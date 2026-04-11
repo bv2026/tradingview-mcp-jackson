@@ -1,65 +1,177 @@
 {
-  "watchlist": ["BTCUSDT"],
-  "default_timeframe": "1",
+  "watchlist": ["BTCUSD", "ETHUSD", "SOLUSD", "XRPUSD", "LINKUSD", "PEPEUSD", "PAXGUSD", "XTZUSD", "DOTUSD", "POLUSD", "ATOMUSD", "DOGEUSD", "TRUUSD"],
+  "default_timeframe": "1W",
 
   "strategy": {
-    "name": "10-Second Momentum Scalper",
+    "name": "van de Poppe + Tone Vays BTC Strategy",
     "sources": [
-      "Price momentum — buy if last close > previous close (green candle)",
-      "RSI filter — only trade when RSI is not at an extreme (30–70 range)"
+      "Michaël van de Poppe (@CryptoMichNL) — EMA 21/50/200 pullback system",
+      "Tone Vays (@ToneVays) — MACD divergence + RSI confirmation",
+      "ICT (Inner Circle Trader) — order blocks, fair value gaps, killzones",
+      "CryptoCred — EMA + VWAP + key levels",
+      "TraderSZ — volume profile"
     ],
     "primary_timeframes": [
-      "1-minute (signal source)",
-      "10-second execution loop"
+      "Weekly (macro bias)",
+      "Daily (entry timing)",
+      "4H (precise entry)"
     ]
   },
 
   "indicators": {
-    "rsi_14": "Momentum filter. Only trade when RSI is between 30–70 (avoid extremes).",
-    "price_momentum": "Compare last close vs previous close. Up = long signal. Down = short signal."
+    "ema_21": "Short-term trend. Price bouncing off this = healthy uptrend.",
+    "ema_50": "Medium-term trend. EMA 21 above EMA 50 = bullish alignment.",
+    "ema_200": "Macro trend filter. Only take longs above this. Only take shorts below.",
+    "ema_20w": "Weekly macro filter. Van de Poppe uses 20W EMA as ultimate bull/bear divider. Double tap = potential support.",
+    "rsi_14": "Momentum filter. Pullback entry zone: 35-58. Overbought: >70. Oversold: <30.",
+    "macd_12_26_9": "Tone Vays momentum confirmation. Line above signal = bullish. Divergence = reversal warning.",
+    "vwap": "Institutional reference price. CryptoCred/TraderSZ anchor from session/week open.",
+    "volume": "Breakout confirmation. Require above-average volume on breakout candles."
+  },
+
+  "timeframe_structure": {
+    "weekly": "Van de Poppe: 21 EMA on weekly is THE key BTC trend filter. 200 EMA on weekly = ultimate bull/bear divider",
+    "daily": "PRIMARY decision timeframe (Tone Vays). All MACD/RSI/EMA signals generated here. Determine macro bias",
+    "4H": "Identify key levels — EMA confluence, Fibonacci zones, volume profile levels, VWAP",
+    "1H": "Confirm setup direction — EMA alignment, RSI divergences",
+    "15m": "Execute trades — entry patterns, killzone timing, rejection candles. Do NOT use below 1H for swing trades (Van de Poppe)"
+  },
+
+  "strategies": {
+    "tone_vays_macd": {
+      "description": "Tone Vays' MACD-based BTC trading system — conservative, daily chart focused",
+      "long_entry": [
+        "Price is above the 50 EMA on the Daily chart (non-negotiable filter)",
+        "MACD histogram on Daily is flipping from negative to positive (or positive and expanding)",
+        "RSI(14) on Daily is above 50",
+        "21 EMA has crossed above or is above the 50 EMA (EMA stacking confirmation)",
+        "Strongest signal: full EMA stack (21 > 50 > 200) with MACD histogram expanding"
+      ],
+      "exit_short": [
+        "MACD histogram flips from positive to negative on Daily — first warning",
+        "Price closes below 21 EMA on Daily — tighten stop",
+        "Price closes below 50 EMA on Daily — hard exit",
+        "RSI dropping below 50 confirms bearish shift"
+      ],
+      "notes": "Tone Vays trades BTC almost exclusively. Prefers spot or 2-3x max leverage. Very comfortable being in cash."
+    },
+
+    "van_de_poppe_swing": {
+      "description": "Van de Poppe's Fibonacci swing setup — most replicable BTC swing trade",
+      "setup": [
+        "1. Confirm trend: BTC above 200 EMA on Daily = bullish bias",
+        "2. Wait for pullback: price retraces to 0.618-0.786 Fibonacci zone of prior swing (the 'golden pocket')",
+        "3. Confluence check: Fib zone should overlap with 21 EMA or 50 EMA, and ideally a high-volume node",
+        "4. RSI confirmation: RSI(14) on Daily near or below 40, or showing bullish divergence",
+        "5. Entry: limit order in the golden pocket (0.618-0.786 fib retracement)",
+        "6. Stop loss: below the 0.786 fib level or swing low — typically 3-5% below entry",
+        "7. Target 1: 1.272 Fibonacci extension (take partial profit)",
+        "8. Target 2: 1.618 Fibonacci extension (let remainder run)"
+      ],
+      "fibonacci_levels": {
+        "entry_zone": "0.618 - 0.786 retracement (golden pocket)",
+        "stop": "Below 0.786 or swing low",
+        "tp1": "1.272 extension",
+        "tp2": "1.618 extension"
+      },
+      "notes": "Best for swing trading BTC on Daily/Weekly. Do NOT use below 1H timeframe. Scale out at each Fib extension."
+    }
   },
 
   "bias_criteria": {
     "bullish": [
-      "Last 1-min candle closed higher than the one before it",
-      "RSI is between 30 and 70"
+      "Price is above the EMA 200",
+      "EMA 21 is above EMA 50 (golden alignment)",
+      "MACD line is above signal line",
+      "RSI is below 70 (room to run)",
+      "Price is above VWAP (institutional buyers in control)",
+      "Volume is increasing on green candles (buying pressure confirmed)"
     ],
     "bearish": [
-      "Last 1-min candle closed lower than the one before it",
-      "RSI is between 30 and 70"
+      "Price is below the EMA 200",
+      "EMA 21 is below EMA 50",
+      "MACD line is below signal line",
+      "RSI is above 30 (room to drop)",
+      "Price is below VWAP (institutional sellers in control)",
+      "Volume is increasing on red candles (selling pressure confirmed)"
     ],
     "neutral": [
-      "RSI is above 70 (overbought — skip)",
-      "RSI is below 30 (oversold — skip)",
-      "Candle close change is less than 0.05% (chop — skip)"
+      "Price is chopping around the EMA 200",
+      "EMA 21 and EMA 50 are flat or intertwined",
+      "RSI is between 45 and 55",
+      "MACD histogram is near zero with no clear direction",
+      "Price is near VWAP with no conviction",
+      "Volume is declining or below average"
     ]
   },
 
   "entry_rules": {
     "long": [
-      "Last close > previous close by at least 0.05%",
-      "RSI between 30 and 70",
-      "Enter market buy immediately"
+      "Macro bias is BULLISH (price > EMA 200, EMA 21 > EMA 50)",
+      "Price pulls back into the EMA 21-50 zone",
+      "RSI cools to 35-58 range (not capitulation, just a healthy pullback)",
+      "MACD line remains above signal line (momentum intact)",
+      "Enter in two tranches: 50% on first touch of zone, 50% on confirmed bounce candle",
+      "VAN DE POPPE SWING: Price in 0.618-0.786 Fib zone overlapping with 21 or 50 EMA + RSI near 40 or divergence",
+      "ICT/CRYPTOCRED: Price at confluent level (2+ of: order block, FVG, VWAP, EMA) with rejection candle on 15m",
+      "Prefer trades during London Open (02:00-05:00 EST) or NY Open (07:00-10:00 EST) killzones"
     ],
     "short": [
-      "Last close < previous close by at least 0.05%",
-      "RSI between 30 and 70",
-      "Enter market sell immediately"
+      "Macro bias is BEARISH (price < EMA 200, EMA 21 < EMA 50)",
+      "Price retraces up into the EMA 21-50 zone",
+      "RSI in 42-65 range",
+      "MACD line below signal line"
     ]
   },
 
   "exit_rules": [
-    "Exit automatically after 10 seconds (next loop tick closes previous position)",
-    "No manual exit management — pure time-based scalp"
+    "Take 33-50% profit at prior swing high or key resistance",
+    "Remaining position targets: 1.272 and 1.618 Fibonacci extensions from prior swing",
+    "Full exit if stop loss is hit — no averaging down into losers",
+    "Exit if MACD crosses bearish on the entry timeframe",
+    "TONE VAYS EXIT: MACD histogram flips against you on Daily = first warning. Close below 21 EMA = tighten stop. Close below 50 EMA = hard exit",
+    "TRAILING: Use 21 EMA on execution timeframe as trailing stop reference",
+    "Never move stop loss further from entry once placed",
+    "If price reclaims the level against you with strong volume, exit immediately"
   ],
 
   "risk_rules": [
-    "Fixed trade size: 1% of portfolio per trade",
-    "Maximum trade size: $3.00",
-    "Maximum 6 trades per 60-second run",
-    "No stop loss — exit is time-based at next tick",
-    "For demo purposes only — minimum BitGet order size may apply"
+    "Risk maximum 1-2% of portfolio per trade",
+    "Minimum R:R of 2:1 — prefer 3:1 or better",
+    "Stop loss placed below the 0.786 Fibonacci level or most recent swing low",
+    "Position size = risk amount divided by distance to stop loss",
+    "Maximum 2-3 open positions at once",
+    "If stop is hit, setup is invalid — do not re-enter immediately",
+    "No trading against the EMA 200 macro trend",
+    "Daily loss limit: 3% of account — stop trading for the day if hit",
+    "Weekly loss limit: 6% of account — reduce position size by 50% if hit",
+    "If 2 losing trades in a row, stop for the day",
+    "No trading in the first 15 minutes of the NY session open",
+    "No trading during low-volume weekend periods",
+    "Prefer spot or low leverage (2-3x max per Tone Vays). Being in cash is a valid position"
   ],
 
-  "notes": "Demo strategy for YouTube video. Runs 6 trades over 60 seconds, one every 10 seconds. Signal is simple price momentum on 1-min candles with RSI sanity check."
+  "do_not": [
+    "Do not use indicator crossovers as standalone entry signals",
+    "Do not go long if price is below the EMA 200 (macro trend filter)",
+    "Do not trade without a higher-timeframe directional bias from the Daily chart",
+    "Do not average down on a losing trade",
+    "Do not move your stop loss further from entry",
+    "Do not trade if RSI is above 70 (long) or below 30 (short) — overextended, wait for pullback",
+    "Do not use Fibonacci levels as standalone signals — require confluence with EMAs or volume (Van de Poppe)",
+    "Do not use anything below 1H timeframe for swing trade decisions (Van de Poppe)"
+  ],
+
+  "output_format": {
+    "description": "Morning brief must be presented in this exact format every time",
+    "table_columns": ["Asset", "Bias", "Price vs EMA 200", "Price vs 20W EMA", "RSI", "MACD", "Signal"],
+    "bias_format": "Use colored indicators: BEARISH (red), BULLISH (green), NEUTRAL (yellow)",
+    "after_table": [
+      "Key takeaways: bullet list of the most important observations across all assets",
+      "Strategy recommendation: one clear paragraph on what to do based on rules"
+    ],
+    "example": "| Asset | Bias | Price vs EMA 200 | Price vs 20W EMA | RSI | MACD | Signal |\n| BTC | BEARISH | Below | Below | 32.8 | Bearish | Oversold, watching |\n\nKey takeaways:\n- Everything is red or neutral...\n\nThe strategy says sit on hands until assets reclaim and close above the EMA 200 on the weekly."
+  },
+
+  "notes": "Add macro context here — e.g. upcoming Fed meetings, halving cycle position, key on-chain levels, Bitcoin dominance trend, and anything that should affect your bias. Two primary modes: (1) Tone Vays system for daily bias and momentum confirmation via MACD + EMA stacking + RSI>50, (2) Van de Poppe system for swing entries at Fibonacci golden pocket (0.618-0.786) with EMA confluence."
 }
