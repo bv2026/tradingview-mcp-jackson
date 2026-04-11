@@ -41,13 +41,28 @@ function loadRules(rulesPath) {
   );
 }
 
-export async function runBrief({ rules_path } = {}) {
+export async function runBrief({ rules_path, category } = {}) {
   const { rules, path: loadedFrom } = loadRules(rules_path);
-  const { watchlist = [], default_timeframe = "240" } = rules;
+
+  // If a category is specified (e.g. "crypto", "stocks", "futures"),
+  // use that category's symbols and timeframe from rules.watchlists.
+  // Otherwise fall back to the flat rules.watchlist array.
+  let watchlist, default_timeframe;
+  if (category && rules.watchlists && rules.watchlists[category]) {
+    const cat = rules.watchlists[category];
+    watchlist = cat.symbols || [];
+    default_timeframe = cat.default_timeframe || rules.default_timeframe || "240";
+  } else {
+    watchlist = rules.watchlist || [];
+    default_timeframe = rules.default_timeframe || "240";
+  }
 
   if (!watchlist.length) {
+    const available = rules.watchlists ? Object.keys(rules.watchlists).join(", ") : "none";
     throw new Error(
-      "rules.json watchlist is empty. Add at least one symbol to your watchlist array.",
+      category
+        ? `No symbols found for category "${category}". Available categories: ${available}`
+        : "rules.json watchlist is empty. Add at least one symbol to your watchlist array, or use a category parameter (e.g. crypto, stocks, futures).",
     );
   }
 
@@ -99,9 +114,13 @@ export async function runBrief({ rules_path } = {}) {
     success: true,
     generated_at: new Date().toISOString(),
     rules_loaded_from: loadedFrom,
+    category: category || "default",
+    symbols_count: watchlist.length,
     rules: {
       bias_criteria: rules.bias_criteria || null,
       risk_rules: rules.risk_rules || null,
+      asset_class_notes: category && rules.asset_class_notes ? rules.asset_class_notes[category] : null,
+      output_format: rules.output_format || null,
       notes: rules.notes || null,
     },
     symbols_scanned: results,

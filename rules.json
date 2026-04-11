@@ -1,6 +1,33 @@
 {
-  "watchlist": ["BTCUSD", "ETHUSD", "SOLUSD", "XRPUSD", "LINKUSD", "PEPEUSD", "PAXGUSD", "XTZUSD", "DOTUSD", "POLUSD", "ATOMUSD", "DOGEUSD", "TRUUSD"],
+  "watchlist": ["BTCUSD", "ETHUSD", "SOLUSD", "SPY", "ES1!", "GC1!"],
   "default_timeframe": "1W",
+
+  "watchlists": {
+    "crypto": {
+      "symbols": ["BTCUSD", "ETHUSD", "SOLUSD", "XRPUSD", "LINKUSD", "PEPEUSD", "PAXGUSD", "XTZUSD", "DOTUSD", "POLUSD", "ATOMUSD", "DOGEUSD", "TRUUSD"],
+      "default_timeframe": "1W",
+      "session": "24/7",
+      "notes": "Crypto trades 24/7. Use London/NY killzones for optimal entries. Current rules (Tone Vays, Van de Poppe) designed for this."
+    },
+    "stocks": {
+      "symbols": ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA", "AMD", "NFLX", "COIN", "SPY", "QQQ"],
+      "default_timeframe": "D",
+      "session": "0930-1600 ET",
+      "notes": "Equity market hours only. Check for upcoming earnings before entering — earnings can invalidate technical setups. Gap risk on overnight holds."
+    },
+    "futures": {
+      "symbols": ["CME_MINI:ES1!", "CME_MINI:NQ1!", "NYMEX:CL1!", "COMEX:GC1!", "CBOT_MINI:YM1!", "CME:6E1!", "NYMEX:NG1!"],
+      "default_timeframe": "D",
+      "session": "Nearly 24h (Sun 6pm - Fri 5pm ET)",
+      "notes": "Use RTH (regular trading hours) data for key levels. Reduce risk to 0.5-1% per trade (higher leverage). Avoid holding into expiration week. The ! suffix = continuous front-month contract."
+    }
+  },
+
+  "asset_class_notes": {
+    "crypto": "24/7 market. BTC dominance and ETH/BTC ratio matter. Killzone timing still applies for optimal fills.",
+    "stocks": "Regular hours 0930-1600 ET. Earnings dates can invalidate technical setups. Avoid holding through earnings unless intentional. Gap risk on overnight holds.",
+    "futures": "Nearly 24h session. Use RTH data for key levels. Margin requirements higher — risk 0.5-1% per trade instead of 1-2%. Roll dates matter — avoid holding into expiration week. Settlement prices are key reference levels."
+  },
 
   "strategy": {
     "name": "van de Poppe + Tone Vays BTC Strategy",
@@ -136,7 +163,7 @@
   ],
 
   "risk_rules": [
-    "Risk maximum 1-2% of portfolio per trade",
+    "Risk maximum 1-2% of portfolio per trade (0.5-1% for futures due to higher leverage)",
     "Minimum R:R of 2:1 — prefer 3:1 or better",
     "Stop loss placed below the 0.786 Fibonacci level or most recent swing low",
     "Position size = risk amount divided by distance to stop loss",
