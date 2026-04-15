@@ -1,0 +1,195 @@
+//@version=6
+// ============================================================================
+// Pro Crypto Bias Engine
+// ----------------------------------------------------------------------------
+// Consolidated crypto bias engine combining five professional trading systems
+// into a single overlay indicator:
+//
+//   * Tone Vays — MACD histogram flip + EMA 50 + RSI > 50 long trigger,
+//                 20-week EMA macro trend filter, spot-or-low-leverage bias
+//   * Van de Poppe — Fibonacci golden pocket (0.618-0.786) swing entries with
+//                    EMA 21 / EMA 50 bullish structure confirmation
+//   * ICT / SMC — swing-high / swing-low internal structure as fib anchors
+//   * CryptoCred — multi-MA trend alignment and RSI momentum regime
+//   * TraderSZ — VWAP + volume confirmation as institutional bias tell
+//
+// Features:
+//   * 21 EMA, 50 EMA, 200 SMA, 20-week EMA, VWAP plotted on chart
+//   * Fibonacci golden pocket fill + 1.272 / 1.618 extension targets
+//   * 8-criteria bias scoring with on-chart dashboard (top-right)
+//   * Signal labels: TV LONG / TV EXIT, VDP SWING, EMA STACK, Bull/Bear Div,
+//                    20W 2-TAP (double-tap pattern on the weekly EMA)
+//   * Bullish/bearish background shading when score >= 6 / <= 2
+//   * 7 alertconditions ready to wire up for automated notifications
+//
+// Timeframes: works on any TF; bias designed for 4H and Daily, swings on 1H
+// Built for: crypto majors, equity index futures, metals, FX — any liquid market
+// ============================================================================
+indicator("Pro Crypto Bias Engine", shorttitle="ProBias", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500)
+
+// ============================================================================
+// INPUTS
+// ============================================================================
+grpMA    = "Moving Averages"
+ema21Len = input.int(21,  "EMA Fast (Tone Vays / VdP)", minval=1, group=grpMA)
+ema50Len = input.int(50,  "EMA Slow",                   minval=1, group=grpMA)
+sma200Len= input.int(200, "SMA 200 (Macro Trend)",      minval=1, group=grpMA)
+w20Len   = input.int(20,  "Weekly EMA (Tone Vays 20W)", minval=1, group=grpMA)
+
+grpMom   = "Momentum"
+macdFast = input.int(12, "MACD Fast",   group=grpMom)
+macdSlow = input.int(26, "MACD Slow",   group=grpMom)
+macdSig  = input.int(9,  "MACD Signal", group=grpMom)
+rsiLen   = input.int(14, "RSI Length",  group=grpMom)
+
+grpFib   = "Fibonacci (Van de Poppe)"
+fibLook  = input.int(50, "Fib Swing Lookback", minval=10, group=grpFib)
+showFibFill = input.bool(true, "Show Golden Pocket Fill", group=grpFib)
+
+grpW20   = "20W EMA Double-Tap Alert"
+dtTol    = input.float(0.5, "Tap Tolerance %",      minval=0.1, step=0.1, group=grpW20)
+dtLook   = input.int(30,    "Lookback Bars",        minval=5,  group=grpW20)
+dtBounce = input.float(1.0, "Min Bounce % Between", minval=0.1, step=0.1, group=grpW20)
+
+grpViz   = "Visuals"
+showDash = input.bool(true, "Show Dashboard",    group=grpViz)
+showBG   = input.bool(true, "Bias Background",   group=grpViz)
+showLbl  = input.bool(true, "Show Signal Labels", group=grpViz)
+
+// ============================================================================
+// CORE CALCULATIONS
+// ============================================================================
+ema21  = ta.ema(close, ema21Len)
+ema50  = ta.ema(close, ema50Len)
+sma200 = ta.sma(close, sma200Len)
+w20    = request.security(syminfo.tickerid, "W", ta.ema(close, w20Len))
+
+[macdLine, sigLine, hist] = ta.macd(close, macdFast, macdSlow, macdSig)
+rsi = ta.rsi(close, rsiLen)
+vwapVal = ta.vwap(hlc3)
+volAvg  = ta.sma(volume, 20)
+
+// Fib golden pocket on recent swing
+swHigh = ta.highest(high, fibLook)
+swLow  = ta.lowest(low,  fibLook)
+rng    = swHigh - swLow
+fib618 = swHigh - rng * 0.618
+fib786 = swHigh - rng * 0.786
+fibTP1 = swLow  + rng * 1.272
+fibTP2 = swLow  + rng * 1.618
+
+// ============================================================================
+// BIAS CRITERIA (8 checks)
+// ============================================================================
+c1 = close > sma200
+c2 = close > ema50
+c3 = ema21 > ema50
+c4 = hist > 0
+c5 = rsi > 50
+c6 = close > vwapVal
+c7 = volume > volAvg
+c8 = close > w20
+
+score = (c1?1:0)+(c2?1:0)+(c3?1:0)+(c4?1:0)+(c5?1:0)+(c6?1:0)+(c7?1:0)+(c8?1:0)
+isBull = score >= 6
+isBear = score <= 2
+
+// ============================================================================
+// SIGNALS
+// ============================================================================
+// Tone Vays long: histogram flip positive + price > ema50 + rsi > 50
+tvLong = ta.crossover(hist, 0) and close > ema50 and rsi > 50
+tvExit = ta.crossunder(hist, 0)
+
+// Van de Poppe swing: price tags golden pocket with bullish EMA structure
+inPocket = low <= fib618 and low >= fib786
+vdpLong  = inPocket and close > open and ema21 > ema50
+
+// EMA stack confirmation
+emaStack = ta.crossover(ema21, ema50) and close > sma200
+
+// RSI divergences (simple)
+bullDiv = ta.lowest(low, 5)  < ta.lowest(low[5], 5)  and ta.lowest(rsi, 5) > ta.lowest(rsi[5], 5)
+bearDiv = ta.highest(high, 5) > ta.highest(high[5], 5) and ta.highest(rsi, 5) < ta.highest(rsi[5], 5)
+
+// 20W EMA Double-Tap
+tol = w20 * dtTol / 100
+tap = low <= w20 + tol and low >= w20 - tol
+var int  lastTapBar = na
+var float lastTapLow = na
+doubleTap = false
+if tap
+    if not na(lastTapBar) and (bar_index - lastTapBar) <= dtLook
+        if ta.highest(high, bar_index - lastTapBar) >= lastTapLow * (1 + dtBounce/100)
+            doubleTap := true
+    lastTapBar := bar_index
+    lastTapLow := low
+
+// ============================================================================
+// PLOTS
+// ============================================================================
+plot(ema21,  "EMA 21",  color=color.new(color.yellow, 0))
+plot(ema50,  "EMA 50",  color=color.new(color.orange, 0))
+plot(sma200, "SMA 200", color=color.new(color.red, 0),    linewidth=2)
+plot(w20,    "20W EMA", color=color.new(color.purple, 0), linewidth=2)
+plot(vwapVal,"VWAP",    color=color.new(color.aqua, 0))
+
+p618 = plot(fib618, "Fib 0.618", color=color.new(color.green, 60))
+p786 = plot(fib786, "Fib 0.786", color=color.new(color.green, 60))
+fill(p618, p786, color = showFibFill ? color.new(color.green, 85) : na, title="Golden Pocket")
+plot(fibTP1, "Fib 1.272 TP1", color=color.new(color.teal, 40))
+plot(fibTP2, "Fib 1.618 TP2", color=color.new(color.teal, 40))
+
+bgcolor(showBG and isBull ? color.new(color.green, 92) : showBG and isBear ? color.new(color.red, 92) : na)
+
+if showLbl and tvLong
+    label.new(bar_index, low, "TV LONG",  color=color.green,  textcolor=color.white, style=label.style_label_up,   size=size.small)
+if showLbl and tvExit
+    label.new(bar_index, high, "TV EXIT", color=color.orange, textcolor=color.white, style=label.style_label_down, size=size.tiny)
+if showLbl and vdpLong
+    label.new(bar_index, low, "VDP SWING", color=color.blue, textcolor=color.white, style=label.style_label_up, size=size.small)
+if showLbl and emaStack
+    label.new(bar_index, low, "EMA STACK", color=color.teal, textcolor=color.white, style=label.style_label_up, size=size.tiny)
+if showLbl and bullDiv
+    label.new(bar_index, low, "Bull Div", color=color.lime,   textcolor=color.black, style=label.style_label_up, size=size.tiny)
+if showLbl and bearDiv
+    label.new(bar_index, high,"Bear Div", color=color.maroon, textcolor=color.white, style=label.style_label_down, size=size.tiny)
+if showLbl and doubleTap
+    label.new(bar_index, low, "20W 2-TAP", color=color.fuchsia, textcolor=color.white, style=label.style_label_up, size=size.normal)
+
+// ============================================================================
+// DASHBOARD
+// ============================================================================
+var table dash = table.new(position.top_right, 2, 12, border_width=1)
+f_row(row, lbl, ok) =>
+    table.cell(dash, 0, row, lbl, text_color=color.white, bgcolor=color.new(color.gray, 70), text_size=size.small)
+    table.cell(dash, 1, row, ok ? "✓" : "✗", text_color=ok?color.lime:color.red, bgcolor=color.new(color.black, 70), text_size=size.small)
+
+if showDash and barstate.islast
+    table.cell(dash, 0, 0, "PRO BIAS", text_color=color.white, bgcolor=color.new(color.blue, 30), text_size=size.normal)
+    table.cell(dash, 1, 0, isBull ? "BULL" : isBear ? "BEAR" : "NEUT", text_color=color.white, bgcolor=isBull?color.green:isBear?color.red:color.gray, text_size=size.normal)
+    f_row(1, "Price > SMA200", c1)
+    f_row(2, "Price > EMA50",  c2)
+    f_row(3, "EMA21 > EMA50",  c3)
+    f_row(4, "MACD Hist > 0",  c4)
+    f_row(5, "RSI > 50",       c5)
+    f_row(6, "Price > VWAP",   c6)
+    f_row(7, "Vol > Avg",      c7)
+    f_row(8, "Price > 20W",    c8)
+    table.cell(dash, 0, 9,  "Score", text_color=color.white, bgcolor=color.new(color.gray, 50), text_size=size.small)
+    table.cell(dash, 1, 9,  str.tostring(score) + "/8", text_color=color.white, bgcolor=color.new(color.black, 50), text_size=size.small)
+    table.cell(dash, 0, 10, "RSI",   text_color=color.white, bgcolor=color.new(color.gray, 70), text_size=size.small)
+    table.cell(dash, 1, 10, str.tostring(rsi, "#.0"), text_color=color.white, bgcolor=color.new(color.black, 70), text_size=size.small)
+    table.cell(dash, 0, 11, "MACD H", text_color=color.white, bgcolor=color.new(color.gray, 70), text_size=size.small)
+    table.cell(dash, 1, 11, str.tostring(hist, "#.##"), text_color=color.white, bgcolor=color.new(color.black, 70), text_size=size.small)
+
+// ============================================================================
+// ALERTS
+// ============================================================================
+alertcondition(tvLong,    "Tone Vays Long",  "MACD flip + EMA50 + RSI>50")
+alertcondition(tvExit,    "Tone Vays Exit",  "MACD histogram turned negative")
+alertcondition(vdpLong,   "VdP Golden Pocket","Price tagged 0.618-0.786 with bullish structure")
+alertcondition(emaStack,  "EMA Stack",       "21 EMA crossed above 50 EMA while above 200 SMA")
+alertcondition(bullDiv,   "Bullish RSI Div", "Price LL, RSI HL")
+alertcondition(bearDiv,   "Bearish RSI Div", "Price HH, RSI LH")
+alertcondition(doubleTap, "20W EMA Double Tap","Price tapped 20W EMA twice within lookback window")
