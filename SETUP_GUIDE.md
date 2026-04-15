@@ -48,6 +48,27 @@ TradingView Desktop must be running with Chrome DevTools Protocol enabled.
 **Auto-detect and launch (recommended):**
 After the MCP server is connected, use the `tv_launch` tool — it auto-detects TradingView on Mac, Windows, and Linux.
 
+**Optional auto-launch on MCP startup:**
+If you want TradingView to start automatically whenever the MCP server starts, add env vars to your MCP config:
+
+```json
+{
+  "mcpServers": {
+    "tradingview": {
+      "command": "node",
+      "args": ["C:/work/tradingview-mcp-jackson/src/server.js"],
+      "env": {
+        "TV_AUTO_LAUNCH": "1",
+        "TV_AUTO_LAUNCH_KILL_EXISTING": "1",
+        "TV_AUTO_LAUNCH_PORT": "9222"
+      }
+    }
+  }
+}
+```
+
+This replaces the need to run `scripts\\launch_tv_debug.bat` manually on Windows. The server checks whether CDP is already live and only launches TradingView if it is missing.
+
 **Manual launch by platform:**
 
 Mac:

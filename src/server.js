@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerHealthTools } from "./tools/health.js";
@@ -15,6 +16,7 @@ import { registerUiTools } from "./tools/ui.js";
 import { registerPaneTools } from "./tools/pane.js";
 import { registerTabTools } from "./tools/tab.js";
 import { registerMorningTools } from "./tools/morning.js";
+import { launch as launchTradingView } from "./core/health.js";
 
 const server = new McpServer(
   {
@@ -96,6 +98,44 @@ process.stderr.write(
   "   Ensure your usage complies with TradingView's Terms of Use.\n\n",
 );
 
+await maybeAutoLaunchTradingView();
+
 // Start stdio transport
 const transport = new StdioServerTransport();
 await server.connect(transport);
+
+async function maybeAutoLaunchTradingView() {
+  if (!isEnabled(process.env.TV_AUTO_LAUNCH)) return;
+
+  const port = Number(process.env.TV_AUTO_LAUNCH_PORT || process.env.TV_CDP_PORT || 9222);
+  const killExisting = process.env.TV_AUTO_LAUNCH_KILL_EXISTING == null
+    ? true
+    : isEnabled(process.env.TV_AUTO_LAUNCH_KILL_EXISTING);
+
+  try {
+    if (await isCdpReady(port)) {
+      process.stderr.write(`tradingview-mcp  |  CDP already available on port ${port}, skipping auto-launch.\n`);
+      return;
+    }
+
+    process.stderr.write(`tradingview-mcp  |  TV_AUTO_LAUNCH enabled, starting TradingView on port ${port}...\n`);
+    const result = await launchTradingView({ port, kill_existing: killExisting });
+    const suffix = result?.cdp_ready === false ? " (CDP still warming up)" : "";
+    process.stderr.write(`tradingview-mcp  |  TradingView launch requested via ${result?.binary || "auto-detect"}${suffix}\n`);
+  } catch (err) {
+    process.stderr.write(`tradingview-mcp  |  Auto-launch failed: ${err.message}\n`);
+  }
+}
+
+async function isCdpReady(port) {
+  try {
+    const response = await fetch(`http://localhost:${port}/json/version`);
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+function isEnabled(value) {
+  return /^(1|true|yes|on)$/i.test(String(value || "").trim());
+}

@@ -111,6 +111,26 @@ Add to `~/.claude/.mcp.json` (merge with any existing servers):
 
 Replace `YOUR_USERNAME` with your actual username. On Mac: `echo $USER` to check.
 
+If you want the MCP server to launch TradingView automatically when it starts, add env vars to that server entry:
+
+```json
+{
+  "mcpServers": {
+    "tradingview": {
+      "command": "node",
+      "args": ["C:/work/tradingview-mcp-jackson/src/server.js"],
+      "env": {
+        "TV_AUTO_LAUNCH": "1",
+        "TV_AUTO_LAUNCH_KILL_EXISTING": "1",
+        "TV_AUTO_LAUNCH_PORT": "9222"
+      }
+    }
+  }
+}
+```
+
+`TV_AUTO_LAUNCH=1` turns on startup launch. `TV_AUTO_LAUNCH_KILL_EXISTING=1` is recommended if you want this to fully replace the batch file, because it restarts TradingView when it is already open without CDP enabled.
+
 ### 5. Verify
 
 Restart Claude Code, then ask: *"Use tv_health_check to verify TradingView is connected"*
