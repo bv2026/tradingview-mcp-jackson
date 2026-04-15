@@ -3,6 +3,89 @@
  */
 import { evaluate, evaluateAsync, getClient } from '../connection.js';
 
+async function setBottomWidgetState(panel, action) {
+  const widgetName = panel === 'pine-editor' ? 'pine-editor' : 'backtesting';
+  return evaluate(`
+    (function() {
+      var panel = ${JSON.stringify(panel)};
+      var widgetName = ${JSON.stringify(widgetName)};
+      var action = ${JSON.stringify(action)};
+      var bwb = window.TradingView && window.TradingView.bottomWidgetBar;
+      if (!bwb) return { error: 'bottomWidgetBar not available' };
+
+      function panelOpenState() {
+        var bottomArea = document.querySelector('[class*="layout__area--bottom"]');
+        var open = !!(bottomArea && bottomArea.offsetHeight > 50);
+        if (panel === 'pine-editor') {
+          var monacoEl = document.querySelector('.monaco-editor.pine-editor-monaco');
+          return open && !!monacoEl;
+        }
+        if (panel === 'strategy-tester') {
+          var stratPanel = document.querySelector('[data-name="backtesting"]') || document.querySelector('[class*="strategyReport"]');
+          return open && !!(stratPanel && stratPanel.offsetParent);
+        }
+        return open;
+      }
+
+      function clickVisibleButton(matchers) {
+        var btns = document.querySelectorAll('button, [role="button"], [role="tab"]');
+        for (var i = 0; i < btns.length; i++) {
+          if (btns[i].offsetParent === null) continue;
+          var text = (btns[i].textContent || '').trim();
+          var aria = btns[i].getAttribute('aria-label') || '';
+          var dataName = btns[i].getAttribute('data-name') || '';
+          for (var j = 0; j < matchers.length; j++) {
+            if (matchers[j].test(text) || matchers[j].test(aria) || matchers[j].test(dataName)) {
+              btns[i].click();
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      var wasOpen = panelOpenState();
+      var performed = 'none';
+      var closeMethod = null;
+
+      if (action === 'open' || (action === 'toggle' && !wasOpen)) {
+        if (panel === 'pine-editor' && typeof bwb.activateScriptEditorTab === 'function') {
+          bwb.activateScriptEditorTab();
+          performed = 'opened';
+        } else if (typeof bwb.showWidget === 'function') {
+          bwb.showWidget(widgetName);
+          performed = 'opened';
+        } else if (clickVisibleButton(panel === 'pine-editor'
+          ? [/^pine$/i, /pine editor/i, /script editor/i]
+          : [/strategy tester/i, /backtesting/i])) {
+          performed = 'opened';
+        }
+      } else if (action === 'close' || (action === 'toggle' && wasOpen)) {
+        if (typeof bwb.hideWidget === 'function') {
+          bwb.hideWidget(widgetName);
+          performed = 'closed';
+          closeMethod = 'hideWidget';
+        } else if (panel === 'pine-editor' && typeof bwb.activateScriptEditorTab === 'function') {
+          bwb.activateScriptEditorTab();
+          performed = 'closed';
+          closeMethod = 'activateScriptEditorTab';
+        } else if (typeof bwb.showWidget === 'function') {
+          bwb.showWidget(widgetName);
+          performed = 'closed';
+          closeMethod = 'showWidget_toggle';
+        } else if (clickVisibleButton(panel === 'pine-editor'
+          ? [/^pine$/i, /pine editor/i, /script editor/i]
+          : [/strategy tester/i, /backtesting/i])) {
+          performed = 'closed';
+          closeMethod = 'button_click';
+        }
+      }
+
+      return { was_open: wasOpen, performed: performed, close_method: closeMethod };
+    })()
+  `);
+}
+
 export async function click({ by, value }) {
   const escaped = JSON.stringify(value);
   const result = await evaluate(`
@@ -31,32 +114,9 @@ export async function click({ by, value }) {
 export async function openPanel({ panel, action }) {
   const isBottomPanel = panel === 'pine-editor' || panel === 'strategy-tester';
   if (isBottomPanel) {
-    const widgetName = panel === 'pine-editor' ? 'pine-editor' : 'backtesting';
-    const result = await evaluate(`
-      (function() {
-        var bwb = window.TradingView && window.TradingView.bottomWidgetBar;
-        if (!bwb) return { error: 'bottomWidgetBar not available' };
-        var panel = ${JSON.stringify(panel)};
-        var widgetName = ${JSON.stringify(widgetName)};
-        var action = ${JSON.stringify(action)};
-        var bottomArea = document.querySelector('[class*="layout__area--bottom"]');
-        var isOpen = !!(bottomArea && bottomArea.offsetHeight > 50);
-        if (panel === 'pine-editor') { var monacoEl = document.querySelector('.monaco-editor.pine-editor-monaco'); isOpen = isOpen && !!monacoEl; }
-        if (panel === 'strategy-tester') { var stratPanel = document.querySelector('[data-name="backtesting"]') || document.querySelector('[class*="strategyReport"]'); isOpen = isOpen && !!(stratPanel && stratPanel.offsetParent); }
-        var performed = 'none';
-        if (action === 'open' || (action === 'toggle' && !isOpen)) {
-          if (panel === 'pine-editor') { if (typeof bwb.activateScriptEditorTab === 'function') bwb.activateScriptEditorTab(); else if (typeof bwb.showWidget === 'function') bwb.showWidget(widgetName); }
-          else { if (typeof bwb.showWidget === 'function') bwb.showWidget(widgetName); }
-          performed = 'opened';
-        } else if (action === 'close' || (action === 'toggle' && isOpen)) {
-          if (typeof bwb.hideWidget === 'function') bwb.hideWidget(widgetName);
-          performed = 'closed';
-        }
-        return { was_open: isOpen, performed: performed };
-      })()
-    `);
+    const result = await setBottomWidgetState(panel, action);
     if (result && result.error) throw new Error(result.error);
-    return { success: true, panel, action, was_open: result?.was_open ?? false, performed: result?.performed ?? 'unknown' };
+    return { success: true, panel, action, was_open: result?.was_open ?? false, performed: result?.performed ?? 'unknown', close_method: result?.close_method ?? null };
   } else {
     const selectorMap = {
       'watchlist': { dataName: 'base-watchlist-widget-button', ariaLabel: 'Watchlist' },

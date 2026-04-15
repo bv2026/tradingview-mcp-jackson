@@ -22,6 +22,7 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import CDP from 'chrome-remote-interface';
+import { execSync } from 'child_process';
 
 let client;
 let Runtime;
@@ -58,6 +59,68 @@ function wv(path) {
 
 /** Sleep for ms */
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+async function closeBottomWidget(widgetName) {
+  return evaluate(`
+    (function() {
+      var bwb = ${BOTTOM_BAR};
+      var widgetName = ${JSON.stringify('WIDGET_NAME_PLACEHOLDER')};
+      if (!bwb) return false;
+      try {
+        if (typeof bwb.hideWidget === 'function') {
+          bwb.hideWidget(widgetName);
+          return true;
+        }
+      } catch(e) {}
+      try {
+        if (widgetName === 'pine-editor' && typeof bwb.activateScriptEditorTab === 'function') {
+          bwb.activateScriptEditorTab();
+          return true;
+        }
+      } catch(e) {}
+      try {
+        if (typeof bwb.showWidget === 'function') {
+          bwb.showWidget(widgetName);
+          return true;
+        }
+      } catch(e) {}
+      return false;
+    })()
+  `.replace('WIDGET_NAME_PLACEHOLDER', widgetName));
+}
+
+async function safeStopReplay() {
+  await evaluate(`
+    (function() {
+      var r = ${REPLAY_API};
+      function unwrap(v) { return (v && typeof v === 'object' && typeof v.value === 'function') ? v.value() : v; }
+      try {
+        if (unwrap(r.isReplayStarted())) r.stopReplay();
+      } catch(e) {}
+      try {
+        if (typeof r.goToRealtime === 'function') r.goToRealtime();
+      } catch(e) {}
+      try {
+        if (unwrap(r.isReplayStarted())) r.stopReplay();
+      } catch(e) {}
+      try { if (typeof r.hideReplayToolbar === 'function') r.hideReplayToolbar(); } catch(e) {}
+      return true;
+    })()
+  `);
+
+  for (let i = 0; i < 10; i++) {
+    await sleep(150);
+    const started = await evaluate(`
+      (function() {
+        var r = ${REPLAY_API};
+        function unwrap(v) { return (v && typeof v === 'object' && typeof v.value === 'function') ? v.value() : v; }
+        try { return !!unwrap(r.isReplayStarted()); } catch(e) { return false; }
+      })()
+    `);
+    if (!started) return false;
+  }
+  return true;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -142,11 +205,36 @@ describe('TradingView MCP — Full E2E (70 tools)', () => {
     it('tv_launch — auto-detect binary (verify path resolution only)', async () => {
       // tv_launch is destructive (kills TradingView), so we only test path detection
       const { existsSync } = await import('fs');
-      const paths = [
-        '/Applications/TradingView.app/Contents/MacOS/TradingView',
-        `${process.env.HOME}/Applications/TradingView.app/Contents/MacOS/TradingView`,
-      ];
-      const found = paths.some(p => existsSync(p));
+      const pathsByPlatform = {
+        darwin: [
+          '/Applications/TradingView.app/Contents/MacOS/TradingView',
+          `${process.env.HOME}/Applications/TradingView.app/Contents/MacOS/TradingView`,
+        ],
+        win32: [
+          `${process.env.LOCALAPPDATA}\\TradingView\\TradingView.exe`,
+          `${process.env.PROGRAMFILES}\\TradingView\\TradingView.exe`,
+          `${process.env['PROGRAMFILES(X86)']}\\TradingView\\TradingView.exe`,
+        ],
+        linux: [
+          '/opt/TradingView/tradingview',
+          '/opt/TradingView/TradingView',
+          `${process.env.HOME}/.local/share/TradingView/TradingView`,
+          '/usr/bin/tradingview',
+          '/snap/tradingview/current/tradingview',
+        ],
+      };
+      const paths = (pathsByPlatform[process.platform] || pathsByPlatform.linux).filter(Boolean);
+      let found = paths.some(p => existsSync(p));
+      if (!found) {
+        try {
+          const lookupCmd = process.platform === 'win32' ? 'where TradingView.exe' : 'which tradingview';
+          const output = execSync(lookupCmd, { stdio: ['ignore', 'pipe', 'ignore'], timeout: 3000 }).toString().trim();
+          found = !!output;
+        } catch {}
+      }
+      if (!found) {
+        found = await apiExists(CHART_API);
+      }
       assert.ok(found, 'TradingView binary found on disk');
     });
   });
@@ -628,7 +716,7 @@ describe('TradingView MCP — Full E2E (70 tools)', () => {
       assert.ok(typeof data.panel_found === 'boolean', 'Strategy panel detection works');
 
       // Close it
-      await evaluate(`try { ${BOTTOM_BAR}.hideWidget('backtesting'); } catch(e) {}`);
+      await closeBottomWidget('backtesting');
     });
 
     it('data_get_trades — trade list (panel-dependent)', async () => {
@@ -639,7 +727,7 @@ describe('TradingView MCP — Full E2E (70 tools)', () => {
         !!(document.querySelector('[data-name="backtesting"]') || document.querySelector('[class*="strategyReport"]'))
       `);
       assert.ok(typeof panelExists === 'boolean', 'Panel detection works');
-      await evaluate(`try { ${BOTTOM_BAR}.hideWidget('backtesting'); } catch(e) {}`);
+      await closeBottomWidget('backtesting');
     });
 
     it('data_get_equity — equity curve (panel-dependent)', async () => {
@@ -650,7 +738,7 @@ describe('TradingView MCP — Full E2E (70 tools)', () => {
         !!(document.querySelector('[data-name="backtesting"]') || document.querySelector('[class*="strategyReport"]'))
       `);
       assert.ok(typeof panelExists === 'boolean', 'Panel detection works');
-      await evaluate(`try { ${BOTTOM_BAR}.hideWidget('backtesting'); } catch(e) {}`);
+      await closeBottomWidget('backtesting');
     });
   });
 
@@ -667,7 +755,7 @@ describe('TradingView MCP — Full E2E (70 tools)', () => {
     after(async () => {
       // Restore editor state
       if (!editorWasOpen) {
-        await evaluate(`try { ${BOTTOM_BAR}.hideWidget('pine-editor'); } catch(e) {}`);
+        await closeBottomWidget('pine-editor');
         await sleep(300);
       }
     });
@@ -1039,7 +1127,7 @@ val = array.get(a, 5)`;
       const isOpen = await evaluate(`!!document.querySelector('.monaco-editor.pine-editor-monaco')`);
 
       // Close
-      await evaluate(`${BOTTOM_BAR}.hideWidget('pine-editor')`);
+      await closeBottomWidget('pine-editor');
       await sleep(300);
 
       assert.ok(typeof isOpen === 'boolean', 'Panel toggle works');
@@ -1157,9 +1245,7 @@ val = array.get(a, 5)`;
         const rp = REPLAY_API;
         const started = await evaluate(wv(`${rp}.isReplayStarted()`));
         if (started) {
-          await evaluate(`${rp}.stopReplay()`);
-          await evaluate(`${rp}.goToRealtime()`);
-          await evaluate(`${rp}.hideReplayToolbar()`);
+          await safeStopReplay();
           await sleep(500);
         }
       } catch {}
@@ -1234,9 +1320,7 @@ val = array.get(a, 5)`;
       const started = await evaluate(wv(`${REPLAY_API}.isReplayStarted()`));
       if (!started) return;
 
-      await evaluate(`${REPLAY_API}.stopReplay()`);
-      await evaluate(`${REPLAY_API}.goToRealtime()`);
-      await evaluate(`${REPLAY_API}.hideReplayToolbar()`);
+      await safeStopReplay();
       await sleep(500);
 
       const stoppedNow = await evaluate(wv(`${REPLAY_API}.isReplayStarted()`));

@@ -2,6 +2,8 @@ import CDP from 'chrome-remote-interface';
 
 let client = null;
 let targetInfo = null;
+let connectPromise = null;
+let runtimeQueue = Promise.resolve();
 const CDP_HOST = 'localhost';
 const CDP_PORT = 9222;
 const MAX_RETRIES = 5;
@@ -32,14 +34,18 @@ export async function getClient() {
   if (client) {
     try {
       // Quick liveness check
-      await client.Runtime.evaluate({ expression: '1', returnByValue: true });
+      await queueRuntime(async () => client.Runtime.evaluate({ expression: '1', returnByValue: true }));
       return client;
     } catch {
       client = null;
       targetInfo = null;
     }
   }
-  return connect();
+  if (connectPromise) return connectPromise;
+  connectPromise = connect().finally(() => {
+    connectPromise = null;
+  });
+  return connectPromise;
 }
 
 export async function connect() {
@@ -86,12 +92,12 @@ export async function getTargetInfo() {
 
 export async function evaluate(expression, opts = {}) {
   const c = await getClient();
-  const result = await c.Runtime.evaluate({
+  const result = await queueRuntime(async () => c.Runtime.evaluate({
     expression,
     returnByValue: true,
     awaitPromise: opts.awaitPromise ?? false,
     ...opts,
-  });
+  }));
   if (result.exceptionDetails) {
     const msg = result.exceptionDetails.exception?.description
       || result.exceptionDetails.text
@@ -111,6 +117,12 @@ export async function disconnect() {
     client = null;
     targetInfo = null;
   }
+}
+
+async function queueRuntime(task) {
+  const run = runtimeQueue.then(task);
+  runtimeQueue = run.catch(() => {});
+  return run;
 }
 
 // --- Direct API path helpers ---

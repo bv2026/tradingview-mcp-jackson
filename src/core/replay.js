@@ -7,6 +7,49 @@ function wv(path) {
   return `(function(){ var v = ${path}; return (v && typeof v === 'object' && typeof v.value === 'function') ? v.value() : v; })()`;
 }
 
+async function stopReplayInternals(rp) {
+  const startedBefore = await evaluate(`
+    (function() {
+      var r = ${rp};
+      function unwrap(v) { return (v && typeof v === 'object' && typeof v.value === 'function') ? v.value() : v; }
+      try { return !!unwrap(r.isReplayStarted()); } catch(e) { return false; }
+    })()
+  `);
+
+  await evaluate(`
+    (function() {
+      var r = ${rp};
+      function unwrap(v) { return (v && typeof v === 'object' && typeof v.value === 'function') ? v.value() : v; }
+      try {
+        if (unwrap(r.isReplayStarted())) r.stopReplay();
+      } catch(e) {}
+      try {
+        if (typeof r.goToRealtime === 'function') r.goToRealtime();
+      } catch(e) {}
+      try {
+        if (unwrap(r.isReplayStarted())) r.stopReplay();
+      } catch(e) {}
+      try { if (typeof r.hideReplayToolbar === 'function') r.hideReplayToolbar(); } catch(e) {}
+      return true;
+    })()
+  `);
+
+  let startedAfter = startedBefore;
+  for (let i = 0; i < 10; i++) {
+    await new Promise(r => setTimeout(r, 150));
+    startedAfter = await evaluate(`
+      (function() {
+        var r = ${rp};
+        function unwrap(v) { return (v && typeof v === 'object' && typeof v.value === 'function') ? v.value() : v; }
+        try { return !!unwrap(r.isReplayStarted()); } catch(e) { return false; }
+      })()
+    `);
+    if (!startedAfter) break;
+  }
+
+  return { started_before: startedBefore, started_after: startedAfter };
+}
+
 export async function start({ date } = {}) {
   const rp = await getReplayApi();
   const available = await evaluate(wv(`${rp}.isReplayAvailable()`));
@@ -33,8 +76,7 @@ export async function start({ date } = {}) {
 
   if (toast) {
     // Stop replay to recover chart
-    try { await evaluate(`${rp}.stopReplay()`); } catch {}
-    try { await evaluate(`${rp}.hideReplayToolbar()`); } catch {}
+    try { await stopReplayInternals(rp); } catch {}
     throw new Error(`Replay date unavailable: "${toast}". The requested date has no data for this timeframe. Try a more recent date or switch to a higher timeframe (e.g., Daily).`);
   }
 
@@ -65,15 +107,8 @@ export async function autoplay({ speed } = {}) {
 
 export async function stop() {
   const rp = await getReplayApi();
-  const started = await evaluate(wv(`${rp}.isReplayStarted()`));
-  if (!started) {
-    // Try to hide toolbar even if not started
-    try { await evaluate(`${rp}.hideReplayToolbar()`); } catch {}
-    return { success: true, action: 'already_stopped' };
-  }
-  await evaluate(`${rp}.stopReplay()`);
-  try { await evaluate(`${rp}.hideReplayToolbar()`); } catch {}
-  return { success: true, action: 'replay_stopped' };
+  const result = await stopReplayInternals(rp);
+  return { success: true, action: result?.started_before ? 'replay_stopped' : 'already_stopped', replay_started: !!result?.started_after };
 }
 
 export async function trade({ action }) {
