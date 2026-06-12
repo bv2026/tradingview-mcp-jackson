@@ -1,0 +1,113 @@
+{
+  "screener_name": null,
+  "screener_note": "Static ARK Innovation watchlist — 116 symbols. No TradingView screener used. Scans first max_symbols each run. Reorder watchlist array to prioritize symbols.",
+  "watchlist": [
+    "NASDAQ:NVDA", "NASDAQ:PLTR", "NASDAQ:MU", "NASDAQ:AVGO", "NASDAQ:AMD",
+    "NASDAQ:TSLA", "NASDAQ:AMZN", "NASDAQ:GOOG", "NASDAQ:META", "NASDAQ:NFLX",
+    "NASDAQ:CRWD", "NASDAQ:DDOG", "NASDAQ:NET", "NASDAQ:SHOP", "NASDAQ:COIN",
+    "NASDAQ:RBLX", "NASDAQ:DASH", "NYSE:HOOD", "NYSE:SOFI", "NYSE:NU",
+    "NASDAQ:ACHR", "NYSE:AUR", "NYSE:RKLB", "NASDAQ:JOBY", "NASDAQ:RXRX",
+    "NASDAQ:CRWV", "NASDAQ:OKLO", "NASDAQ:LUNR", "NYSE:Z", "NYSE:TOST",
+    "NYSE:BABA", "NYSE:TSM", "NASDAQ:TEM", "NASDAQ:KTOS", "NASDAQ:DKNG",
+    "NYSE:VRT", "NASDAQ:GTLB", "NASDAQ:ABNB", "NASDAQ:ISRG", "NASDAQ:SPOT",
+    "NASDAQ:SNPS", "NYSE:CAT", "NYSE:HON", "NYSE:LLY", "NYSE:DE",
+    "NYSE:LMT", "NASDAQ:GRMN", "NYSE:PWR", "NYSE:ICE", "NASDAQ:CRSP",
+    "NASDAQ:BEAM", "NASDAQ:NTLA", "NASDAQ:ILMN", "NASDAQ:NTRA", "NASDAQ:GH",
+    "NYSE:BFLY", "NASDAQ:TER", "NASDAQ:SNDK", "NASDAQ:WDC", "NASDAQ:STX",
+    "NASDAQ:CCJ", "NYSE:BWXT", "NASDAQ:AVAV", "NYSE:LHX", "NYSE:HEI",
+    "NASDAQ:ROKU", "NYSE:MELI", "NASDAQ:FUTU", "NYSE:SE", "NASDAQ:BIDU",
+    "NASDAQ:IRDM", "NYSE:BNTX", "NASDAQ:SYM", "NYSE:KLAR", "NASDAQ:GENI",
+    "NYSE:FIG", "NYSE:BMNR", "NASDAQ:QSI", "NASDAQ:PACB", "NASDAQ:TRMB",
+    "NASDAQ:SDGR", "NASDAQ:ADPT", "NASDAQ:TXG", "NYSE:WGS", "NYSE:TDY",
+    "NASDAQ:CDNA", "NYSE:RBRK", "NYSE:KDK", "NASDAQ:VCYT", "NYSE:ATAI",
+    "NASDAQ:CMPS", "NASDAQ:PONY", "NYSE:XYZ", "NASDAQ:TWST", "NASDAQ:IONS",
+    "NASDAQ:PSNL", "NASDAQ:ABSI", "NASDAQ:NRIX", "NASDAQ:P", "NYSE:ESLT",
+    "NASDAQ:ARCT", "NASDAQ:BLSH", "NYSE:AIR", "NASDAQ:KSPI", "NASDAQ:ETOR",
+    "NASDAQ:CRCL", "NASDAQ:XE", "NYSE:CNTN", "NASDAQ:SRTA", "NYSE:MASS",
+    "NASDAQ:GENB", "NASDAQ:ALMR", "NASDAQ:WRD", "NASDAQ:PAYP", "NASDAQ:PRME",
+    "NASDAQ:CERS", "NASDAQ:SLMT"
+  ],
+  "max_symbols": 20,
+  "default_timeframe": "D",
+  "required_indicators": [
+    "Trendlines with Breaks Oscillator [LuxAlgo]",
+    "Nadaraya-Watson Envelope [LuxAlgo]",
+    "Volume"
+  ],
+  "strategy_type": "relative_strength_base_breakout",
+  "strategy_note": "ARK names are narrative and catalyst-driven — they gap 15-30% on news, base for weeks, then move again. Trend-following oscillators whipsaw. This strategy identifies stocks outperforming QQQ that are building a tight base after a prior move, then enters on a volume breakout from that base. TWB is used only as a breakout confirmation signal, not as a trend direction filter. NW Envelope upper band is the price target, not a trend gate.",
+  "market_context": {
+    "benchmark": "QQQ",
+    "benchmark_alt": "SPY",
+    "benchmark_filter": "QQQ must be above its 50-day EMA for any long entries. If QQQ is below 50d EMA, all signals are neutral — wait for market to recover.",
+    "note": "ARK holdings are high-beta growth: genomics, fintech, AI, space, autonomous vehicles. Many are pre-profit. Catalyst and narrative matter more than technicals alone. A stock can have a perfect setup and still fail without a catalyst. Always check for upcoming earnings, FDA dates, product launches before entry."
+  },
+  "bias_criteria": {
+    "base_building": [
+      "QQQ above 50-day EMA (benchmark passes)",
+      "Stock outperforming QQQ over last 20 days (RS positive — stock up more or down less than QQQ)",
+      "Stock above its own 50-day EMA",
+      "Price consolidating in a tight range for 2-6 weeks after a prior impulsive move up",
+      "Volume contracting during the base — daily volume declining toward average or below",
+      "NW Envelope: price inside bands with no recent ▲ or ▼ signal — coiling, not extended"
+    ],
+    "breakout_ready": [
+      "All base_building criteria met",
+      "Price approaching the top of the base / prior resistance level",
+      "TWB Histogram turning positive or crossing above signal line after being near zero",
+      "No earnings within 5 trading days — avoid entering into binary events"
+    ],
+    "skip": [
+      "QQQ below 50-day EMA",
+      "Stock below its own 50-day EMA",
+      "Stock underperforming QQQ over last 20 days",
+      "Price extended — NW ▲ signal already printed (upper band already hit, move played out)",
+      "Volume rising during consolidation — distribution pattern, not accumulation",
+      "Earnings within 5 trading days — wait until after the report"
+    ],
+    "neutral": [
+      "No clear base forming — stock in a choppy range with no tightening",
+      "TWB Histogram near zero with no direction — no conviction",
+      "RS vs QQQ flat — neither outperforming nor underperforming"
+    ]
+  },
+  "entry_criteria": {
+    "long": [
+      "Price breaks above the top of the base / resistance level on a single candle",
+      "Breakout candle volume significantly above the contracting base volume (ideally 2x+ the base average)",
+      "TWB prints a breakout signal (B above trendline) on or within 1-2 bars of the breakout",
+      "Price NOT already outside NW upper band — if upper band already hit, skip (extended)",
+      "Identifiable catalyst present or imminent (sector rotation, product news, macro risk-on)"
+    ]
+  },
+  "exit_criteria": {
+    "stop_loss": "Below the low of the base (undercut = failed breakout, exit immediately). If base is wide, use the breakout candle low as stop instead.",
+    "failed_breakout": "If price closes back below the breakout level on the same day or next — exit immediately. Do not hold through a failed breakout.",
+    "take_profit_1": "Scale out 1/3 to 1/2 when price reaches the NW Envelope upper band.",
+    "take_profit_2": "Trail remainder using the prior day's low as a trailing stop. Exit if price closes below previous day's low after TP1 hit.",
+    "time_stop": "If price does not extend beyond the breakout level within 5 trading days, exit — the move has stalled."
+  },
+  "risk_rules": [
+    "Max 1% account risk per trade",
+    "Max 3 open ARK positions at once — these names are highly correlated (TSLA, COIN, PLTR, NVDA move together in risk-on/off)",
+    "No entries if QQQ below 50-day EMA",
+    "Reduce position size 25% vs standard stocks — ARK names are 2-3x beta",
+    "Volume confirmation on breakout is mandatory — a low-volume breakout in these names fails most of the time",
+    "No entry in first 15 minutes of NYSE open (9:30-9:45 ET)",
+    "Never hold through earnings — pre-profit ARK names gap violently on reports",
+    "Min R:R 1:2 before entry (base width = risk; NW upper band = reward target)"
+  ],
+  "rs_guidance": "Relative strength vs QQQ is the primary filter but cannot be read directly from TV indicators in this scan. Approximate it from the quote data: if SPY/QQQ is -2% over 20 days and the stock is -0.5%, it has positive RS. If SPY is +3% and the stock is flat, RS is negative — skip it.",
+  "asset_notes": {
+    "note": "Reorder the watchlist to put your highest-conviction names first — only max_symbols are scanned per run.",
+    "high_beta_warning": "ARK holdings average 2-3x beta vs SPY. A 1% QQQ move = 2-3% move in these names. Size accordingly.",
+    "correlation_clusters": {
+      "ai_semis": ["NVDA", "AMD", "MU", "AVGO", "TSM"],
+      "fintech_crypto": ["COIN", "HOOD", "SOFI", "NU", "FUTU"],
+      "autonomy_space": ["TSLA", "ACHR", "JOBY", "AUR", "RKLB", "LUNR"],
+      "ai_software": ["PLTR", "CRWD", "DDOG", "NET", "GTLB", "RBRK"],
+      "genomics": ["CRSP", "BEAM", "NTLA", "ILMN", "NTRA", "RXRX"]
+    },
+    "cluster_rule": "Do not hold more than one name from the same correlation cluster simultaneously."
+  }
+}

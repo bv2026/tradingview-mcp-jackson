@@ -2,19 +2,8 @@
  * Core health/discovery/launch logic.
  */
 import { getClient, getTargetInfo, evaluate } from '../connection.js';
-import { existsSync, readdirSync } from 'fs';
+import { existsSync } from 'fs';
 import { execSync, spawn } from 'child_process';
-
-function findWindowsStoreTradingView() {
-  try {
-    const base = `${process.env.PROGRAMFILES}\\WindowsApps`;
-    if (!existsSync(base)) return [];
-    const dirs = readdirSync(base).filter(d => /^TradingView\./i.test(d));
-    return dirs.map(d => `${base}\\${d}\\TradingView.exe`).filter(p => existsSync(p));
-  } catch {
-    return [];
-  }
-}
 
 export async function healthCheck() {
   await getClient();
@@ -184,8 +173,6 @@ export async function launch({ port, kill_existing } = {}) {
       `${process.env.LOCALAPPDATA}\\TradingView\\TradingView.exe`,
       `${process.env.PROGRAMFILES}\\TradingView\\TradingView.exe`,
       `${process.env['PROGRAMFILES(X86)']}\\TradingView\\TradingView.exe`,
-      // Microsoft Store / MSIX install — glob WindowsApps for the TradingView exe
-      ...findWindowsStoreTradingView(),
     ],
     linux: [
       '/opt/TradingView/tradingview',

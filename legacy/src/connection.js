@@ -111,59 +111,6 @@ export async function evaluateAsync(expression) {
   return evaluate(expression, { awaitPromise: true });
 }
 
-// Screener runs in a separate CDP target (tradingview.com/screener/ URL).
-// This client is cached separately from the chart client.
-let screenerClient = null;
-
-// Screener targets are cached by CDP target ID.
-const screenerClients = {};
-
-async function findScreenerTarget(screenerName) {
-  const resp = await fetch(`http://${CDP_HOST}:${CDP_PORT}/json/list`);
-  const targets = await resp.json();
-  // TradingView uses /screener/ for stocks and /crypto-coins-screener/ (etc.) for other asset classes
-  const screenerTargets = targets.filter(
-    t => t.type === 'page' && /tradingview\.com\/.+-screener\/|tradingview\.com\/screener\//i.test(t.url)
-  );
-  if (!screenerTargets.length) return null;
-  // If a name is given, prefer the target whose title matches
-  if (screenerName) {
-    const match = screenerTargets.find(t => t.title === screenerName);
-    if (match) return match;
-  }
-  // Fallback: return the first screener target found
-  return screenerTargets[0];
-}
-
-export async function getScreenerClient(screenerName) {
-  // Find the right target first so we can key the cache by target ID
-  const target = await findScreenerTarget(screenerName);
-  if (!target) return null;
-  if (screenerClients[target.id]) {
-    try {
-      await screenerClients[target.id].Runtime.evaluate({ expression: '1', returnByValue: true });
-      return screenerClients[target.id];
-    } catch {
-      delete screenerClients[target.id];
-    }
-  }
-  const sc = await CDP({ host: CDP_HOST, port: CDP_PORT, target: target.id });
-  await sc.Runtime.enable();
-  screenerClients[target.id] = sc;
-  return sc;
-}
-
-export async function evaluateOnScreener(expression, screenerName) {
-  const sc = await getScreenerClient(screenerName);
-  if (!sc) return null;
-  const result = await sc.Runtime.evaluate({ expression, returnByValue: true, awaitPromise: false });
-  if (result.exceptionDetails) {
-    const msg = result.exceptionDetails.exception?.description || result.exceptionDetails.text || 'Unknown evaluation error';
-    throw new Error(`JS evaluation error: ${msg}`);
-  }
-  return result.result?.value;
-}
-
 export async function disconnect() {
   if (client) {
     try { await client.close(); } catch {}

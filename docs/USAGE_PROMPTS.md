@@ -49,11 +49,23 @@ Use a specific study filter when you know the indicator name:
 
 ## Morning Workflow
 
-- `Run morning_brief and give me my session bias.`
-- `Run morning_brief for the crypto category.`
-- `Run morning_brief for futures and keep the output short.`
+### Stocks
+- `Run morning_brief instrument_type="stocks" and give me my session bias.`
+- `Run the stocks brief and show me top 3 long candidates.`
+
+### Crypto Spot
+- `Run morning_brief instrument_type="crypto" — check BTC benchmark first, then give me alt bias.`
+- `Run the crypto brief and tell me if BTC is above its 50-day SMA.`
+
+### Crypto Perps (Long + Short)
+- `Run morning_brief instrument_type="crypto_perps" — check BTC TWB direction and give me the top 3 candidates for that side.`
+- `Run the perps brief. If BTC TWB is negative, give me top short setups. If positive, give me top long setups.`
+- `Run perps brief and separately analyze SILVER using its own TWB signal.`
+
+### Session Management
 - `Save this brief with session_save.`
 - `Get yesterday's saved session using session_get.`
+- `Compare today's brief with yesterday's session.`
 
 ## Pine Script Workflow
 

@@ -1,0 +1,112 @@
+{
+  "instrument_type": "crypto_perps",
+  "screener_name": "MOMENTUM-PERPS",
+  "max_symbols": 12,
+  "default_timeframe": "D",
+  "entry_timeframe_note": "Use Daily for bias. Drop to 4H for entry timing — confirm TWB signal on 4H before entering.",
+
+  "required_indicators": [
+    "Trendlines with Breaks Oscillator [LuxAlgo]",
+    "Nadaraya-Watson Envelope [LuxAlgo]",
+    "Volume"
+  ],
+
+  "market_context": {
+    "benchmark": "COINBASE:BTCUSDC.P",
+    "benchmark_signal": "BTC perp TWB Histogram direction is the market signal — it determines whether to scan for longs or shorts across all alts. No SMA check needed.",
+    "signal_rules": {
+      "btc_twb_positive": "BTC TWB Histogram > 0 → market in uptrend → scan alts for LONG setups",
+      "btc_twb_negative": "BTC TWB Histogram < 0 → market in downtrend → scan alts for SHORT setups",
+      "btc_twb_crossing_zero": "Histogram just crossed from negative to positive (or vice versa) → direction change — highest conviction signal, enter early",
+      "btc_twb_neutral_zone": "Histogram near zero (within 5% of recent range) → no clear edge → reduce size or skip"
+    },
+    "funding_note": "Check funding rate direction before entry. For longs: neutral or negative funding preferred. For shorts: positive funding preferred (shorts get paid). Extreme positive funding (>0.05%/hr) = crowded long → short opportunity. Extreme negative funding = crowded short → long opportunity.",
+    "oi_note": "Rising OI with rising price = healthy uptrend (confirms long). Rising OI with falling price = short pressure building (confirms short). Falling OI = trend exhaustion on either side — reduce size."
+  },
+
+  "bias_criteria_note": "Perps allow both longs AND shorts. BTC TWB signal determines which side to trade. Apply bullish criteria for longs when BTC TWB positive; bearish criteria for shorts when BTC TWB negative. Commodity perps (SILVER, GOLD) are exempt from BTC benchmark — apply their own TWB signal independently.",
+
+  "bias_criteria": {
+    "bullish_long": [
+      "BTC perp TWB Histogram is positive (market uptrend confirmed)",
+      "Symbol TWB Histogram positive and above its signal line",
+      "Symbol printing higher highs and higher lows on Daily",
+      "Breakout candle volume above 5-10 day average",
+      "Price approaching but NOT extended outside upper NW Envelope band",
+      "Funding rate neutral or negative (longs not crowded)",
+      "Open interest rising with price"
+    ],
+    "bearish_short": [
+      "BTC perp TWB Histogram is negative (market downtrend confirmed)",
+      "Symbol TWB Histogram negative and below its signal line",
+      "Symbol printing lower highs and lower lows on Daily",
+      "Breakdown candle volume above 5-10 day average",
+      "Price at or below lower NW Envelope band (extended short = wait for bounce to short)",
+      "Funding rate positive (longs paying — squeeze risk adds fuel to short)",
+      "Open interest rising as price falls (shorts piling in = trend confirmation)"
+    ],
+    "neutral_skip": [
+      "BTC TWB Histogram near zero — no clear direction",
+      "Symbol TWB flat, histogram and signal lines converging",
+      "Price chopping inside NW Envelope bands with no trend",
+      "Volume below average — no conviction",
+      "Funding rate near zero — no crowding either way"
+    ]
+  },
+
+  "entry_criteria": {
+    "perp_long": [
+      "BTC TWB Histogram positive (confirmed)",
+      "Symbol TWB Histogram positive AND above signal line",
+      "Symbol consolidating near local highs — flag, pennant, or horizontal resistance",
+      "4H chart confirms same TWB bullish breakout",
+      "Breakout candle volume above average",
+      "Funding rate neutral or negative at entry time",
+      "OI stable or rising",
+      "NW: price approaching upper band but not extended outside it"
+    ],
+    "perp_short": [
+      "BTC TWB Histogram negative (confirmed)",
+      "Symbol TWB Histogram negative AND below signal line",
+      "Symbol rejecting from a key resistance level or prior breakdown zone",
+      "4H chart confirms same TWB bearish breakdown",
+      "Breakdown candle volume above average",
+      "Funding rate positive at entry (shorts get paid) — OR neutral is acceptable",
+      "NW: price bouncing up into the lower band (ideal short entry on the retrace, not the initial drop)",
+      "Do NOT short into an already-extended move — wait for a dead-cat bounce to the lower NW band"
+    ]
+  },
+
+  "exit_criteria": {
+    "long_stop": "Below breakout candle low or nearest 4H swing low.",
+    "long_tp1": "Scale out 1/3 when price touches upper NW Envelope band.",
+    "long_tp2": "Scale out 1/3 at 2R. Trail remainder with 4H 9 EMA.",
+    "long_tp3": "Exit final 1/3 if price closes below 4H 9 EMA for two consecutive candles.",
+    "short_stop": "Above short entry candle high or nearest 4H swing high.",
+    "short_tp1": "Cover 1/3 when price touches lower NW Envelope band.",
+    "short_tp2": "Cover 1/3 at 2R. Trail remainder with 4H 9 EMA (from below).",
+    "short_tp3": "Cover final 1/3 if price closes above 4H 9 EMA for two consecutive candles.",
+    "funding_exit": "Exit long if funding rate spikes above 0.1%/hr. Exit short if funding rate drops below -0.05%/hr.",
+    "emergency_exit": "Exit ALL perp positions immediately if BTC moves 8%+ intraday in either direction."
+  },
+
+  "risk_rules": [
+    "Maximum 2% account risk per perp trade (long or short)",
+    "Maximum 3 open perp positions at once",
+    "Maximum 3x leverage — never higher for crypto perps",
+    "Reduce position size 50% if entering against recent funding rate direction",
+    "No perp trades when BTC TWB is in the neutral zone near zero",
+    "No trading during FOMC, CPI, or major macro events — crypto amplifies moves",
+    "Never average down on a losing perp in either direction",
+    "If BTC moves 8%+ intraday, exit ALL positions regardless of direction",
+    "For shorts: wait for dead-cat bounce to lower NW band — do NOT chase the initial drop",
+    "Commodity perps (SILVER, GOLD) use their own TWB signal — BTC benchmark does not apply to them"
+  ],
+
+  "commodity_perps_note": "SILVER and GOLD perps follow macro/USD drivers, not crypto momentum. Use the same TWB + NW framework on their own charts. Positive TWB + DXY weakening = long bias. Negative TWB + DXY strengthening = short bias. No BTC benchmark check for these.",
+
+  "tradeable_exchanges": ["Coinbase"],
+  "tradeable_note": "All perps in MOMENTUM-PERPS are Coinbase CDE USDC-settled contracts. No exchange check needed.",
+
+  "asset_notes": "Coinbase perp universe is USDC-settled and regulated. Perps allow both sides — the TWB signal on BTC tells you which side the market favors today. For shorts, the ideal entry is a retrace back up into the lower NW band after an initial breakdown — not chasing the drop. Funding rates are visible in the TradingView CEX screener overview tab. Prefer entries during US session (9:30am-4pm ET) or Asia open (8pm-midnight ET) — avoid low-liquidity gaps in between."
+}

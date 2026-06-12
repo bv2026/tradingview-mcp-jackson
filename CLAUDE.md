@@ -1,6 +1,159 @@
 # TradingView MCP — Claude Instructions
 
-68 tools for reading and controlling a live TradingView Desktop chart via CDP (port 9222).
+68+ tools for reading and controlling a live TradingView Desktop chart via CDP (port 9222).
+
+## Morning Workflow (primary daily use)
+
+Three independent briefs — run each in its own TradingView screener window:
+
+```
+morning_brief instrument_type="stocks"       # equity momentum
+morning_brief instrument_type="crypto"       # crypto spot (Coinbase)
+morning_brief instrument_type="crypto_perps" # crypto perps (Coinbase CDE)
+```
+
+**Step 1 — sync screener** (when TV screener results change during the day):
+```
+screener_get screener_name="MOMENTUM" max_symbols=10
+screener_get screener_name="MOMENTUM-CRYPTO" max_symbols=9
+screener_get screener_name="MOMENTUM-PERPS" max_symbols=12
+```
+
+**Step 2 — run brief** — pulls live symbols, scans each symbol, returns structured data for Claude to apply strategy rules.
+
+**Step 3 — save brief** (optional):
+```
+session_save brief="<Claude's output>"
+session_get   # retrieve today's or yesterday's saved brief
+```
+
+**Key files:**
+- `rules.json` — screener name per instrument type
+- `strategy-stocks.json` — stocks bias/entry/exit rules
+- `strategy-crypto.json` — crypto spot bias/entry/exit rules
+- `strategy-crypto_perps.json` — crypto perps bias/entry/exit rules (both long AND short)
+- `~/.tradingview-mcp/sessions/` — saved daily briefs
+
+**Required indicators on chart** (auto-added if missing):
+- Trendlines with Breaks Oscillator [LuxAlgo]
+- Nadaraya-Watson Envelope [LuxAlgo]
+- Volume
+
+**NW Envelope note**: Does NOT appear in `data_get_study_values` (it's a price overlay, not an oscillator). Use `data_get_pine_labels` with `study_filter: "Nadaraya-Watson"` to get signal markers: ▲ = price crossed above a band, ▼ = price crossed below. The most recent label (first in array) indicates current band position.
+
+---
+
+## Strategy Reference
+
+### Strategy 1 — Stocks (`strategy-stocks.json`)
+
+| | |
+|---|---|
+| **Screener** | `MOMENTUM` (Stock Screener, US equities) |
+| **Timeframe** | Daily |
+| **Benchmark** | SPY / QQQ above 50-day SMA → longs only |
+| **Side** | Long only. No shorts (future work). |
+| **Indicators** | TWB Oscillator + NW Envelope + Volume |
+
+**Bias rules:**
+- Bullish: HH/HL pattern + TWB bullish breakout + volume surge + approaching (not outside) upper NW band + catalyst
+- Bearish: LL/LH + TWB breakdown + price back below trendline → exit/avoid longs only
+- Neutral: consolidation, no breakout, below-average volume
+
+**Entry:** Flag/pennant near highs + TWB bullish B signal + volume + NW band not extended
+**Exits:** Stop below breakout candle low. TP1: upper NW band (scale 1/2–1/3). TP2: trail 9 EMA.
+**Risk:** 1% max risk/trade, 1:2 min R:R, max 3 positions, no entry if SPY/QQQ below 50d SMA.
+
+---
+
+### Strategy 2 — Crypto Spot (`strategy-crypto.json`)
+
+| | |
+|---|---|
+| **Screener** | `MOMENTUM-CRYPTO` (Crypto Coins Screener, Coinbase large caps >$5B mcap, >$100M vol) |
+| **Timeframe** | Daily bias, 4H entry confirmation |
+| **Benchmark** | BTC above 50-day SMA → longs only. BTC below 50d SMA → all alts neutral/bearish. |
+| **Side** | Long only (spot + max 3x futures). No shorts. |
+| **Exchange** | Coinbase only. Non-Coinbase coins → SKIP. |
+| **Universe** | BTC, ETH, SOL, XRP, DOGE, ZEC, ADA, LINK, XLM (9 coins after blocklist) |
+
+**Bias rules:**
+- Bullish: BTC above 50d SMA + HH/HL + TWB bullish + volume + approaching upper NW band + catalyst
+- Bearish: BTC below 50d SMA → avoid all alt longs
+- Neutral: BTC consolidating near 50d SMA, no TWB signal, chop
+
+**Entry:** Consolidation near highs + Daily TWB bullish + 4H TWB confirms + volume + NW not extended
+**Exits:** Stop below breakout low. TP1: 1/3 at upper NW band. TP2: 1/3 at 2R + trail 4H 9 EMA. TP3: 1/3 if 4H 9 EMA violated for 2 candles. Emergency: BTC −8% intraday → exit ALL.
+**Risk:** 2% max/trade, max 3 positions, max 3x leverage on futures, no averaging down.
+
+---
+
+### Strategy 3 — Crypto Perps (`strategy-crypto_perps.json`)
+
+| | |
+|---|---|
+| **Screener** | `MOMENTUM-PERPS` (CEX Screener, Coinbase, Perpetual, USDC, >$1M vol) |
+| **Timeframe** | Daily bias, 4H entry confirmation |
+| **Benchmark** | BTC perp **TWB Histogram direction** (not SMA) |
+| **Side** | **Both long AND short** depending on BTC TWB signal |
+| **Exchange** | Coinbase CDE (USDC-settled perps) |
+| **Universe** | ~12 clean crypto + SILVER + GOLD after blocklist |
+
+**Benchmark signal rules:**
+- BTC TWB Histogram **> 0** → uptrend → scan ALL alts for **LONG** setups
+- BTC TWB Histogram **< 0** → downtrend → scan ALL alts for **SHORT** setups
+- Histogram crossing zero = highest conviction direction change
+- Near zero = neutral zone → skip or reduce size
+
+**Long entry:** BTC TWB positive + symbol TWB positive + above signal line + consolidating near highs + 4H confirms + volume + funding neutral/negative + OI rising
+**Short entry:** BTC TWB negative + symbol TWB negative + below signal line + rejection from resistance + 4H confirms + volume + **wait for dead-cat bounce to lower NW band** (never chase initial drop)
+
+**Long exits:** Stop below breakout low. TP1: 1/3 at upper NW band. TP2: 1/3 at 2R + trail 4H 9 EMA. TP3: 4H 9 EMA violated 2 candles.
+**Short exits:** Stop above entry high. TP1: 1/3 at lower NW band. TP2: 1/3 at 2R + trail 4H 9 EMA from below. TP3: price closes above 4H 9 EMA for 2 candles.
+**Funding exit:** Long: exit if funding >0.1%/hr. Short: exit if funding <−0.05%/hr.
+**Emergency:** BTC ±8% intraday → exit ALL.
+
+**Commodity perps (SILVER, GOLD):** Exempt from BTC benchmark. Use their own TWB signal + DXY direction. Positive TWB + DXY weakening = long. Negative TWB + DXY strengthening = short.
+
+**Risk:** 2% max/trade, max 3 positions, max 3x leverage, no averaging down.
+
+---
+
+## Screener Blocklists (enforced in code)
+
+### Crypto Spot blocklist (`CRYPTO_BLOCKLIST` in `src/core/screener.js`)
+Removes: stablecoins (USDT/USDC/DAI), wrapped tokens (WBTC/WETH), tokenized gold (XAUT/PAXG), BNB, XMR, TRX
+
+### Perps blocklist (`PERPS_BASE_BLOCKLIST` in `src/core/screener.js`)
+Removes by base ticker:
+- **Stocks/ETFs:** META, TSLA, GOOGL, INTC, AMZN, SPY, NVDA, AAPL, MSFT, MU, AMD, ARM, QQQ, ROBO, NBIS
+- **Fiat:** EURC, USDT, USDC, DAI
+- **Meme/micro:** PUMP, BILL, 1000SHIB, 1000PEPE, MEME, SNDK, CBRS, MERL, W
+- **Low quality:** HYPE, CRV, BE
+- **Keeps:** SILVER, GOLD, PAXG (commodity perps intentionally included)
+
+---
+
+## Crypto Workflow
+
+```
+morning_brief instrument_type="crypto"
+```
+- Screener window must be open in TradingView — separate CDP target at `tradingview.com/crypto-coins-screener/`
+- Benchmark: BTC above 50-day SMA required for any alt bullish bias
+- Timeframe: Daily for bias, 4H for entry confirmation
+- Spot + futures (max 3x leverage), Coinbase only
+- Emergency exit: BTC drops 8%+ intraday → exit ALL positions
+
+## Crypto Perps Workflow
+
+```
+morning_brief instrument_type="crypto_perps"
+```
+- Screener window must be open — separate CDP target at `tradingview.com/cex-screener/`
+- Benchmark: BTC perp TWB Histogram direction (positive = longs, negative = shorts)
+- Both sides active — brief outputs top 3 LONG or top 3 SHORT candidates
+- Commodity perps (SILVER, GOLD) evaluated independently of BTC signal
 
 ## Decision Tree — Which Tool When
 

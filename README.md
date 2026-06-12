@@ -19,10 +19,13 @@ Built on top of the original [tradingview-mcp](https://github.com/tradesdontlie/
 
 | Feature | What it does |
 |---------|-------------|
-| `morning_brief` | One command that scans your watchlist, reads all your indicators, and returns structured data for Claude to generate your session bias |
+| `morning_brief` | One command that scans your screener, reads all your indicators, and returns structured data for Claude to generate your session bias |
+| **3 independent briefs** | Stocks, crypto spot, and crypto perps — each with its own screener, strategy, and bias logic |
+| **Crypto perps (long + short)** | Perps brief uses BTC TWB signal direction to determine side — negative = scan for shorts, positive = scan for longs |
 | `session_save` / `session_get` | Saves your daily brief to `~/.tradingview-mcp/sessions/` so you can compare today vs yesterday |
-| `rules.json` | Write your trading rules once — bias criteria, risk rules, watchlist. The morning brief applies them automatically every day |
-| Launch bug fix | Fixed `tv_launch` compatibility with TradingView Desktop v2.14+ |
+| `rules.json` | Maps instrument types to screener names. Strategy files hold all bias/entry/exit/risk rules |
+| **Screener blocklists** | Auto-removes stablecoins, wrapped tokens, stock perps, meme coins from results in code |
+| Launch bug fix | Fixed `tv_launch` compatibility with TradingView Desktop v2.14+ and Windows Store (MSIX) installs |
 | `tv brief` CLI | Run your morning brief from the terminal in one word |
 
 ---
@@ -149,24 +152,51 @@ tv brief
 
 ## Morning Brief Workflow
 
-This is the feature that turns this from a toolkit into a daily habit.
+This is the feature that turns this from a toolkit into a daily habit. Three independent briefs, each with its own screener and strategy.
 
 **Before every session:**
 
-1. TradingView is open (launched with debug port)
-2. Run: `tv brief` in your terminal (or ask Claude: *"run morning_brief"*)
-3. Claude scans every symbol in your watchlist, reads your indicator values, applies your `rules.json` criteria, and prints:
+1. TradingView is open with all screener windows visible (stocks, crypto, perps)
+2. Run one or more briefs:
 
 ```
-BTCUSD  | BIAS: Bearish  | KEY LEVEL: 94,200  | WATCH: RSI crossing 50 on 4H
-ETHUSD  | BIAS: Neutral  | KEY LEVEL: 3,180   | WATCH: Ribbon direction on daily
-SOLUSD  | BIAS: Bullish  | KEY LEVEL: 178.50  | WATCH: Hold above 20 EMA
+morning_brief instrument_type="stocks"         # equity momentum
+morning_brief instrument_type="crypto"         # crypto spot (Coinbase)
+morning_brief instrument_type="crypto_perps"   # crypto perps long or short
+```
 
-Overall: Cautious session. BTC leading bearish, SOL the exception — watch for divergence.
+3. Claude scans every symbol in the screener, reads TWB Oscillator + NW Envelope, applies the strategy rules, and prints one line per symbol:
+
+```
+SOL  | BIAS: SHORT | SIGNAL: TWB −17.4, NW bounce at $78 = short entry zone | WATCH: Wait for retrace to $75–78
+ETH  | BIAS: SHORT | SIGNAL: TWB −598, price below last NW ▲ at $1,823     | WATCH: Dead-cat to $1,800–1,823
+XRP  | BIAS: SHORT | SIGNAL: TWB −0.25, price at $1.14 near NW ▲ at $1.21  | WATCH: Closest to live short entry
+
+Overall: BTC TWB negative — short side in play. Wait for dead-cat bounces before shorting.
 ```
 
 4. Save it: *"save this brief"* (uses `session_save`)
 5. Next morning, compare: *"get yesterday's session"* (uses `session_get`)
+
+### Strategy Files
+
+Each brief loads its own strategy file:
+
+| Brief | Command | Screener | Strategy File | Side |
+|-------|---------|----------|---------------|------|
+| Stocks | `instrument_type="stocks"` | `MOMENTUM` | `strategy-stocks.json` | Long only |
+| Crypto Spot | `instrument_type="crypto"` | `MOMENTUM-CRYPTO` | `strategy-crypto.json` | Long only |
+| Crypto Perps | `instrument_type="crypto_perps"` | `MOMENTUM-PERPS` | `strategy-crypto_perps.json` | **Long + Short** |
+
+### How the Benchmark Works
+
+| Brief | Benchmark | Logic |
+|-------|-----------|-------|
+| Stocks | SPY/QQQ 50-day SMA | Above = longs ok. Below = avoid longs. |
+| Crypto Spot | BTC 50-day SMA | Above = alt longs ok. Below = avoid alts. |
+| Crypto Perps | **BTC perp TWB Histogram** | Positive = scan for longs. Negative = scan for shorts. |
+
+The perps brief is the only one that trades both sides — the BTC TWB signal determines which side the market favors that day.
 
 ---
 

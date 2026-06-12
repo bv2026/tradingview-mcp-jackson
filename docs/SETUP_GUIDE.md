@@ -12,15 +12,27 @@ npm install
 
 If the user specifies a different install path, use that instead of `~/tradingview-mcp-jackson`.
 
-## Step 2: Set Up Rules
+## Step 2: Set Up Rules and Strategy Files
 
-Copy the example rules file and open it for the user to fill in:
+Copy the example rules file:
 
 ```bash
 cp ~/tradingview-mcp-jackson/rules.example.json ~/tradingview-mcp-jackson/rules.json
 ```
 
-Tell the user: "Open `rules.json` and fill in your watchlist (the symbols you trade), your bias criteria (what makes something bullish/bearish for you), and your risk rules. This is what the morning brief uses every day."
+`rules.json` maps instrument types to TradingView screener names. The strategy files (`strategy-stocks.json`, `strategy-crypto.json`, `strategy-crypto_perps.json`) contain all bias criteria, entry/exit rules, and risk rules — they are pre-configured and ready to use.
+
+Tell the user: "Open `rules.json` and verify the screener names match the saved screens in your TradingView account. Each screener must be open and visible in TradingView for the morning brief to read it."
+
+### Required TradingView Screeners
+
+| Screener Name | Type | Filters |
+|--------------|------|---------|
+| `MOMENTUM` | Stock Screener | Your momentum watchlist |
+| `MOMENTUM-CRYPTO` | Crypto Coins Screener | Coinbase, >$5B mcap, >$100M vol |
+| `MOMENTUM-PERPS` | CEX Screener | Coinbase, Perpetual, USDC, >$1M vol |
+
+Each screener opens in its own TradingView window — keep all three open during the morning workflow.
 
 ## Step 3: Add to MCP Config
 
@@ -112,13 +124,28 @@ If `cdp_connected: false`, TradingView is not running with `--remote-debugging-p
 
 ## Step 7: Run Your First Morning Brief
 
-Ask Claude: *"Run morning_brief and give me my session bias"*
+Three briefs available — run each with its screener window open in TradingView:
 
-Claude will scan your watchlist, read your indicators, apply your `rules.json` criteria, and print your bias for each symbol.
+```
+morning_brief instrument_type="stocks"         # equity momentum, long only
+morning_brief instrument_type="crypto"         # crypto spot, BTC 50d SMA benchmark, long only
+morning_brief instrument_type="crypto_perps"   # perps, BTC TWB signal = long or short
+```
+
+Ask Claude: *"Run morning_brief instrument_type='stocks' and give me my session bias"*
+
+Claude scans every symbol in the screener, reads the TWB Oscillator + NW Envelope, applies the strategy rules, and outputs one line per symbol plus top 3 candidates.
 
 To save it: *"Save this brief using session_save"*
+To retrieve: *"Get yesterday's session using session_get"*
 
-To retrieve tomorrow: *"Get yesterday's session using session_get"*
+### Understanding the Perps Brief
+
+The perps brief (`crypto_perps`) is the only one that trades both sides:
+- BTC perp TWB Histogram **positive** → outputs top 3 **LONG** candidates
+- BTC perp TWB Histogram **negative** → outputs top 3 **SHORT** candidates
+- For shorts: never chase the initial drop — wait for a dead-cat bounce to the lower NW band
+- SILVER and GOLD perps use their own TWB signal independent of BTC
 
 ## Step 8: Install CLI (Optional)
 
@@ -144,7 +171,10 @@ Then `tv status`, `tv quote`, `tv pine compile`, etc. work from anywhere.
 
 ## What to Read Next
 
-- `rules.json` — Your personal trading rules (fill this in before using morning_brief)
-- `CLAUDE.md` — Decision tree for which tool to use when (auto-loaded by Claude Code)
+- `rules.json` — Screener name mappings per instrument type
+- `strategy-stocks.json` — Stocks bias/entry/exit/risk rules
+- `strategy-crypto.json` — Crypto spot bias/entry/exit/risk rules (long only, BTC 50d SMA benchmark)
+- `strategy-crypto_perps.json` — Crypto perps rules (long + short, BTC TWB signal benchmark)
+- `CLAUDE.md` — Full decision tree + strategy reference (auto-loaded by Claude Code)
 - `README.md` — Full tool reference including morning brief workflow
 - `RESEARCH.md` — Research context and open questions

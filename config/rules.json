@@ -1,0 +1,20 @@
+{
+  "screener_sources": {
+    "stocks":       "MOMENTUM",
+    "etf":          "MOMENTUM-ETF",
+    "futures":      null,
+    "ark":          "MOMENTUM-ARK",
+    "indices":      "MOMENTUM-INDICES",
+    "crypto":       "MOMENTUM-CRYPTO",
+    "crypto_perps": "MOMENTUM-PERPS"
+  },
+
+  "risk_rules": [
+    "Never risk more than 1% of total account on a single trade",
+    "No trading in the first 15 minutes of the NYSE open (9:30-9:45 AM ET)",
+    "Maximum 5 open positions across all instrument types at once",
+    "If 3 consecutive losing trades in a day, stop trading for the day"
+  ],
+
+  "notes": "Symbols are sourced live from TradingView screeners. Run screener_get before morning_brief. Strategy-specific criteria (bias rules, entry/exit, indicators) live in strategy-{type}.json files."
+}

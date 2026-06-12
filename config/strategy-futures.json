@@ -1,0 +1,148 @@
+{
+  "screener_name": null,
+  "screener_note": "No TradingView futures screener exists. Symbol list is static — defined in watchlist below.",
+  "watchlist": [
+    "CME_MINI:ES1!", "CME_MINI:NQ1!", "CBOT_MINI:YM1!", "CME_MINI:RTY1!",
+    "NYMEX:CL1!", "NYMEX:NG1!", "NYMEX:BZ1!",
+    "COMEX:GC1!", "COMEX:SI1!", "COMEX:HG1!",
+    "CME:6E1!", "CME:6B1!", "CME:6J1!", "ICEUS:DX1!",
+    "CBOT:ZB1!", "CBOT:ZN1!",
+    "CME:BTC1!", "CME:ETH1!",
+    "CBOT:ZC1!", "CBOT:ZW1!", "CBOT:ZS1!",
+    "CME:LE1!", "CME:HE1!", "CME:GF1!",
+    "CBOE:VX1!"
+  ],
+  "max_symbols": 25,
+  "default_timeframe": "D",
+  "required_indicators": [
+    "Trendlines with Breaks Oscillator [LuxAlgo]",
+    "Nadaraya-Watson Envelope [LuxAlgo]",
+    "Volume"
+  ],
+  "market_context": {
+    "note": "Futures are multi-sector — no single benchmark. Evaluate each symbol independently on its own trend and mean-reversion signals.",
+    "macro_overlays": [
+      "DXY trend affects metals, energy, FX futures — strong dollar = headwind for commodities and EM",
+      "ZB/ZN direction (bonds) affects equity index futures — rising yields = headwind for ES/NQ",
+      "VX1! level: above 20 = elevated volatility regime, reduce position size; above 30 = crisis mode, mean-revert only"
+    ]
+  },
+  "regime_detection": {
+    "trending": "TWB Histogram clearly positive or negative for 3+ bars. Price making HH/HL (uptrend) or LL/LH (downtrend). NW Envelope angled, price riding outside or near outer band.",
+    "mean_reverting": "TWB Histogram near zero or reversing. RSI > 70 or < 30. Price extended beyond NW Envelope outer band (▲ or ▼ label present). No clear HH/HL or LL/LH structure."
+  },
+  "bias_criteria": {
+    "trend_long": [
+      "TWB Histogram positive (above zero) and rising",
+      "TWB signal line crossed above zero (higher conviction)",
+      "Price making HH/HL structure on daily",
+      "Price near or inside upper NW band — not yet overextended",
+      "Volume confirming the move (above average on breakout bars)"
+    ],
+    "trend_short": [
+      "TWB Histogram negative (below zero) and falling",
+      "TWB signal line crossed below zero (higher conviction)",
+      "Price making LL/LH structure on daily",
+      "Price near or inside lower NW band — not yet overextended",
+      "Volume confirming the breakdown"
+    ],
+    "mean_rev_long": [
+      "TWB Histogram reversing from deeply negative (histogram turning up from lows)",
+      "NW Envelope: recent ▼ label (price dropped through lower band) — potential snap-back zone",
+      "RSI below 30 on daily",
+      "Price at or below lower NW band — stretched, look for reversal candle",
+      "Volume drying up on the sell-off (exhaustion)"
+    ],
+    "mean_rev_short": [
+      "TWB Histogram reversing from deeply positive (histogram turning down from highs)",
+      "NW Envelope: recent ▲ label (price broke above upper band) — potential snap-back zone",
+      "RSI above 70 on daily",
+      "Price at or above upper NW band — stretched, look for rejection candle",
+      "Volume drying up on the rally (exhaustion)"
+    ],
+    "neutral": [
+      "TWB Histogram near zero, no direction",
+      "Price inside NW bands with no ▲ or ▼ signal",
+      "No clear HH/HL or LL/LH structure — choppy/consolidating"
+    ]
+  },
+  "entry_criteria": {
+    "trend_long_entry": [
+      "Pullback to 20 EMA or recent breakout level on daily",
+      "TWB Histogram remains positive during pullback (dip, not reversal)",
+      "NW Envelope: price approaching but not through upper band",
+      "Entry on first bullish close after pullback"
+    ],
+    "trend_short_entry": [
+      "Dead-cat bounce to 20 EMA or recent breakdown level",
+      "TWB Histogram remains negative during bounce",
+      "NW Envelope: price approaching but not through lower band from below",
+      "Entry on first bearish close after bounce"
+    ],
+    "mean_rev_long_entry": [
+      "Price at or below lower NW band",
+      "Reversal candle: hammer, engulfing, or inside bar at support",
+      "TWB Histogram beginning to turn up (first positive bar after negative run)",
+      "Do NOT enter mid-fall — wait for the turn signal"
+    ],
+    "mean_rev_short_entry": [
+      "Price at or above upper NW band",
+      "Rejection candle: shooting star, bearish engulfing, or inside bar at resistance",
+      "TWB Histogram beginning to turn down (first negative bar after positive run)",
+      "Do NOT enter mid-rally — wait for the turn signal"
+    ]
+  },
+  "exit_criteria": {
+    "trend_long": {
+      "stop": "Below the most recent swing low or breakout candle low",
+      "tp1": "Upper NW band — scale out 1/3",
+      "tp2": "Trail 20 EMA — exit on close below",
+      "tp3": "TWB Histogram crosses below zero — full exit"
+    },
+    "trend_short": {
+      "stop": "Above the most recent swing high or breakdown candle high",
+      "tp1": "Lower NW band — scale out 1/3",
+      "tp2": "Trail 20 EMA from below — exit on close above",
+      "tp3": "TWB Histogram crosses above zero — full exit"
+    },
+    "mean_rev_long": {
+      "stop": "Below the recent low that triggered the entry (1-2 ATR buffer)",
+      "tp1": "Middle of NW band (mean) — scale out 1/2",
+      "tp2": "Upper NW band or prior resistance — full exit",
+      "note": "Mean reversion trades are shorter duration — take profits quickly, do not trail aggressively"
+    },
+    "mean_rev_short": {
+      "stop": "Above the recent high that triggered the entry (1-2 ATR buffer)",
+      "tp1": "Middle of NW band (mean) — scale out 1/2",
+      "tp2": "Lower NW band or prior support — full exit",
+      "note": "Mean reversion trades are shorter duration — take profits quickly"
+    }
+  },
+  "risk_rules": [
+    "Max 1.5% risk per trade (futures leverage is significant)",
+    "Max 3 positions open at once across ALL futures sectors",
+    "Do not hold more than 1 energy, 1 metals, 1 equity index position simultaneously — sector concentration limit",
+    "VX1! above 25: reduce all position sizes by 50%",
+    "VX1! above 30: mean-reversion only, no new trend entries",
+    "No trend entries on Friday into the weekend for energy or grains (gap risk)",
+    "Min R:R 1:1.5 for mean reversion, 1:2 for trend following"
+  ],
+  "sector_map": {
+    "equity_index": ["CME_MINI:ES1!", "CME_MINI:NQ1!", "CBOT_MINI:YM1!", "CME_MINI:RTY1!"],
+    "energy": ["NYMEX:CL1!", "NYMEX:NG1!", "NYMEX:BZ1!"],
+    "metals": ["COMEX:GC1!", "COMEX:SI1!", "COMEX:HG1!"],
+    "fx": ["CME:6E1!", "CME:6B1!", "CME:6J1!", "ICEUS:DX1!"],
+    "bonds": ["CBOT:ZB1!", "CBOT:ZN1!"],
+    "crypto_cme": ["CME:BTC1!", "CME:ETH1!"],
+    "grains": ["CBOT:ZC1!", "CBOT:ZW1!", "CBOT:ZS1!"],
+    "livestock": ["CME:LE1!", "CME:HE1!", "CME:GF1!"],
+    "volatility": ["CBOE:VX1!"]
+  },
+  "asset_notes": {
+    "VX1!": "Volatility futures — use as market context signal, not a directional trade. High VX = reduce risk across all positions.",
+    "DXY (ICEUS:DX1!)": "Use as macro overlay for metals and FX — do not trade DXY directly unless setup is very clean.",
+    "ZB1!/ZN1!": "Bond direction signals equity index bias — rising bonds (falling yields) = tailwind for NQ/ES.",
+    "NG1!": "Natural gas is highly seasonal and mean-reverts aggressively. Prefer mean-reversion regime for NG.",
+    "livestock": "LE, HE, GF are seasonal and report-driven (USDA). Trend regime works; size smaller due to low liquidity."
+  }
+}

@@ -1,72 +1,74 @@
-import { z } from "zod";
-import { jsonResult } from "./_format.js";
-import * as core from "../core/morning.js";
+import { z } from 'zod';
+import { jsonResult } from './_format.js';
+import * as core from '../core/morning.js';
 
 export function registerMorningTools(server) {
   server.tool(
-    "morning_brief",
-    "Scan your watchlist, read all indicator values, and return structured data for a session brief. Reads rules.json for your bias criteria and watchlist. Claude applies the rules to generate your daily bias. Use the category parameter to scan a specific watchlist (crypto, stocks, futures) instead of the default flat watchlist.",
+    'morning_brief',
+    'Run a morning scan for a specific instrument type. Reads live symbols from the TradingView screener, ensures required LuxAlgo indicators are on the chart, scans each symbol, and returns structured data with strategy rules for Claude to generate a session bias. Requires rules.json (screener sources) and strategy-{type}.json (bias criteria).',
     {
+      instrument_type: z
+        .enum(['stocks', 'ark', 'etf', 'futures', 'indices', 'crypto', 'crypto_perps', 'all'])
+        .default('stocks')
+        .describe('Instrument type to scan. Use "all" to run all 4 briefs (stocks, crypto, crypto_perps, futures) in one call and auto-save each report. Use "ark" for ARK Innovation watchlist scan. Default: stocks.'),
       rules_path: z
         .string()
         .optional()
-        .describe(
-          "Optional path to rules.json. Defaults to rules.json in the project root.",
-        ),
-      category: z
-        .string()
-        .optional()
-        .describe(
-          "Watchlist category to scan: 'crypto', 'stocks', or 'futures'. If omitted, scans the default flat watchlist (core symbols only — faster, avoids timeouts). Use a category to scan all symbols in that group.",
-        ),
+        .describe('Optional path to rules.json. Defaults to rules.json in the project root.'),
     },
-    async ({ rules_path, category } = {}) => {
+    async ({ instrument_type, rules_path } = {}) => {
       try {
-        return jsonResult(await core.runBrief({ rules_path, category }));
+        return jsonResult(await core.runBrief({ instrument_type, rules_path }));
       } catch (err) {
         return jsonResult({ success: false, error: err.message }, true);
       }
-    },
+    }
   );
 
   server.tool(
-    "session_save",
-    "Save today's morning brief to ~/.tradingview-mcp/sessions/YYYY-MM-DD.json for future reference.",
+    'session_save',
+    'Save a morning brief as a human-readable markdown report to reports/YYYY-Mon-DD/{instrument_type}.md in the project directory.',
     {
       brief: z
         .string()
-        .describe(
-          "The brief text to save (output from morning_brief after Claude applies the rules).",
-        ),
+        .describe("Claude's analysis text to save — the full session bias output."),
+      instrument_type: z
+        .enum(['stocks', 'ark', 'crypto', 'crypto_perps', 'futures', 'etf', 'indices'])
+        .default('stocks')
+        .describe('Instrument type — determines the filename. Default: stocks.'),
       date: z
         .string()
         .optional()
-        .describe("Date string YYYY-MM-DD. Defaults to today."),
+        .describe('Date string YYYY-MM-DD. Defaults to today.'),
     },
-    async ({ brief, date } = {}) => {
+    async ({ brief, instrument_type, date } = {}) => {
       try {
-        return jsonResult(core.saveSession({ brief, date }));
+        return jsonResult(core.saveSession({ brief, instrument_type, date }));
       } catch (err) {
         return jsonResult({ success: false, error: err.message }, true);
       }
-    },
+    }
   );
 
   server.tool(
-    "session_get",
-    "Retrieve a saved session brief. Returns today's if available, otherwise yesterday's.",
+    'session_get',
+    'Retrieve a saved morning brief. Without instrument_type, lists all briefs saved today. With instrument_type, returns that specific brief.',
     {
       date: z
         .string()
         .optional()
-        .describe("Date string YYYY-MM-DD. Defaults to today."),
+        .describe('Date string YYYY-MM-DD. Defaults to today.'),
+      instrument_type: z
+        .enum(['stocks', 'ark', 'crypto', 'crypto_perps', 'futures', 'etf', 'indices'])
+        .optional()
+        .describe('Retrieve a specific instrument brief. Omit to list all briefs saved today.'),
     },
-    async ({ date } = {}) => {
+    async ({ date, instrument_type } = {}) => {
       try {
-        return jsonResult(core.getSession({ date }));
+        return jsonResult(core.getSession({ date, instrument_type }));
       } catch (err) {
         return jsonResult({ success: false, error: err.message }, true);
       }
-    },
+    }
   );
 }
