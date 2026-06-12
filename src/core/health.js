@@ -6,14 +6,26 @@ import { existsSync, readdirSync } from 'fs';
 import { execSync, spawn } from 'child_process';
 
 function findWindowsStoreTradingView() {
+  // Try direct access first (requires admin) then fall back to PowerShell query
   try {
     const base = `${process.env.PROGRAMFILES}\\WindowsApps`;
-    if (!existsSync(base)) return [];
-    const dirs = readdirSync(base).filter(d => /^TradingView\./i.test(d));
-    return dirs.map(d => `${base}\\${d}\\TradingView.exe`).filter(p => existsSync(p));
-  } catch {
-    return [];
-  }
+    if (existsSync(base)) {
+      const dirs = readdirSync(base).filter(d => /^TradingView\./i.test(d));
+      const found = dirs.map(d => `${base}\\${d}\\TradingView.exe`).filter(p => existsSync(p));
+      if (found.length) return found;
+    }
+  } catch { /* restricted — try PowerShell */ }
+  try {
+    const result = execSync(
+      'powershell -NoProfile -Command "Get-AppxPackage -Name \'*TradingView*\' | Select-Object -ExpandProperty InstallLocation"',
+      { timeout: 5000 }
+    ).toString().trim();
+    if (result) {
+      const p = `${result}\\TradingView.exe`;
+      if (existsSync(p)) return [p];
+    }
+  } catch { /* ignore */ }
+  return [];
 }
 
 export async function healthCheck() {
@@ -197,9 +209,15 @@ export async function launch({ port, kill_existing } = {}) {
   };
 
   let tvPath = null;
-  const candidates = pathMap[platform] || pathMap.linux;
-  for (const p of candidates) {
-    if (p && existsSync(p)) { tvPath = p; break; }
+  // Allow explicit override via env var
+  if (process.env.TV_EXECUTABLE_PATH && existsSync(process.env.TV_EXECUTABLE_PATH)) {
+    tvPath = process.env.TV_EXECUTABLE_PATH;
+  }
+  if (!tvPath) {
+    const candidates = pathMap[platform] || pathMap.linux;
+    for (const p of candidates) {
+      if (p && existsSync(p)) { tvPath = p; break; }
+    }
   }
 
   if (!tvPath) {
