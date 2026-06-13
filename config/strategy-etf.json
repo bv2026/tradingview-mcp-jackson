@@ -1,0 +1,67 @@
+{
+  "instrument_type": "etf",
+  "screener_name": "MOMENTUM-ETF",
+  "max_symbols": 20,
+  "default_timeframe": "D",
+
+  "required_indicators": [
+    "Trendlines with Breaks Oscillator [LuxAlgo]",
+    "Nadaraya-Watson Envelope [LuxAlgo]",
+    "Volume"
+  ],
+
+  "market_context": {
+    "benchmark": "SPY",
+    "benchmark_alt": "QQQ",
+    "benchmark_filter": "SPY or QQQ must be above its 50-day SMA for any bullish bias. ETFs are sector/market proxies — if the broad market is broken, skip all ETF longs."
+  },
+
+  "bias_criteria_note": "ETFs move slower than individual stocks — fewer false breakouts, but also slower entries. Treat TWB signals as sector rotation confirmation, not just single-stock momentum. Bearish = exit/avoid longs only. No short ETF entries (use inverse ETFs separately if needed).",
+  "bias_criteria": {
+    "bullish": [
+      "ETF printing higher highs and higher lows on the daily",
+      "TWB Oscillator shows recent bullish breakout signal",
+      "Breakout volume above 10-day average (sector rotation inflow signal)",
+      "Price approaching upper Nadaraya-Watson Envelope band but not extended outside it",
+      "Sector has a clear macro catalyst (Fed policy, earnings season, sector rotation)"
+    ],
+    "bearish": [
+      "ETF printing lower highs and lower lows on the daily",
+      "TWB shows bearish breakdown signal",
+      "Price broken back below prior breakout trendline on above-average volume",
+      "Sector rotation out — relative performance vs SPY deteriorating"
+    ],
+    "neutral": [
+      "ETF consolidating with no clear direction",
+      "No TWB breakout signal",
+      "Price chopping inside NW Envelope bands",
+      "Volume at or below average — no sector rotation evident"
+    ]
+  },
+
+  "entry_criteria": {
+    "long": [
+      "ETF consolidating near highs after a prior move up",
+      "TWB Oscillator prints bullish B signal",
+      "Volume breakout on the entry candle — confirms sector inflow",
+      "Price breaking toward upper NW Envelope band but not outside it",
+      "Broad market (SPY/QQQ) above 50-day SMA"
+    ]
+  },
+
+  "exit_criteria": {
+    "stop_loss": "Below breakout candle low or prior swing low. Exit if price closes back below the broken trendline (failed breakout).",
+    "take_profit_1": "Scale out 1/2 to 1/3 at upper Nadaraya-Watson Envelope band.",
+    "take_profit_2": "Trail remaining on 9 EMA. Exit if price closes below 9 EMA for 2 consecutive days."
+  },
+
+  "risk_rules": [
+    "Minimum R:R of 1:2 before entering",
+    "No bullish entries if SPY or QQQ is below its 50-day SMA",
+    "ETFs move slower — require more patience on entries, don't chase breakouts",
+    "Maximum 2 open ETF positions at once (ETFs are broader — one sector ETF covers 30+ stocks)",
+    "Prefer sector ETFs (XLK, SMH, XLE) over thematic (ARTY, CHAT) for cleaner signals"
+  ],
+
+  "asset_notes": "Sector and thematic ETFs on daily timeframe. TWB signals on ETFs represent institutional sector rotation — higher conviction than single stocks because many funds must agree. Screener is sorted by 3M performance so top names are the strongest rotating sectors. Top names typically: SOXX/SMH (semis), XLK/VGT (broad tech), CIBR (cybersecurity), QTUM (quantum/AI), SPMO/MTUM (momentum factor)."
+}

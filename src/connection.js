@@ -77,7 +77,9 @@ export async function connect() {
 async function findChartTarget() {
   const resp = await fetch(`http://${CDP_HOST}:${CDP_PORT}/json/list`);
   const targets = await resp.json();
-  // Prefer targets with tradingview.com/chart in the URL
+  // On initial connect, pick the first /chart/ target (index 0 = stocks chart by convention).
+  // Use tab_switch after connect to move to a specific chart tab — that calls switchTarget()
+  // which reconnects CDP to the correct target.
   return targets.find(t => t.type === 'page' && /tradingview\.com\/chart/i.test(t.url))
     || targets.find(t => t.type === 'page' && /tradingview/i.test(t.url))
     || null;
@@ -170,6 +172,35 @@ export async function disconnect() {
     client = null;
     targetInfo = null;
   }
+}
+
+/**
+ * Reconnect CDP to a specific target by ID.
+ * Called after tab_switch so all subsequent evaluate() calls go to the correct tab.
+ */
+export async function switchTarget(targetId) {
+  // Close existing connection
+  if (client) {
+    try { await client.close(); } catch {}
+    client = null;
+    targetInfo = null;
+  }
+
+  // Fetch current target list to get full metadata for this ID
+  const resp = await fetch(`http://${CDP_HOST}:${CDP_PORT}/json/list`);
+  const targets = await resp.json();
+  const target = targets.find(t => t.id === targetId);
+  if (!target) {
+    throw new Error(`Target ${targetId} not found in CDP target list`);
+  }
+
+  targetInfo = target;
+  client = await CDP({ host: CDP_HOST, port: CDP_PORT, target: target.id });
+  await client.Runtime.enable();
+  await client.Page.enable();
+  await client.DOM.enable();
+
+  return { target_id: target.id, url: target.url, title: target.title };
 }
 
 async function queueRuntime(task) {

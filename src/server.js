@@ -31,7 +31,7 @@ const server = new McpServer(
 
 TOOL SELECTION GUIDE:
 
-Morning workflow (instrument_type: stocks | etf | futures | indices):
+Morning workflow (instrument_type: stocks | etf | ark | crypto | crypto_perps | futures | all):
 - screener_get        → read live symbols from TradingView MOMENTUM screener (top N ranked)
 - morning_brief       → full scan: screener symbols + indicators + strategy rules → Claude generates bias
 - session_save        → save today's brief to disk

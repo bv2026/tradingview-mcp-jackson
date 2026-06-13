@@ -10,7 +10,7 @@ export function registerMorningTools(server) {
       instrument_type: z
         .enum(['stocks', 'ark', 'etf', 'futures', 'indices', 'crypto', 'crypto_perps', 'all'])
         .default('stocks')
-        .describe('Instrument type to scan. Use "all" to run all 4 briefs (stocks, crypto, crypto_perps, futures) in one call and auto-save each report. Use "ark" for ARK Innovation watchlist scan. Default: stocks.'),
+        .describe('Instrument type to scan. Use "all" to run all 6 briefs (stocks, etf, ark, crypto, crypto_perps, futures) sequentially and auto-save each report plus a daily-summary.md. Default: stocks.'),
       rules_path: z
         .string()
         .optional()
@@ -27,23 +27,28 @@ export function registerMorningTools(server) {
 
   server.tool(
     'session_save',
-    'Save a morning brief as a human-readable markdown report to reports/YYYY-Mon-DD/{instrument_type}.md in the project directory.',
+    'Save a morning brief report. Full brief → {type}.md. Summary → {type}-summary.md (set is_summary=true). Daily combined summary → daily-summary.md (set instrument_type="daily_summary").',
     {
       brief: z
         .string()
-        .describe("Claude's analysis text to save — the full session bias output."),
+        .describe("The text to save. Full analysis for normal saves; 4-line summary block for is_summary=true; all 6 summaries stacked for instrument_type='daily_summary'."),
       instrument_type: z
-        .enum(['stocks', 'ark', 'crypto', 'crypto_perps', 'futures', 'etf', 'indices'])
+        .enum(['stocks', 'ark', 'crypto', 'crypto_perps', 'futures', 'etf', 'indices', 'daily_summary'])
         .default('stocks')
-        .describe('Instrument type — determines the filename. Default: stocks.'),
+        .describe('Instrument type. Use "daily_summary" to save the combined all-briefs summary to daily-summary.md.'),
+      is_summary: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe('Set true to save a 4-line summary to {type}-summary.md instead of the full brief.'),
       date: z
         .string()
         .optional()
         .describe('Date string YYYY-MM-DD. Defaults to today.'),
     },
-    async ({ brief, instrument_type, date } = {}) => {
+    async ({ brief, instrument_type, is_summary, date } = {}) => {
       try {
-        return jsonResult(core.saveSession({ brief, instrument_type, date }));
+        return jsonResult(core.saveSession({ brief, instrument_type, is_summary, date }));
       } catch (err) {
         return jsonResult({ success: false, error: err.message }, true);
       }

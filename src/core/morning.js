@@ -13,6 +13,7 @@ import { evaluate, KNOWN_PATHS } from '../connection.js';
 import * as chart from './chart.js';
 import * as data from './data.js';
 import * as screener from './screener.js';
+import { switchTab } from './tab.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../../');
@@ -98,10 +99,16 @@ async function ensureIndicators(requiredIndicators) {
     }
   }
 
+  // If any indicators were freshly added, wait for them to fully calculate
+  // before the scan begins. 400ms per indicator isn't enough for historical data.
+  if (added.length > 0) {
+    await new Promise(r => setTimeout(r, 3000));
+  }
+
   return { added };
 }
 
-const ALL_INSTRUMENTS = ['stocks', 'crypto', 'crypto_perps', 'futures'];
+const ALL_INSTRUMENTS = ['stocks', 'etf', 'ark', 'crypto', 'crypto_perps', 'futures'];
 
 export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = {}) {
   const instrument = instrument_type || 'stocks';
@@ -118,16 +125,30 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
         `For each instrument_type:`,
         `1. Call morning_brief with that instrument_type.`,
         `2. Apply the returned bias_criteria and instruction to the symbols_scanned data.`,
-        `3. Write the full analysis (symbol table, top 3 setups, overall market read) under a markdown header: ## STOCKS / ## CRYPTO / ## CRYPTO PERPS / ## FUTURES.`,
-        `4. Call session_save with your analysis text and the matching instrument_type.`,
+        `3. Write the full analysis (symbol table, top 3 setups, overall market read) under a markdown header: ## STOCKS / ## CRYPTO / ## CRYPTO PERPS / ## FUTURES / etc.`,
+        `4. Call session_save with your full analysis text and the matching instrument_type.`,
         `5. Proceed to the next instrument_type.`,
-        `Complete all ${ALL_INSTRUMENTS.length} briefs before finishing. Be direct. No preamble between sections.`,
+        `After ALL ${ALL_INSTRUMENTS.length} briefs are complete, call session_save one final time with instrument_type="daily_summary" — write a 4-line block per instrument (line 1 = "## TYPE | BIAS", line 2 = benchmark status, line 3 = "TOP 3: ...", line 4 = "SKIP: ..."), all stacked into one file. This is the single file the user reads each morning.`,
+        `Be direct. No preamble between sections.`,
       ].join(' '),
     };
   }
 
   const { rules, path: rulesFrom } = loadRules(rules_path);
   const { strategy, path: strategyFrom } = loadStrategy(instrument);
+
+  // Switch to the dedicated chart tab for this instrument before scanning
+  const chartTabConfig = rules.chart_tabs?.[instrument];
+  let chartTabSwitched = false;
+  if (chartTabConfig?.chart_id) {
+    try {
+      await switchTab({ chart_id: chartTabConfig.chart_id });
+      chartTabSwitched = true;
+    } catch (err) {
+      console.error(`Could not switch to chart tab for "${instrument}" (${chartTabConfig.chart_id}): ${err.message}`);
+      // Non-fatal — continue on whichever tab is active
+    }
+  }
 
   // Resolve screener name from rules.json (null = use static watchlist from strategy file)
   const screenerName = rules.screener_sources?.[instrument] ?? null;
@@ -178,7 +199,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
       await evaluate(`${CHART_API}.setSymbol('${symbol.replace(/'/g, "\\'")}', {})`);
       await evaluate(`${CHART_API}.setResolution('${timeframe}', {})`);
       // Flat wait — enough for indicator values to update
-      await new Promise(r => setTimeout(r, _scan_wait_ms ?? 1000));
+      await new Promise(r => setTimeout(r, _scan_wait_ms ?? 800));
 
       const [indicators, quote, nwSignals] = await Promise.all([
         data.getStudyValues(),
@@ -209,6 +230,9 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
     generated_at: new Date().toISOString(),
     date: dateStr,
     instrument_type: instrument,
+    chart_tab: chartTabConfig
+      ? { chart_id: chartTabConfig.chart_id, layout_name: chartTabConfig.layout_name, switched: chartTabSwitched }
+      : { switched: false, note: 'No chart_tab configured for this instrument in rules.json' },
     rules_loaded_from: rulesFrom,
     strategy_loaded_from: strategyFrom,
     screener: {
@@ -249,7 +273,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
         : `Then list top 3 candidates (longs or shorts depending on BTC TWB direction) with entry_criteria checklist.`,
       `End with a one-sentence overall market read.`,
       `Be direct. No preamble.`,
-      `After writing your analysis, automatically call session_save with your complete output text and instrument_type="${instrument}" — do not wait for the user to ask.`,
+      `After writing your analysis, call session_save with your complete output text and instrument_type="${instrument}". Do not wait for the user to ask.`,
     ].join(' '),
   };
 
@@ -265,20 +289,33 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
   return output;
 }
 
-export function saveSession({ brief, instrument_type = 'stocks', date } = {}) {
+export function saveSession({ brief, instrument_type = 'stocks', is_summary = false, date } = {}) {
   const now = date ? new Date(date) : new Date();
   const folder = dateFolderName(now);
   const reportDir = join(REPORTS_DIR, folder);
   mkdirSync(reportDir, { recursive: true });
 
-  const filePath = join(reportDir, `${instrument_type}.md`);
+  const isDailySum = instrument_type === 'daily_summary';
+  const filename = isDailySum
+    ? 'daily-summary.md'
+    : is_summary
+      ? `${instrument_type}-summary.md`
+      : `${instrument_type}.md`;
+
+  const filePath = join(reportDir, filename);
   const timestamp = now.toLocaleString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     hour: '2-digit', minute: '2-digit', timeZoneName: 'short',
   });
 
+  const title = isDailySum
+    ? 'Daily Market Summary'
+    : is_summary
+      ? `${instrument_type.replace(/_/g, ' ').toUpperCase()} Summary`
+      : `${instrument_type.replace(/_/g, ' ').toUpperCase()} Morning Brief`;
+
   const content = [
-    `# ${instrument_type.replace('_', ' ').toUpperCase()} Morning Brief`,
+    `# ${title}`,
     `**Date:** ${timestamp}`,
     ``,
     brief,
@@ -293,7 +330,7 @@ export function getSession({ date, instrument_type } = {}) {
   const folder = dateFolderName(now);
   const reportDir = join(REPORTS_DIR, folder);
 
-  const types = ['stocks', 'crypto', 'crypto_perps', 'futures'];
+  const types = ['stocks', 'etf', 'ark', 'crypto', 'crypto_perps', 'futures'];
 
   if (instrument_type) {
     const filePath = join(reportDir, `${instrument_type}.md`);

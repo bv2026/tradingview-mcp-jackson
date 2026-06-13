@@ -1,6 +1,6 @@
 {
-  "screener_name": null,
-  "screener_note": "Static ARK Innovation watchlist — 116 symbols. No TradingView screener used. Scans first max_symbols each run. Reorder watchlist array to prioritize symbols.",
+  "screener_name": "MOMENTUM-ARK",
+  "screener_note": "ARK Innovation watchlist screener in TradingView. Fallback: if screener tab is not open, morning.js falls through to the static watchlist array below. Reorder watchlist to prioritize symbols for the fallback path.",
   "watchlist": [
     "NASDAQ:NVDA", "NASDAQ:PLTR", "NASDAQ:MU", "NASDAQ:AVGO", "NASDAQ:AMD",
     "NASDAQ:TSLA", "NASDAQ:AMZN", "NASDAQ:GOOG", "NASDAQ:META", "NASDAQ:NFLX",

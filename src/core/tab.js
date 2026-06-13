@@ -2,7 +2,7 @@
  * Core tab management logic.
  * Controls TradingView Desktop tabs via CDP and Electron keyboard shortcuts.
  */
-import { getClient, evaluate } from '../connection.js';
+import { getClient, evaluate, switchTarget } from '../connection.js';
 
 const CDP_HOST = 'localhost';
 const CDP_PORT = 9222;
@@ -15,13 +15,16 @@ export async function list() {
   const targets = await resp.json();
 
   const tabs = targets
-    .filter(t => t.type === 'page' && /tradingview\.com\/chart/i.test(t.url))
+    .filter(t => t.type === 'page' && /tradingview\.com/i.test(t.url))
     .map((t, i) => ({
       index: i,
       id: t.id,
       title: t.title.replace(/^Live stock.*charts on /, ''),
       url: t.url,
       chart_id: t.url.match(/\/chart\/([^/?]+)/)?.[1] || null,
+      tab_type: /\/chart\//.test(t.url) ? 'chart'
+        : /screener/.test(t.url) ? 'screener'
+        : 'other',
     }));
 
   return { success: true, tab_count: tabs.length, tabs };
@@ -85,22 +88,38 @@ export async function closeTab() {
 /**
  * Switch to a tab by index. Reconnects CDP to the new target.
  */
-export async function switchTab({ index }) {
+export async function switchTab({ index, chart_id, tab_id }) {
   const tabs = await list();
-  const idx = Number(index);
 
-  if (idx >= tabs.tab_count) {
-    throw new Error(`Tab index ${idx} out of range (have ${tabs.tab_count} tabs)`);
+  let target;
+  if (chart_id) {
+    target = tabs.tabs.find(t => t.chart_id === chart_id);
+    if (!target) throw new Error(`No tab found with chart_id "${chart_id}"`);
+  } else if (tab_id) {
+    target = tabs.tabs.find(t => t.id === tab_id);
+    if (!target) throw new Error(`No tab found with tab_id "${tab_id}"`);
+  } else {
+    const idx = Number(index);
+    if (idx >= tabs.tab_count) throw new Error(`Tab index ${idx} out of range (have ${tabs.tab_count} tabs)`);
+    target = tabs.tabs[idx];
   }
 
-  const target = tabs.tabs[idx];
-
-  // Use CDP Target.activateTarget to bring the tab to front
-  try {
-    const resp = await fetch(`http://${CDP_HOST}:${CDP_PORT}/json/activate/${target.id}`);
-    const text = await resp.text();
-    return { success: true, action: 'switched', index: idx, tab_id: target.id, chart_id: target.chart_id };
-  } catch (e) {
-    throw new Error(`Failed to activate tab ${idx}: ${e.message}`);
+  // Activate the tab visually in TradingView
+  const resp = await fetch(`http://${CDP_HOST}:${CDP_PORT}/json/activate/${target.id}`);
+  if (!resp.ok) {
+    throw new Error(`Failed to activate tab: HTTP ${resp.status}`);
   }
+
+  // Reconnect CDP client to the new target so all subsequent tool calls run there
+  await switchTarget(target.id);
+
+  return {
+    success: true,
+    action: 'switched',
+    index: target.index,
+    tab_id: target.id,
+    chart_id: target.chart_id,
+    tab_type: target.tab_type,
+    url: target.url,
+  };
 }
