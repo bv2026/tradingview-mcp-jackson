@@ -1,62 +1,60 @@
 # ARK Morning Brief
-**Date:** Monday, June 15, 2026 at 10:09 AM EDT
+**Date:** Monday, June 15, 2026 at 10:36 AM EDT
 
 ## ARK
 
 **Benchmark:**
-- QQQ above 50d (TWB+ 144>136, riding bands) → long entries allowed.
+- QQQ $740.61 vs 50-day **EMA** $690.26 → **ABOVE (+7.3%)** → longs allowed ✓ (`benchmark_status.above=true`, EMA gate as configured)
 
 **Theme:**
-- Most ARK names extended at the upper NW band or in downtrends — thin pickings; only CRWD offers a constructive base.
+- Risk-on backdrop, but ARK leadership (semis) extended at the upper NW band and most growth/genomics names broken — only CRWD offers a constructive base.
 
 | SYMBOL | STATUS | RS | SIGNAL | CLUSTER |
 |--------|--------|----|--------|---------|
-| TWST | EXTENDED | + | TWB+ (11>9), recent ▼ at upper band, price 79.3 pushed | genomics |
-| SNDK | EXTENDED | + | Huge TWB, price 2025 far above bands | ai_semis |
-| PSNL | SKIP | − | Weak TWB, pulled back below band, choppy | genomics |
-| ABSI | EXTENDED | ~ | Low-priced, recent ▼ at upper band | genomics |
-| TXG | SKIP | ? | No indicator data on chart | genomics |
-| MU | EXTENDED | + | TWB+ strong but close 1054 at upper band | ai_semis |
-| BFLY | EXTENDED | ~ | Penny-tier, recent ▼ at band | genomics |
-| WDC | EXTENDED | + | TWB+ strong, no NW data, stretched | ai_semis |
-| ADPT | SKIP | − | Weak TWB, no NW, red | genomics |
-| GH | SKIP | ~ | TWB+ (38>31) but red day, no NW data | genomics |
-| STX | SKIP | − | No TWB study, red close at low | ai_semis |
-| TER | EXTENDED | + | TWB+ small, close 430 at upper band | ai_semis |
-| AMD | EXTENDED | + | Recent ▼ at upper band 548 | ai_semis |
-| GTLB | SKIP | − | Below bands 28.5, downtrend from 70s | ai_software |
-| AIR | EXTENDED | + | TWB turning + (0.85 vs −3.5), pushing above band | aero (non-core) |
-| VCYT | EXTENDED | + | TWB+ (14>12), pushed above bands | genomics |
-| CRWD | BASE_BUILDING | + | TWB+ strong (285>261), pulled back from 731 high, consolidating 681 | ai_software |
-| SDGR | SKIP | − | Downtrend, price 14.8 well below bands | genomics |
-| CMPS | BASE_BUILDING | + | Weak TWB but recent ▲ NW, room, low-priced | genomics |
-| DKNG | BASE_BUILDING | ~ | Weak TWB+ (1.96>1.41), basing near 29 | fintech_crypto |
+| SNDK | EXTENDED | + | Huge TWB, px 2087 far above bands | ai_semis |
+| TWST | EXTENDED | + | TWB+ (11>9), green, recent ▼ at band | genomics |
+| PSNL | SKIP | − | Weak TWB, pulled back below band, red | genomics |
+| TXG | EXTENDED | ~ | TWB+ (5>4), green, ▼ at band | genomics |
+| MU | EXTENDED | + | TWB+ strong, green but px 1064 above band | ai_semis |
+| ABSI | EXTENDED | ~ | Low-priced, ▼ at band | genomics |
+| BFLY | EXTENDED | ~ | Penny-tier, ▼ at band, red | genomics |
+| WDC | EXTENDED | + | TWB+ strong, green, stretched above band | ai_semis |
+| ADPT | SKIP | − | Weak TWB, below band, red | genomics |
+| GH | SKIP | ~ | TWB+ (38>31) but red, below band | genomics |
+| STX | EXTENDED | + | TWB+ (546>504), extended above band, red | ai_semis |
+| AMD | EXTENDED | + | TWB+ strong, green but at band 548 | ai_semis |
+| VCYT | EXTENDED | + | TWB+ (14>12), green, pushed above band | genomics |
+| TER | EXTENDED | + | TWB+ (20>19), green, above band 429 | ai_semis |
+| GTLB | SKIP | − | Below band 28.4, downtrend from 70s | ai_software |
+| AIR | EXTENDED | + | TWB turning + (0.83 vs −3.5), green, near band | aero (non-core) |
+| CRWD | BASE_BUILDING | + | TWB+ strong (286>261), pulled back from 731 to 686 — basing | ai_software |
+| DKNG | BASE_BUILDING | ~ | Weak TWB+ (1.98>1.42), basing near 29 | fintech_crypto |
+| SDGR | SKIP | − | Downtrend, px 14.6 far below band | genomics |
+| HEI | EXTENDED | + | TWB+ (43>32), green, ▼ just above band 345 | aero (non-core) |
 
 ---
 
 ### Top Candidates
 _No clean BREAKOUT_READY — best BASE_BUILDING._
 
-**1. CRWD — $681.02**
-- Strongest profile: TWB+ (285>261), positive RS, pulled back from 731 ATH, consolidating
-- Watch for tightening base + volume contraction, then break back above ~692 on 2x volume. Stop: below base low. Target: NW upper band
+**1. CRWD — $686.60**
+- Strongest: TWB+ (286>261), positive RS, pulled back from 731 ATH, basing
+- Watch for tightening + volume contraction, then break above ~692 on 2x volume. Stop: below base low. Target: NW upper band
 - ai_software cluster — do not pair with GTLB
 
-**2. DKNG — $28.96**
-- Basing near 29 after decline; weak but positive TWB
-- Needs base to tighten + volume breakout above 30 before entry. Lower conviction
+**2. DKNG — $29.18**
+- Basing near 29; weak but positive TWB. Needs base tightening + volume break above 30. Lower conviction
 
-**3. CMPS — $12.15**
-- Recent ▲ NW (room), but TWB barely positive and price speculative
-- Speculative starter only — size down hard
+**3. (none) — semis all extended**
+- ai_semis (MU/AMD/WDC/STX/SNDK/TER) all stretched at/above the band — skip
 
 ---
 
 ### Cluster Rule
-- ai_semis (MU/AMD/WDC/SNDK/TER) all extended and highly correlated — do not chase; one max if forced
+- ai_semis cluster fully extended and correlated — do not chase
 - Max 1 name per correlation cluster
 
 ## Overall Market Read
-- Risk-on market but ARK leadership (semis) is overextended
-- Growth/genomics names mostly broken or speculative
+- QQQ above 50d EMA by computed gate (+7.3%) — ARK longs permitted
+- Leadership (semis) overextended; growth/genomics mostly broken
 - Only CRWD offers a constructive base — sit on hands unless it sets up cleanly
