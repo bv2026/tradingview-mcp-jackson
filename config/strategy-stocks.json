@@ -13,6 +13,8 @@
   "market_context": {
     "benchmark": "SPY",
     "benchmark_alt": "QQQ",
+    "benchmark_ma_type": "SMA",
+    "benchmark_ma_period": 50,
     "benchmark_filter": "Benchmark (SPY or QQQ) must be above its 50-day SMA for any bullish bias. If below, default all stocks to neutral or bearish."
   },
 

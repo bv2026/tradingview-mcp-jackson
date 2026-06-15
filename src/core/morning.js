@@ -108,6 +108,86 @@ async function ensureIndicators(requiredIndicators) {
   return { added };
 }
 
+const round2 = (x) => Math.round(x * 100) / 100;
+
+// Compute a moving average over an array of closes (oldest → newest).
+// type: 'SMA' (simple) or 'EMA' (exponential, SMA-seeded to match TradingView).
+function computeMA(closes, period, type) {
+  if (!Array.isArray(closes) || closes.length < period) return null;
+  if (type === 'EMA') {
+    // Use up to period*3 bars so the EMA converges; seed with SMA of the first `period`.
+    const window = closes.slice(-Math.min(closes.length, period * 3));
+    if (window.length < period) return null;
+    const seed = window.slice(0, period).reduce((a, b) => a + b, 0) / period;
+    let ema = seed;
+    const k = 2 / (period + 1);
+    for (let i = period; i < window.length; i++) ema = window[i] * k + ema * (1 - k);
+    return ema;
+  }
+  // SMA
+  const w = closes.slice(-period);
+  return w.reduce((a, b) => a + b, 0) / period;
+}
+
+// Measure the strategy benchmark (e.g. SPY) against its configured moving average.
+// Only runs when market_context defines benchmark_ma_type + benchmark_ma_period
+// (stocks/etf/ark). Switches the chart to the benchmark on the brief timeframe,
+// polls for enough bars, computes the MA in code, and compares to the last close.
+// Falls back to benchmark_alt if the primary symbol can't be loaded.
+async function measureBenchmark({ marketContext, timeframe, scanWaitMs }) {
+  const maType = (marketContext?.benchmark_ma_type || '').toUpperCase();
+  const maPeriod = marketContext?.benchmark_ma_period;
+  if (!maType || !maPeriod) return null; // not a benchmark-gated instrument
+
+  const candidates = [marketContext.benchmark, marketContext.benchmark_alt].filter(Boolean);
+  const CHART_API = KNOWN_PATHS.chartApi;
+  const wait = scanWaitMs ?? 800;
+
+  for (let i = 0; i < candidates.length; i++) {
+    const sym = candidates[i];
+    try {
+      await evaluate(`${CHART_API}.setSymbol('${sym.replace(/'/g, "\\'")}', {})`);
+      await evaluate(`${CHART_API}.setResolution('${timeframe}', {})`);
+
+      // Poll until enough daily bars have loaded (benchmark history is larger than a flat wait allows).
+      let bars = null;
+      for (let t = 0; t < 8; t++) {
+        await new Promise(r => setTimeout(r, wait));
+        try {
+          const o = await data.getOhlcv({ count: Math.max(maPeriod * 3, maPeriod + 5) });
+          if (o?.bars && o.bars.length >= maPeriod) { bars = o.bars; break; }
+        } catch (_) {}
+      }
+      if (!bars) continue;
+
+      const closes = bars.map(b => b.close).filter(c => typeof c === 'number');
+      const ma = computeMA(closes, maPeriod, maType);
+      const close = closes[closes.length - 1];
+      if (ma == null || close == null) continue;
+
+      return {
+        symbol: sym,
+        close: round2(close),
+        ma_type: maType,
+        ma_period: maPeriod,
+        ma_value: round2(ma),
+        above: close > ma,
+        near: Math.abs(close - ma) / ma <= 0.003, // within 0.3% = borderline
+        used_alt: i > 0,
+        source: 'computed_from_ohlcv',
+      };
+    } catch (_) { /* try next candidate */ }
+  }
+
+  return {
+    available: false,
+    attempted: candidates,
+    ma_type: maType,
+    ma_period: maPeriod,
+    note: 'Could not load benchmark OHLCV; treat the benchmark as UNKNOWN and be conservative on longs.',
+  };
+}
+
 const ALL_INSTRUMENTS = ['stocks', 'etf', 'ark', 'crypto', 'crypto_perps', 'futures'];
 
 export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = {}) {
@@ -189,6 +269,19 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
     originalTimeframe = currentState.resolution;
   } catch (_) {}
 
+  // Measure the benchmark (SPY/QQQ above its 50d SMA/EMA) before scanning candidates.
+  // Returns null for instruments without a configured MA gate (crypto/perps/futures).
+  let benchmarkStatus = null;
+  try {
+    benchmarkStatus = await measureBenchmark({
+      marketContext: strategy.market_context,
+      timeframe,
+      scanWaitMs: _scan_wait_ms,
+    });
+  } catch (err) {
+    benchmarkStatus = { available: false, error: err.message, note: 'Benchmark measurement failed; be conservative on longs.' };
+  }
+
   const results = [];
 
   const CHART_API = KNOWN_PATHS.chartApi;
@@ -241,6 +334,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
       symbols_scanned: symbols.length,
     },
     indicators_added_to_chart: indicatorsAdded,
+    benchmark_status: benchmarkStatus,
     strategy: {
       market_context: strategy.market_context || null,
       bias_criteria: strategy.bias_criteria || null,
@@ -262,8 +356,8 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
         : instrument === 'futures'
         ? `FUTURES REGIME DETECTION: Each symbol is evaluated independently — no single benchmark. For each symbol, determine which regime applies using regime_detection rules: TRENDING (TWB Histogram clearly directional for 3+ bars, HH/HL or LL/LH structure) or MEAN_REVERTING (TWB near zero or reversing, RSI extreme, price extended beyond NW band). Then apply the matching bias_criteria (trend_long, trend_short, mean_rev_long, mean_rev_short). Check macro_overlays in market_context: DXY direction affects metals/FX, ZB/ZN direction affects equity index, VX1! level sets overall risk mode. Output one line per symbol with its regime tag. End with top 3 setups across all sectors.`
         : instrument === 'ark'
-        ? `ARK RELATIVE STRENGTH + BASE BREAKOUT: First check QQQ — if QQQ is below its 50-day EMA, all signals are SKIP (wait for market). For each symbol: (1) RELATIVE STRENGTH — compare the stock's recent price action to QQQ. If QQQ is down 2% over 20 days and the stock is down 0.5%, RS is positive. If QQQ is up 3% and stock is flat, RS is negative — skip it. (2) BASE CHECK — is the stock in a 2-6 week tight consolidation after a prior move up? Volume should be contracting during the base. NW Envelope: price should be inside bands (no recent ▲ signal = not yet extended). (3) BREAKOUT SIGNAL — TWB Histogram turning positive or printing a breakout. Assign each symbol one of: BASE_BUILDING (positive RS, base forming, volume contracting), BREAKOUT_READY (base complete, TWB triggering), EXTENDED (NW ▲ already printed, move played out — skip), SKIP (QQQ below 50d EMA, stock below 50d EMA, negative RS, or earnings within 5 days). Note the correlation cluster (ai_semis / fintech_crypto / autonomy_space / ai_software / genomics) — flag if multiple names from same cluster would be entered simultaneously.`
-        : `Check market_context first — if the benchmark (${strategy.market_context?.benchmark || 'SPY'}) is below its 50-day SMA, default all to neutral/bearish. IMPORTANT: bearish signals = exit/avoid on longs only. Do NOT suggest short entries.`,
+        ? `ARK RELATIVE STRENGTH + BASE BREAKOUT: First check benchmark_status (QQQ vs its 50-day EMA, computed in the payload). If benchmark_status.above is false, all signals are SKIP (wait for market). If benchmark_status.near is true, the benchmark is borderline — reduce conviction. If benchmark_status.available is false, the benchmark could not be measured — be conservative. For each symbol: (1) RELATIVE STRENGTH — compare the stock's recent price action to QQQ. If QQQ is down 2% over 20 days and the stock is down 0.5%, RS is positive. If QQQ is up 3% and stock is flat, RS is negative — skip it. (2) BASE CHECK — is the stock in a 2-6 week tight consolidation after a prior move up? Volume should be contracting during the base. NW Envelope: price should be inside bands (no recent ▲ signal = not yet extended). (3) BREAKOUT SIGNAL — TWB Histogram turning positive or printing a breakout. Assign each symbol one of: BASE_BUILDING (positive RS, base forming, volume contracting), BREAKOUT_READY (base complete, TWB triggering), EXTENDED (NW ▲ already printed, move played out — skip), SKIP (QQQ below 50d EMA, stock below 50d EMA, negative RS, or earnings within 5 days). Note the correlation cluster (ai_semis / fintech_crypto / autonomy_space / ai_software / genomics) — flag if multiple names from same cluster would be entered simultaneously.`
+        : `Check benchmark_status first (computed in the payload — the benchmark price vs its configured moving average). If benchmark_status.above is false, the benchmark is below its ${strategy.market_context?.benchmark_ma_period || 50}-day ${strategy.market_context?.benchmark_ma_type || 'SMA'} — default ALL symbols to neutral/bearish (no long entries). If benchmark_status.near is true, treat the benchmark as borderline and reduce conviction. If benchmark_status.available is false, the benchmark could not be measured — be conservative on longs. IMPORTANT: bearish signals = exit/avoid on longs only. Do NOT suggest short entries.`,
       `If strategy has tradeable_exchanges defined, flag any symbol NOT available on those exchanges as SKIP.`,
       instrument === 'ark'
         ? `Output one line per symbol: SYMBOL | STATUS: [BASE_BUILDING/BREAKOUT_READY/EXTENDED/SKIP] | RS: [+/-] | SIGNAL: [key observation] | CLUSTER: [cluster name]`

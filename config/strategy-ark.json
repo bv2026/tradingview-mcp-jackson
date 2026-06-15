@@ -39,6 +39,8 @@
   "market_context": {
     "benchmark": "QQQ",
     "benchmark_alt": "SPY",
+    "benchmark_ma_type": "EMA",
+    "benchmark_ma_period": 50,
     "benchmark_filter": "QQQ must be above its 50-day EMA for any long entries. If QQQ is below 50d EMA, all signals are neutral — wait for market to recover.",
     "note": "ARK holdings are high-beta growth: genomics, fintech, AI, space, autonomous vehicles. Many are pre-profit. Catalyst and narrative matter more than technicals alone. A stock can have a perfect setup and still fail without a catalyst. Always check for upcoming earnings, FDA dates, product launches before entry."
   },

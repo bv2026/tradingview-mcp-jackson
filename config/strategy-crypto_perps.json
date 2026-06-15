@@ -20,8 +20,8 @@
       "btc_twb_crossing_zero": "Histogram just crossed from negative to positive (or vice versa) → direction change — highest conviction signal, enter early",
       "btc_twb_neutral_zone": "Histogram near zero (within 5% of recent range) → no clear edge → reduce size or skip"
     },
-    "funding_note": "Check funding rate direction before entry. For longs: neutral or negative funding preferred. For shorts: positive funding preferred (shorts get paid). Extreme positive funding (>0.05%/hr) = crowded long → short opportunity. Extreme negative funding = crowded short → long opportunity.",
-    "oi_note": "Rising OI with rising price = healthy uptrend (confirms long). Rising OI with falling price = short pressure building (confirms short). Falling OI = trend exhaustion on either side — reduce size."
+    "funding_note": "Funding rate is NOT available in TradingView — it is not in the brief payload. Check it manually on Coinbase (or the exchange) immediately before entry. Guidance: for longs, neutral or negative funding preferred; for shorts, positive funding preferred (shorts get paid). Extreme positive funding (>0.05%/hr) = crowded long → short opportunity; extreme negative funding = crowded short → long opportunity. Treat funding as a final manual confirmation step, not an automated signal.",
+    "oi_note": "Open interest is NOT in the brief payload either — check it manually on Coinbase before entry if available. Guidance: rising OI with rising price = healthy uptrend (confirms long); rising OI with falling price = short pressure building (confirms short); falling OI = trend exhaustion on either side — reduce size."
   },
 
   "bias_criteria_note": "Perps allow both longs AND shorts. BTC TWB signal determines which side to trade. Apply bullish criteria for longs when BTC TWB positive; bearish criteria for shorts when BTC TWB negative. Commodity perps (SILVER, GOLD) are exempt from BTC benchmark — apply their own TWB signal independently.",
@@ -108,5 +108,5 @@
   "tradeable_exchanges": ["Coinbase"],
   "tradeable_note": "All perps in MOMENTUM-PERPS are Coinbase CDE USDC-settled contracts. No exchange check needed.",
 
-  "asset_notes": "Coinbase perp universe is USDC-settled and regulated. Perps allow both sides — the TWB signal on BTC tells you which side the market favors today. For shorts, the ideal entry is a retrace back up into the lower NW band after an initial breakdown — not chasing the drop. Funding rates are visible in the TradingView CEX screener overview tab. Prefer entries during US session (9:30am-4pm ET) or Asia open (8pm-midnight ET) — avoid low-liquidity gaps in between."
+  "asset_notes": "Coinbase perp universe is USDC-settled and regulated. Perps allow both sides — the TWB signal on BTC tells you which side the market favors today. For shorts, the ideal entry is a retrace back up into the lower NW band after an initial breakdown — not chasing the drop. Funding rate and open interest are NOT available in TradingView — check them manually on Coinbase before entry. Prefer entries during US session (9:30am-4pm ET) or Asia open (8pm-midnight ET) — avoid low-liquidity gaps in between."
 }

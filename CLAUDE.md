@@ -27,6 +27,16 @@ session_save brief="<Claude's output>"
 session_get   # retrieve today's or yesterday's saved brief
 ```
 
+**Brief formatting convention (REQUIRED for `session_save`):**
+The `morning_brief` tool's embedded instruction says to output bare pipe-delimited lines (`SYMBOL | BIAS: ... | SIGNAL: ...`). Do NOT save that raw form — it does not render as a table in markdown. Always reshape the analysis into proper GitHub-flavored markdown before calling `session_save`:
+- `## {TYPE}` section, then `**Benchmark:**` and `**Theme:**` bullet blocks
+- A per-symbol **markdown table** with a header row and `|---|` separator: `| SYMBOL | BIAS | SIGNAL | WATCH |` (use `| SYMBOL | STATUS | RS | SIGNAL | CLUSTER |` for ARK)
+- `### Top 3 Setups` — prose or a table with Entry/Stop/TP1/R:R columns
+- `## Overall Market Read` — bullet list
+- For `instrument_type="daily_summary"`: lead with a `## Quick Reference` table (Instrument | Direction | Top 3 | Key Action), one short section per instrument, and close with a `## Cross-Market Read` table.
+
+The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief body should start at `## {TYPE}`. See `reports/2026-Jun-13/` for reference structure.
+
 **Key files:**
 - `rules.json` — screener name per instrument type
 - `strategy-stocks.json` — stocks bias/entry/exit rules
