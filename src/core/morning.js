@@ -188,6 +188,86 @@ async function measureBenchmark({ marketContext, timeframe, scanWaitMs }) {
   };
 }
 
+// Ticker root = the part after the last ':' (e.g. "NASDAQ:AMD" → "AMD", "BATS:AMD" → "AMD").
+// Used to confirm the chart actually switched to the requested symbol, since the resolved
+// quote symbol often comes back on a different exchange prefix (NASDAQ requested, BATS resolved).
+function tickerRoot(sym) {
+  return String(sym || '').split(':').pop().trim().toUpperCase();
+}
+
+// Liveness probe — run ONCE before scanning all symbols. Confirms two things on the lead
+// symbol: (1) the chart returns a quote that matches the requested ticker (feed is live,
+// not echoing the previously-loaded symbol), and (2) the value-producing required indicator
+// (TWB oscillator — NW Envelope is a price overlay and never reports here) is actually
+// computing. If either never confirms, abort loudly instead of emitting stale/empty data.
+async function verifyChartLive(symbol, timeframe, scanWaitMs, requiredIndicators) {
+  const CHART_API = KNOWN_PATHS.chartApi;
+  const wait = scanWaitMs ?? 800;
+  const want = tickerRoot(symbol);
+  await evaluate(`${CHART_API}.setSymbol('${symbol.replace(/'/g, "\\'")}', {})`);
+  await evaluate(`${CHART_API}.setResolution('${timeframe}', {})`);
+
+  const valueIndicator = (requiredIndicators || []).find(i => !/nadaraya/i.test(i)) || '';
+  const valueKey = valueIndicator.toLowerCase().split('[')[0].trim();
+
+  let quoteFresh = false, studyLive = false;
+  for (let t = 0; t < 8; t++) {
+    await new Promise(r => setTimeout(r, wait));
+    let quote;
+    try { quote = await data.getQuote({}); } catch (_) { continue; }
+    quoteFresh = !!(quote?.symbol && tickerRoot(quote.symbol) === want && typeof quote.close === 'number');
+    if (!quoteFresh) continue;
+    try {
+      const sv = await data.getStudyValues();
+      const names = (sv?.studies || []).map(s => (s.name || '').toLowerCase());
+      studyLive = valueKey ? names.some(n => n.includes(valueKey)) : true;
+    } catch (_) { studyLive = false; }
+    if (quoteFresh && studyLive) return;
+  }
+
+  throw new Error(
+    `Chart is not returning live data for ${symbol} after multiple tries ` +
+    `(quote fresh: ${quoteFresh}, indicators live: ${studyLive}). ` +
+    `The TradingView tab likely opened before its indicators/feed were ready. ` +
+    `Reload the TradingView tab, confirm the LuxAlgo indicators are visible on the chart, then re-run the brief.`
+  );
+}
+
+// Scan a single symbol with a freshness guard. After switching symbol+timeframe, poll the
+// quote until its ticker matches the requested symbol (or retries exhaust) — this prevents
+// reading the previously-loaded symbol's cached values. Marks each reading fresh/stale so
+// the caller can distinguish trustworthy data from a chart that didn't keep up.
+async function scanSymbol(symbol, timeframe, scanWaitMs) {
+  const CHART_API = KNOWN_PATHS.chartApi;
+  const wait = scanWaitMs ?? 800;
+  const want = tickerRoot(symbol);
+
+  await evaluate(`${CHART_API}.setSymbol('${symbol.replace(/'/g, "\\'")}', {})`);
+  await evaluate(`${CHART_API}.setResolution('${timeframe}', {})`);
+
+  let quote = null, fresh = false;
+  for (let t = 0; t < 8; t++) {
+    await new Promise(r => setTimeout(r, wait));
+    try { quote = await data.getQuote({}); } catch (_) { continue; }
+    if (quote?.symbol && tickerRoot(quote.symbol) === want && typeof quote.close === 'number') {
+      fresh = true;
+      break;
+    }
+  }
+
+  const [indicators, nwSignals] = await Promise.all([
+    data.getStudyValues(),
+    data.getPineLabels({ study_filter: 'Nadaraya-Watson' }),
+  ]);
+
+  const reading = { symbol, timeframe, indicators, quote, nw_envelope_signals: nwSignals, fresh };
+  if (!fresh) {
+    reading.stale = true;
+    reading.note = `Chart did not confirm a switch to ${symbol} after multiple tries — this reading may be the previously-loaded symbol's data. Treat as unreliable (SKIP / re-scan).`;
+  }
+  return reading;
+}
+
 const ALL_INSTRUMENTS = ['stocks', 'etf', 'ark', 'crypto', 'crypto_perps', 'futures'];
 
 export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = {}) {
@@ -282,29 +362,24 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
     benchmarkStatus = { available: false, error: err.message, note: 'Benchmark measurement failed; be conservative on longs.' };
   }
 
-  const results = [];
+  // Liveness probe — abort before scanning if the chart isn't returning live data or the
+  // required indicators aren't computing. Prevents silently emitting stale/empty briefs
+  // (the failure where every symbol echoed one cached quote with study_count 0).
+  await verifyChartLive(symbols[0], timeframe, _scan_wait_ms, strategy.required_indicators);
 
+  const results = [];
   const CHART_API = KNOWN_PATHS.chartApi;
 
   for (const symbol of symbols) {
     try {
-      // Switch symbol + timeframe directly without waitForChartReady (too slow for batch scans)
-      await evaluate(`${CHART_API}.setSymbol('${symbol.replace(/'/g, "\\'")}', {})`);
-      await evaluate(`${CHART_API}.setResolution('${timeframe}', {})`);
-      // Flat wait — enough for indicator values to update
-      await new Promise(r => setTimeout(r, _scan_wait_ms ?? 800));
-
-      const [indicators, quote, nwSignals] = await Promise.all([
-        data.getStudyValues(),
-        data.getQuote({}),
-        data.getPineLabels({ study_filter: 'Nadaraya-Watson' }),
-      ]);
-
-      results.push({ symbol, timeframe, indicators, quote, nw_envelope_signals: nwSignals });
+      results.push(await scanSymbol(symbol, timeframe, _scan_wait_ms));
     } catch (err) {
-      results.push({ symbol, error: err.message });
+      results.push({ symbol, error: err.message, fresh: false, stale: true });
     }
   }
+
+  const freshCount = results.filter(r => r.fresh).length;
+  const staleCount = results.length - freshCount;
 
   // Restore original chart state (symbol + timeframe, not indicators — Option B)
   if (originalSymbol) {
@@ -334,6 +409,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
       symbols_scanned: symbols.length,
     },
     indicators_added_to_chart: indicatorsAdded,
+    scan_quality: { fresh: freshCount, stale: staleCount, total: results.length },
     benchmark_status: benchmarkStatus,
     strategy: {
       market_context: strategy.market_context || null,
@@ -351,6 +427,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
       `For each symbol in symbols_scanned, apply the bias_criteria from the strategy to the indicator readings.`,
       `TWB Oscillator values (Histogram, Signal, Trendline Break) come from the 'indicators' field.`,
       `Nadaraya-Watson Envelope signals come from the 'nw_envelope_signals' field. Labels are ▲ (price crossed above a band) or ▼ (price crossed below a band) at the price level where it occurred. The MOST RECENT label (first in the array) tells you current band position relative to price.`,
+      `DATA QUALITY: each symbol has a 'fresh' flag. Any symbol with fresh:false (or stale:true / an 'error') was NOT confirmed live on the chart — its readings may be the previously-loaded symbol's data. Mark such symbols SKIP (re-scan) and do not base a setup on them. Check scan_quality for the overall fresh/stale counts.`,
       instrument === 'crypto_perps'
         ? `PERPS BENCHMARK: The FIRST symbol in symbols_scanned is always BTC perp. Read its TWB Histogram. If POSITIVE → market in uptrend → scan all alts for LONG setups using bullish_long criteria. If NEGATIVE → market in downtrend → scan all alts for SHORT setups using bearish_short criteria. Do NOT default to "no trades" on negative BTC TWB — negative means SHORT side is in play. Commodity perps (SILVER, GOLD) use their own TWB signal independently of BTC. Output top 3 LONG candidates OR top 3 SHORT candidates depending on BTC TWB direction.`
         : instrument === 'futures'
