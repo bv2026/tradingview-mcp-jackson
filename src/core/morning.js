@@ -235,9 +235,15 @@ async function verifyChartLive(symbol, timeframe, scanWaitMs, requiredIndicators
 
 // Scan a single symbol with a freshness guard. After switching symbol+timeframe, poll the
 // quote until its ticker matches the requested symbol (or retries exhaust) — this prevents
-// reading the previously-loaded symbol's cached values. Marks each reading fresh/stale so
-// the caller can distinguish trustworthy data from a chart that didn't keep up.
-async function scanSymbol(symbol, timeframe, scanWaitMs) {
+// reading the previously-loaded symbol's cached values. Two extra guards:
+//   - echo check: a fresh-looking quote whose close exactly equals the previously scanned
+//     symbol's close is almost certainly stale data for the prior symbol (the NQ-echoed-ES
+//     case), so it's rejected and the poll continues.
+//   - oscillator wait: once the quote is live, the value-producing oscillator (TWB) lags and
+//     often returns empty on the first read, so poll a few extra times for it to appear.
+// Marks each reading fresh/stale so the caller can distinguish trustworthy data.
+async function scanSymbol(symbol, timeframe, scanWaitMs, opts = {}) {
+  const { prevClose = null, oscillatorKey = null } = opts;
   const CHART_API = KNOWN_PATHS.chartApi;
   const wait = scanWaitMs ?? 800;
   const want = tickerRoot(symbol);
@@ -249,21 +255,27 @@ async function scanSymbol(symbol, timeframe, scanWaitMs) {
   for (let t = 0; t < 8; t++) {
     await new Promise(r => setTimeout(r, wait));
     try { quote = await data.getQuote({}); } catch (_) { continue; }
-    if (quote?.symbol && tickerRoot(quote.symbol) === want && typeof quote.close === 'number') {
-      fresh = true;
-      break;
-    }
+    const tickerOk = quote?.symbol && tickerRoot(quote.symbol) === want && typeof quote.close === 'number';
+    const echo = tickerOk && prevClose != null && quote.close === prevClose;
+    if (tickerOk && !echo) { fresh = true; break; }
   }
 
-  const [indicators, nwSignals] = await Promise.all([
-    data.getStudyValues(),
-    data.getPineLabels({ study_filter: 'Nadaraya-Watson' }),
-  ]);
+  // Give the value-producing oscillator extra polls to finish recalculating — it lags the
+  // quote and otherwise returns empty (study_count 0). Only retries when it's missing.
+  let indicators = await data.getStudyValues();
+  if (fresh && oscillatorKey) {
+    const hasOsc = (sv) => (sv?.studies || []).some(s => (s.name || '').toLowerCase().includes(oscillatorKey));
+    for (let t = 0; t < 3 && !hasOsc(indicators); t++) {
+      await new Promise(r => setTimeout(r, wait));
+      try { indicators = await data.getStudyValues(); } catch (_) {}
+    }
+  }
+  const nwSignals = await data.getPineLabels({ study_filter: 'Nadaraya-Watson' });
 
   const reading = { symbol, timeframe, indicators, quote, nw_envelope_signals: nwSignals, fresh };
   if (!fresh) {
     reading.stale = true;
-    reading.note = `Chart did not confirm a switch to ${symbol} after multiple tries — this reading may be the previously-loaded symbol's data. Treat as unreliable (SKIP / re-scan).`;
+    reading.note = `Chart did not confirm a fresh switch to ${symbol} after multiple tries (stale or echoed data). Treat as unreliable (SKIP / re-scan).`;
   }
   return reading;
 }
@@ -370,9 +382,17 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
   const results = [];
   const CHART_API = KNOWN_PATHS.chartApi;
 
+  // Oscillator key = the value-producing required indicator (TWB); NW Envelope is a price
+  // overlay and never reports in study values, so it can't be the readiness signal.
+  const valueIndicator = (strategy.required_indicators || []).find(i => !/nadaraya/i.test(i)) || '';
+  const oscillatorKey = valueIndicator.toLowerCase().split('[')[0].trim();
+
+  let prevClose = null; // last confirmed-fresh close, for the echo guard
   for (const symbol of symbols) {
     try {
-      results.push(await scanSymbol(symbol, timeframe, _scan_wait_ms));
+      const reading = await scanSymbol(symbol, timeframe, _scan_wait_ms, { prevClose, oscillatorKey });
+      results.push(reading);
+      if (reading.fresh && typeof reading.quote?.close === 'number') prevClose = reading.quote.close;
     } catch (err) {
       results.push({ symbol, error: err.message, fresh: false, stale: true });
     }
