@@ -1,0 +1,217 @@
+{
+  "instrument_type": "stwits_sm",
+  "screener_name": null,
+  "watchlist_source": "C:\\work\\StockTwits\\Reports\\Stocktwits-Top-25-Week-24.md — Stocktwits Top 25 Momentum — Week of June 19, 2026 — rows with a Russell 2000 rank only",
+  "max_symbols": 20,
+  "default_timeframe": "D",
+  "required_indicators": [
+    "Trendlines with Breaks Oscillator [LuxAlgo]",
+    "Nadaraya-Watson Envelope [LuxAlgo]",
+    "Volume"
+  ],
+  "watchlist": [
+    {
+      "symbol": "HURA",
+      "wtd": 15.8,
+      "sentiment": 54,
+      "watchers": "15.5k"
+    },
+    {
+      "symbol": "BE",
+      "wtd": 15.4,
+      "sentiment": 49,
+      "watchers": "29.1k"
+    },
+    {
+      "symbol": "AMBO",
+      "wtd": 14.4,
+      "sentiment": 86,
+      "watchers": "—"
+    },
+    {
+      "symbol": "PENG",
+      "wtd": 12.5,
+      "sentiment": 34,
+      "watchers": "2.6k"
+    },
+    {
+      "symbol": "ICHR",
+      "wtd": 10.2,
+      "sentiment": 68,
+      "watchers": "3.5k"
+    },
+    {
+      "symbol": "ATOM",
+      "wtd": 10.2,
+      "sentiment": 35,
+      "watchers": "11.3k"
+    },
+    {
+      "symbol": "UCTT",
+      "wtd": 8.7,
+      "sentiment": 58,
+      "watchers": "3.7k"
+    },
+    {
+      "symbol": "AGL",
+      "wtd": 8.4,
+      "sentiment": 37,
+      "watchers": "995"
+    },
+    {
+      "symbol": "VSH",
+      "wtd": 7.8,
+      "sentiment": 44,
+      "watchers": "1.3k"
+    },
+    {
+      "symbol": "NVTS",
+      "wtd": 7.5,
+      "sentiment": 37,
+      "watchers": "25.6k"
+    },
+    {
+      "symbol": "MXL",
+      "wtd": 7.1,
+      "sentiment": 34,
+      "watchers": "3.2k"
+    },
+    {
+      "symbol": "VPG",
+      "wtd": 5.9,
+      "sentiment": 24,
+      "watchers": "832"
+    },
+    {
+      "symbol": "HYLN",
+      "wtd": 5.7,
+      "sentiment": 41,
+      "watchers": "39.1k"
+    },
+    {
+      "symbol": "SVCO",
+      "wtd": 5.7,
+      "sentiment": 48,
+      "watchers": "307"
+    },
+    {
+      "symbol": "IBRX",
+      "wtd": 5.3,
+      "sentiment": 28,
+      "watchers": "29.2k"
+    },
+    {
+      "symbol": "EVC",
+      "wtd": 4.6,
+      "sentiment": 35,
+      "watchers": "1.5k"
+    },
+    {
+      "symbol": "AEHR",
+      "wtd": 2.4,
+      "sentiment": 50,
+      "watchers": "13.9k"
+    },
+    {
+      "symbol": "BAND",
+      "wtd": 1.1,
+      "sentiment": 46,
+      "watchers": "3.1k"
+    },
+    {
+      "symbol": "ERAS",
+      "wtd": -2.2,
+      "sentiment": 46,
+      "watchers": "1.0k"
+    },
+    {
+      "symbol": "SATL",
+      "wtd": -2.3,
+      "sentiment": 35,
+      "watchers": "4.5k"
+    },
+    {
+      "symbol": "DOCN",
+      "wtd": -2.6,
+      "sentiment": 34,
+      "watchers": "7.2k"
+    },
+    {
+      "symbol": "AAOI",
+      "wtd": -3.3,
+      "sentiment": 66,
+      "watchers": "22.3k"
+    },
+    {
+      "symbol": "RXT",
+      "wtd": -4.1,
+      "sentiment": 82,
+      "watchers": "10.2k"
+    },
+    {
+      "symbol": "ATEX",
+      "wtd": -5.8,
+      "sentiment": 42,
+      "watchers": "335"
+    },
+    {
+      "symbol": "TNGX",
+      "wtd": -13.4,
+      "sentiment": 44,
+      "watchers": "923"
+    }
+  ],
+  "market_context": {
+    "benchmark": "IWM",
+    "benchmark_alt": "SPY",
+    "benchmark_ma_type": "SMA",
+    "benchmark_ma_period": 50,
+    "benchmark_filter": "Benchmark (IWM, the Russell 2000 ETF) must be above its 50-day SMA for any bullish small-cap bias. If below, default all names to neutral or bearish — small-caps are high-beta and underperform when the Russell is weak."
+  },
+  "bias_criteria_note": "bearish criteria = exit/avoid signal on longs ONLY. Not short entries. Small-caps are higher beta and more gap-prone than large-caps — demand cleaner setups and tighter risk.",
+  "bias_criteria": {
+    "bullish": [
+      "Stock is printing higher highs and higher lows on the daily",
+      "Trendlines with Breaks [LuxAlgo] shows a recent bullish B (breakout) signal",
+      "Breakout candle volume is significantly higher than the prior 5-10 day average",
+      "Price is approaching or at the upper Nadaraya-Watson Envelope band but NOT extended outside it",
+      "StockTwits sentiment is supportive (>=50 bull %) and not crowded (<80)"
+    ],
+    "bearish": [
+      "Stock is printing lower highs and lower lows on the daily",
+      "Trendlines with Breaks [LuxAlgo] shows a recent bearish breakdown signal",
+      "Price has broken back below a prior breakout trendline on volume",
+      "Price is extended outside the lower Nadaraya-Watson Envelope band"
+    ],
+    "neutral": [
+      "Stock is consolidating — no clear higher highs/lows pattern",
+      "No breakout signal from Trendlines with Breaks [LuxAlgo]",
+      "Price is chopping inside the Nadaraya-Watson Envelope bands",
+      "Volume is average or below average — no clear catalyst present"
+    ]
+  },
+  "entry_criteria": {
+    "long": [
+      "Stock consolidating near local highs (flag, pennant, or horizontal resistance)",
+      "Trendlines with Breaks [LuxAlgo] prints bullish B signal above upper trendline",
+      "Breakout candle volume significantly above 5-10 day average",
+      "Price breaking toward upper Nadaraya-Watson Envelope band but NOT fully outside it",
+      "Adequate liquidity — avoid names where a normal position would move the price"
+    ]
+  },
+  "exit_criteria": {
+    "stop_loss": "Below breakout candle low or nearest prior swing low. Exit immediately if price closes back below the broken trendline (failed breakout). Small-caps gap — size for the wider stop.",
+    "take_profit_1": "Scale out 1/2 to 1/3 of position when price touches or pierces upper Nadaraya-Watson Envelope band — signals short-term exhaustion.",
+    "take_profit_2": "Trail remaining position — exit if price closes below previous day's low, or use 9 EMA as trailing stop after scaling out."
+  },
+  "risk_rules": [
+    "Minimum R:R of 1:2 before entering any trade",
+    "Small-caps are high-beta — reduce position size vs large-cap momentum trades",
+    "Avoid illiquid names and sub-$5 prices where slippage and gaps dominate",
+    "No bullish entries if IWM is below its 50-day SMA",
+    "Exit immediately on a failed breakout — price closes back below the broken trendline",
+    "Maximum 3 open momentum stock positions at once"
+  ],
+  "asset_notes": "Small-cap (Russell 2000) momentum names sourced from the StockTwits Top-momentum watchlist, ranked by weekly performance (WTD). Benchmarked to IWM, not SPY — small-cap leadership requires the Russell itself to be in an uptrend. The 'stocktwits' field (sentiment bull %, wtd, watchers) is a RETAIL-ATTENTION context layer; in small-caps high attention + high sentiment can signal a crowded pump, so weight crowding caution more heavily here. Many of these are low-priced and gap-prone — liquidity and risk sizing matter more than in the large-cap book.",
+  "watchlist_generated": "2026-06-21T19:17:30.514Z"
+}

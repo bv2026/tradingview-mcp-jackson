@@ -329,16 +329,29 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
   const timeframe = strategy.default_timeframe || 'D';
 
   let symbols, screenerResult;
+  // Optional per-symbol metadata (e.g. StockTwits sentiment/WTD/watchers) carried
+  // from an object-form watchlist into the scan output. Keyed by symbol string.
+  const symbolMeta = {};
 
   if (!screenerName) {
-    // Static watchlist path — no live screener
+    // Static watchlist path — no live screener.
+    // watchlist entries may be plain strings ("AMD") or objects with metadata
+    // ({ symbol, wtd, sentiment, watchers }). Objects let StockTwits-style signals
+    // flow through to the brief without affecting the scan itself.
     const staticList = strategy.watchlist;
     if (!staticList || staticList.length === 0) {
       throw new Error(
         `No screener configured for "${instrument}" and no watchlist found in strategy-${instrument}.json.`
       );
     }
-    symbols = staticList.slice(0, maxSymbols).map(s => s);
+    symbols = staticList.slice(0, maxSymbols).map(entry => {
+      if (entry && typeof entry === 'object') {
+        const { symbol, ...meta } = entry;
+        if (symbol && Object.keys(meta).length) symbolMeta[symbol] = meta;
+        return symbol;
+      }
+      return entry;
+    });
     screenerResult = { name: `static:${instrument}`, total_in_screener: symbols.length };
   } else {
     // Live screener path
@@ -398,6 +411,14 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
     }
   }
 
+  // Attach any per-symbol watchlist metadata (StockTwits sentiment/WTD/watchers)
+  // so the brief can weigh it alongside the live TWB/NW readings.
+  if (Object.keys(symbolMeta).length) {
+    for (const r of results) {
+      if (r.symbol && symbolMeta[r.symbol]) r.stocktwits = symbolMeta[r.symbol];
+    }
+  }
+
   const freshCount = results.filter(r => r.fresh).length;
   const staleCount = results.length - freshCount;
 
@@ -448,6 +469,9 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
       `TWB Oscillator values (Histogram, Signal, Trendline Break) come from the 'indicators' field.`,
       `Nadaraya-Watson Envelope signals come from the 'nw_envelope_signals' field. Labels are ▲ (price crossed above a band) or ▼ (price crossed below a band) at the price level where it occurred. The MOST RECENT label (first in the array) tells you current band position relative to price.`,
       `DATA QUALITY: each symbol has a 'fresh' flag. Any symbol with fresh:false (or stale:true / an 'error') was NOT confirmed live on the chart — its readings may be the previously-loaded symbol's data. Mark such symbols SKIP (re-scan) and do not base a setup on them. Check scan_quality for the overall fresh/stale counts.`,
+      Object.keys(symbolMeta).length
+        ? `STOCKTWITS SIGNAL: symbols carry a 'stocktwits' field with retail sentiment (bull %), weekly performance (wtd), and watcher count from the source watchlist. Use sentiment as a CONTEXT layer on top of the technicals, not a standalone signal: sentiment ≥ ~50 with a confirming TWB/NW setup = retail conviction behind the move (supportive); sentiment ≥ ~80 = crowded/late — flag caution even on a clean technical; sentiment < ~40 on a mover = weak retail support — require a stronger technical to act. High watcher counts amplify both effects. Note the sentiment read in each symbol's WATCH field.`
+        : null,
       instrument === 'crypto_perps'
         ? `PERPS BENCHMARK: The FIRST symbol in symbols_scanned is always BTC perp. Read its TWB Histogram. If POSITIVE → market in uptrend → scan all alts for LONG setups using bullish_long criteria. If NEGATIVE → market in downtrend → scan all alts for SHORT setups using bearish_short criteria. Do NOT default to "no trades" on negative BTC TWB — negative means SHORT side is in play. Commodity perps (SILVER, GOLD) use their own TWB signal independently of BTC. Output top 3 LONG candidates OR top 3 SHORT candidates depending on BTC TWB direction.`
         : instrument === 'futures'
@@ -465,7 +489,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
       `End with a one-sentence overall market read.`,
       `Be direct. No preamble.`,
       `After writing your analysis, call session_save with your complete output text and instrument_type="${instrument}". Do not wait for the user to ask.`,
-    ].join(' '),
+    ].filter(Boolean).join(' '),
   };
 
   // Auto-save raw scan data with date + instrument stamp

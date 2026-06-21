@@ -1,0 +1,299 @@
+{
+  "instrument_type": "stwits_lg",
+  "screener_name": null,
+  "watchlist_source": "C:\\work\\StockTwits\\Reports\\Stocktwits-Top-25-Week-24.md — Stocktwits Top 25 Momentum — Week of June 19, 2026 — rows with an S&P 500 or Nasdaq 100 rank",
+  "max_symbols": 20,
+  "default_timeframe": "D",
+  "required_indicators": [
+    "Trendlines with Breaks Oscillator [LuxAlgo]",
+    "Nadaraya-Watson Envelope [LuxAlgo]",
+    "Volume"
+  ],
+  "watchlist": [
+    {
+      "symbol": "WDC",
+      "wtd": 32.6,
+      "sentiment": 43,
+      "watchers": "19.1k"
+    },
+    {
+      "symbol": "MRNA",
+      "wtd": 28.2,
+      "sentiment": 85,
+      "watchers": "110.9k"
+    },
+    {
+      "symbol": "MU",
+      "wtd": 15.5,
+      "sentiment": 46,
+      "watchers": "201.2k"
+    },
+    {
+      "symbol": "Q",
+      "wtd": 12.6,
+      "sentiment": 44,
+      "watchers": "880"
+    },
+    {
+      "symbol": "INTC",
+      "wtd": 10.6,
+      "sentiment": 56,
+      "watchers": "203.3k"
+    },
+    {
+      "symbol": "SNDK",
+      "wtd": 10.3,
+      "sentiment": 50,
+      "watchers": "24.0k"
+    },
+    {
+      "symbol": "VRT",
+      "wtd": 10,
+      "sentiment": 39,
+      "watchers": "17.8k"
+    },
+    {
+      "symbol": "AMAT",
+      "wtd": 8.8,
+      "sentiment": 71,
+      "watchers": "33.5k"
+    },
+    {
+      "symbol": "GLW",
+      "wtd": 8.2,
+      "sentiment": 38,
+      "watchers": "13.6k"
+    },
+    {
+      "symbol": "ASML",
+      "wtd": 8,
+      "sentiment": 30,
+      "watchers": "30.5k"
+    },
+    {
+      "symbol": "MPWR",
+      "wtd": 8,
+      "sentiment": 32,
+      "watchers": "2.4k"
+    },
+    {
+      "symbol": "MRVL",
+      "wtd": 7.8,
+      "sentiment": 47,
+      "watchers": "47.4k"
+    },
+    {
+      "symbol": "TXN",
+      "wtd": 6.9,
+      "sentiment": 40,
+      "watchers": "13.0k"
+    },
+    {
+      "symbol": "TER",
+      "wtd": 6.2,
+      "sentiment": 57,
+      "watchers": "7.7k"
+    },
+    {
+      "symbol": "QCOM",
+      "wtd": 6.2,
+      "sentiment": 36,
+      "watchers": "68.0k"
+    },
+    {
+      "symbol": "LRCX",
+      "wtd": 6.1,
+      "sentiment": 51,
+      "watchers": "20.6k"
+    },
+    {
+      "symbol": "GNRC",
+      "wtd": 6.1,
+      "sentiment": 45,
+      "watchers": "5.6k"
+    },
+    {
+      "symbol": "MCHP",
+      "wtd": 6,
+      "sentiment": 45,
+      "watchers": "5.3k"
+    },
+    {
+      "symbol": "NXPI",
+      "wtd": 5.1,
+      "sentiment": 30,
+      "watchers": "11.3k"
+    },
+    {
+      "symbol": "AMD",
+      "wtd": 5,
+      "sentiment": 35,
+      "watchers": "560.8k"
+    },
+    {
+      "symbol": "ARM",
+      "wtd": 4.9,
+      "sentiment": 39,
+      "watchers": "32.8k"
+    },
+    {
+      "symbol": "FIX",
+      "wtd": 4.8,
+      "sentiment": 52,
+      "watchers": "1.9k"
+    },
+    {
+      "symbol": "ADI",
+      "wtd": 4.8,
+      "sentiment": 47,
+      "watchers": "4.7k"
+    },
+    {
+      "symbol": "ON",
+      "wtd": 4.1,
+      "sentiment": 51,
+      "watchers": "12.3k"
+    },
+    {
+      "symbol": "STX",
+      "wtd": 4,
+      "sentiment": 74,
+      "watchers": "12.7k"
+    },
+    {
+      "symbol": "KEYS",
+      "wtd": 3.7,
+      "sentiment": 44,
+      "watchers": "3.2k"
+    },
+    {
+      "symbol": "PANW",
+      "wtd": 2,
+      "sentiment": 36,
+      "watchers": "38.5k"
+    },
+    {
+      "symbol": "CSCO",
+      "wtd": 1.9,
+      "sentiment": 40,
+      "watchers": "61.2k"
+    },
+    {
+      "symbol": "COHR",
+      "wtd": 1.2,
+      "sentiment": 38,
+      "watchers": "8.6k"
+    },
+    {
+      "symbol": "ODFL",
+      "wtd": 1.2,
+      "sentiment": 33,
+      "watchers": "1.8k"
+    },
+    {
+      "symbol": "FTNT",
+      "wtd": 0.4,
+      "sentiment": 40,
+      "watchers": "12.4k"
+    },
+    {
+      "symbol": "CRWD",
+      "wtd": 0.3,
+      "sentiment": 25,
+      "watchers": "61.2k"
+    },
+    {
+      "symbol": "ROST",
+      "wtd": -0.2,
+      "sentiment": 40,
+      "watchers": "4.6k"
+    },
+    {
+      "symbol": "DVA",
+      "wtd": -0.4,
+      "sentiment": 40,
+      "watchers": "2.3k"
+    },
+    {
+      "symbol": "HPE",
+      "wtd": -1.6,
+      "sentiment": 38,
+      "watchers": "12.2k"
+    },
+    {
+      "symbol": "DDOG",
+      "wtd": -2.1,
+      "sentiment": 35,
+      "watchers": "25.4k"
+    },
+    {
+      "symbol": "BKR",
+      "wtd": -2.8,
+      "sentiment": 34,
+      "watchers": "4.3k"
+    },
+    {
+      "symbol": "CIEN",
+      "wtd": -4.8,
+      "sentiment": 38,
+      "watchers": "6.6k"
+    },
+    {
+      "symbol": "LITE",
+      "wtd": -7.8,
+      "sentiment": 29,
+      "watchers": "13.3k"
+    }
+  ],
+  "market_context": {
+    "benchmark": "SPY",
+    "benchmark_alt": "QQQ",
+    "benchmark_ma_type": "SMA",
+    "benchmark_ma_period": 50,
+    "benchmark_filter": "Benchmark (SPY or QQQ) must be above its 50-day SMA for any bullish bias. If below, default all names to neutral or bearish."
+  },
+  "bias_criteria_note": "bearish criteria = exit/avoid signal on longs ONLY. Not short entries.",
+  "bias_criteria": {
+    "bullish": [
+      "Stock is printing higher highs and higher lows on the daily",
+      "Trendlines with Breaks [LuxAlgo] shows a recent bullish B (breakout) signal",
+      "Breakout candle volume is significantly higher than the prior 5-10 day average",
+      "Price is approaching or at the upper Nadaraya-Watson Envelope band but NOT extended outside it",
+      "StockTwits sentiment is supportive (>=50 bull %) and not crowded (<80)"
+    ],
+    "bearish": [
+      "Stock is printing lower highs and lower lows on the daily",
+      "Trendlines with Breaks [LuxAlgo] shows a recent bearish breakdown signal",
+      "Price has broken back below a prior breakout trendline on volume",
+      "Price is extended outside the lower Nadaraya-Watson Envelope band"
+    ],
+    "neutral": [
+      "Stock is consolidating — no clear higher highs/lows pattern",
+      "No breakout signal from Trendlines with Breaks [LuxAlgo]",
+      "Price is chopping inside the Nadaraya-Watson Envelope bands",
+      "Volume is average or below average — no clear catalyst present"
+    ]
+  },
+  "entry_criteria": {
+    "long": [
+      "Stock consolidating near local highs (flag, pennant, or horizontal resistance)",
+      "Trendlines with Breaks [LuxAlgo] prints bullish B signal above upper trendline",
+      "Breakout candle volume significantly above 5-10 day average",
+      "Price breaking toward upper Nadaraya-Watson Envelope band but NOT fully outside it"
+    ]
+  },
+  "exit_criteria": {
+    "stop_loss": "Below breakout candle low or nearest prior swing low. Exit immediately if price closes back below the broken trendline (failed breakout).",
+    "take_profit_1": "Scale out 1/2 to 1/3 of position when price touches or pierces upper Nadaraya-Watson Envelope band — signals short-term exhaustion.",
+    "take_profit_2": "Trail remaining position — exit if price closes below previous day's low, or use 9 EMA as trailing stop after scaling out."
+  },
+  "risk_rules": [
+    "Minimum R:R of 1:2 before entering any trade",
+    "Stock must be capable of a 5-10% move — avoid low-volatility names",
+    "No bullish entries if SPY or QQQ is below its 50-day SMA",
+    "Exit immediately on a failed breakout — price closes back below the broken trendline",
+    "Maximum 3 open momentum stock positions at once"
+  ],
+  "asset_notes": "Large-cap (S&P 500 / Nasdaq 100) momentum names sourced from the StockTwits Top-momentum watchlist, ranked by weekly performance (WTD). The 'stocktwits' field on each symbol (sentiment bull %, wtd, watchers) is a RETAIL-ATTENTION context layer — confirming when sentiment is supportive, a crowding caution when extreme (>=80), and a weak-support flag when low (<40). Technicals (TWB + NW + volume) remain the primary signal; sentiment modulates conviction only.",
+  "watchlist_generated": "2026-06-21T19:17:30.513Z"
+}

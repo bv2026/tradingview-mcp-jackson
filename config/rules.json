@@ -6,7 +6,9 @@
     "crypto_perps": { "chart_id": "6y8jPo4Y", "layout_name": "MY-PERPS" },
     "futures":      { "chart_id": "PtVmcfrM", "layout_name": "MY-FUTURES" },
     "ark":          { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
-    "etf":          { "chart_id": "8UitTI02", "layout_name": "MY-STKS" }
+    "etf":          { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
+    "stwits_lg":    { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
+    "stwits_sm":    { "chart_id": "8UitTI02", "layout_name": "MY-STKS" }
   },
 
   "screener_sources": {
@@ -16,7 +18,9 @@
     "ark":          "MOMENTUM-ARK",
     "indices":      "MOMENTUM-INDICES",
     "crypto":       "MOMENTUM-CRYPTO",
-    "crypto_perps": "MOMENTUM-PERPS"
+    "crypto_perps": "MOMENTUM-PERPS",
+    "stwits_lg":    null,
+    "stwits_sm":    null
   },
 
   "risk_rules": [
