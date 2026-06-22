@@ -50,6 +50,14 @@ node scripts/build-stwits-watchlist.mjs   # rebuild next week's StockTwits watch
 | In `all` run? | ✅ Yes | ❌ No — run explicitly |
 | Extra signal | — | Retail sentiment / WTD / watchers per symbol |
 
+### StockTwits recommended cadence
+The StockTwits watchlists refresh **weekly** (Friday-close data), so the daily run is *monitoring a fixed candidate set for entry triggers*, not discovering new names.
+
+- **Saturday:** `node scripts/build-stwits-watchlist.mjs` — regenerates both lists from the newest report.
+- **Monday:** `morning brief stwits_lg` and `morning brief stwits_sm` — set the week's playbook.
+- **Mid-week (Wed):** re-run both to catch triggers that fired during the week.
+- By Thu/Fri the weekly data is stale vs price — value tails off. Use the live `morning brief stocks` (core) for fresh mid-week discovery the frozen list can't provide.
+
 ---
 
 ## ⚙️ When a restart is needed
