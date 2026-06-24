@@ -8,14 +8,13 @@ Quick reference for the daily/weekly trading workflow. Prompts are what you type
 
 | Goal | Prompt |
 |---|---|
-| **Run all 6 core briefs + daily summary** | `morning brief all` |
+| **Run all 8 briefs + daily summary** | `morning brief all` |
 | Single core brief | `morning brief stocks` (or `etf`, `ark`, `crypto`, `crypto_perps`, `futures`) |
-| StockTwits large-cap book (SPX+NDX) | `morning brief stwits_lg` |
-| StockTwits small-cap book (Russell) | `morning brief stwits_sm` |
+| Single StockTwits brief | `morning brief stwits_lg` (or `stwits_sm`) |
 | Read back a saved brief | `get the stocks brief` (or any type) |
 | Read today's daily summary | `get the daily summary` |
 
-> `all` covers the **6 core** instruments only (stocks, etf, ark, crypto, crypto_perps, futures) and auto-writes a daily-summary. The two **StockTwits** books are separate — run them explicitly.
+> `all` covers **all 8** instruments (stocks, etf, ark, crypto, crypto_perps, futures, stwits_lg, stwits_sm) and auto-writes a daily-summary.
 
 **Reports land in:** `reports/{YYYY-Mon-DD}/{type}.md` + `daily-summary.md`
 
@@ -47,7 +46,7 @@ node scripts/build-stwits-watchlist.mjs   # rebuild next week's StockTwits watch
 | Source | Live TradingView MOMENTUM screeners | Weekly StockTwits Top-momentum report |
 | Refresh | Live, every run | Weekly (Saturday script) |
 | Types | stocks, etf, ark, crypto, crypto_perps, futures | stwits_lg (SPX+NDX), stwits_sm (Russell) |
-| In `all` run? | ✅ Yes | ❌ No — run explicitly |
+| In `all` run? | ✅ Yes | ✅ Yes |
 | Extra signal | — | Retail sentiment / WTD / watchers per symbol |
 
 ### StockTwits recommended cadence
