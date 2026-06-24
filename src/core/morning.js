@@ -280,7 +280,7 @@ async function scanSymbol(symbol, timeframe, scanWaitMs, opts = {}) {
   return reading;
 }
 
-const ALL_INSTRUMENTS = ['stocks', 'etf', 'ark', 'crypto', 'crypto_perps', 'futures'];
+const ALL_INSTRUMENTS = ['stocks', 'etf', 'ark', 'crypto', 'crypto_perps', 'futures', 'stwits_lg', 'stwits_sm'];
 
 export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = {}) {
   const instrument = instrument_type || 'stocks';

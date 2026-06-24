@@ -10,7 +10,7 @@ export function registerMorningTools(server) {
       instrument_type: z
         .enum(['stocks', 'ark', 'etf', 'futures', 'indices', 'crypto', 'crypto_perps', 'stwits_lg', 'stwits_sm', 'all'])
         .default('stocks')
-        .describe('Instrument type to scan. Use "all" to run all 6 briefs (stocks, etf, ark, crypto, crypto_perps, futures) sequentially and auto-save each report plus a daily-summary.md. stwits_lg / stwits_sm = StockTwits top-momentum watchlists (SPX+NDX large-cap / Russell small-cap) sourced from the static watchlist in their strategy files. Default: stocks.'),
+        .describe('Instrument type to scan. Use "all" to run all 8 briefs (stocks, etf, ark, crypto, crypto_perps, futures, stwits_lg, stwits_sm) sequentially and auto-save each report plus a daily-summary.md. stwits_lg / stwits_sm = StockTwits top-momentum watchlists (SPX+NDX large-cap / Russell small-cap) sourced from the static watchlist in their strategy files. Default: stocks.'),
       rules_path: z
         .string()
         .optional()
