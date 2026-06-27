@@ -1,33 +1,166 @@
 {
   "instrument_type": "r2k",
-  "watchlist_source": "CSV/momentum-russell2000-2026-06-26.csv — IN symbols only (25 names)",
+  "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\momentum-russell2000-2026-06-26.csv — IN symbols",
   "default_timeframe": "D",
   "watchlist": [
-    { "symbol": "AGL",  "wtd": 4.8,   "sentiment": 40, "watchers": "995" },
-    { "symbol": "RXT",  "wtd": -17.2, "sentiment": 34, "watchers": "10.2k" },
-    { "symbol": "MXL",  "wtd": 8.8,   "sentiment": 40, "watchers": "3.2k" },
-    { "symbol": "ICHR", "wtd": -4.7,  "sentiment": 61, "watchers": "3.5k" },
-    { "symbol": "UCTT", "wtd": -2.0,  "sentiment": 40, "watchers": "3.7k" },
-    { "symbol": "AEHR", "wtd": -20.4, "sentiment": 31, "watchers": "13.9k" },
-    { "symbol": "IBRX", "wtd": 18.3,  "sentiment": 56, "watchers": "29.2k" },
-    { "symbol": "ERAS", "wtd": 17.1,  "sentiment": 43, "watchers": "1.0k" },
-    { "symbol": "ATEX", "wtd": 20.3,  "sentiment": 38, "watchers": "335" },
-    { "symbol": "EVC",  "wtd": 22.0,  "sentiment": 45, "watchers": "1.5k" },
-    { "symbol": "AAOI", "wtd": -16.2, "sentiment": 70, "watchers": "22.3k" },
-    { "symbol": "VSH",  "wtd": -13.2, "sentiment": 46, "watchers": "1.3k" },
-    { "symbol": "BAND", "wtd": 10.7,  "sentiment": 47, "watchers": "3.1k" },
-    { "symbol": "NVCT", "wtd": 96.7,  "sentiment": 74, "watchers": null },
-    { "symbol": "TNGX", "wtd": 12.5,  "sentiment": 42, "watchers": "923" },
-    { "symbol": "DFTX", "wtd": 83.6,  "sentiment": 85, "watchers": null },
-    { "symbol": "VPG",  "wtd": -9.6,  "sentiment": 39, "watchers": "832" },
-    { "symbol": "SLS",  "wtd": 53.9,  "sentiment": 75, "watchers": null },
-    { "symbol": "ELVN", "wtd": 11.0,  "sentiment": 52, "watchers": null },
-    { "symbol": "ATOM", "wtd": -21.3, "sentiment": 33, "watchers": "11.3k" },
-    { "symbol": "PENG", "wtd": -7.3,  "sentiment": 76, "watchers": "2.6k" },
-    { "symbol": "TWST", "wtd": 14.0,  "sentiment": 80, "watchers": null },
-    { "symbol": "BLZE", "wtd": 77.8,  "sentiment": 76, "watchers": null },
-    { "symbol": "ABSI", "wtd": 47.0,  "sentiment": 79, "watchers": null },
-    { "symbol": "ORKA", "wtd": 25.2,  "sentiment": 75, "watchers": null }
+    {
+      "symbol": "AGL",
+      "wtd": 4.8,
+      "sentiment": 40,
+      "watchers": "995"
+    },
+    {
+      "symbol": "RXT",
+      "wtd": -17.2,
+      "sentiment": 34,
+      "watchers": "10.2k",
+      "chatter": "Oversold"
+    },
+    {
+      "symbol": "MXL",
+      "wtd": 8.8,
+      "sentiment": 40,
+      "watchers": "3.2k"
+    },
+    {
+      "symbol": "ICHR",
+      "wtd": -4.7,
+      "sentiment": 61,
+      "watchers": "3.5k"
+    },
+    {
+      "symbol": "UCTT",
+      "wtd": -2,
+      "sentiment": 40,
+      "watchers": "3.7k"
+    },
+    {
+      "symbol": "AEHR",
+      "wtd": -20.4,
+      "sentiment": 31,
+      "watchers": "13.9k",
+      "chatter": "Oversold"
+    },
+    {
+      "symbol": "IBRX",
+      "wtd": 18.3,
+      "sentiment": 56,
+      "watchers": "29.2k"
+    },
+    {
+      "symbol": "ERAS",
+      "wtd": 17.1,
+      "sentiment": 43,
+      "watchers": "1.0k"
+    },
+    {
+      "symbol": "ATEX",
+      "wtd": 20.3,
+      "sentiment": 38,
+      "watchers": "335"
+    },
+    {
+      "symbol": "EVC",
+      "wtd": 22,
+      "sentiment": 45,
+      "watchers": "1.5k"
+    },
+    {
+      "symbol": "AAOI",
+      "wtd": -16.2,
+      "sentiment": 70,
+      "watchers": "22.3k"
+    },
+    {
+      "symbol": "VSH",
+      "wtd": -13.2,
+      "sentiment": 46,
+      "watchers": "1.3k"
+    },
+    {
+      "symbol": "BAND",
+      "wtd": 10.7,
+      "sentiment": 47,
+      "watchers": "3.1k"
+    },
+    {
+      "symbol": "NVCT",
+      "wtd": 96.7,
+      "sentiment": 74,
+      "watchers": null,
+      "chatter": "Overheated"
+    },
+    {
+      "symbol": "TNGX",
+      "wtd": 12.5,
+      "sentiment": 42,
+      "watchers": "923"
+    },
+    {
+      "symbol": "DFTX",
+      "wtd": 83.6,
+      "sentiment": 85,
+      "watchers": null,
+      "chatter": "Overheated"
+    },
+    {
+      "symbol": "VPG",
+      "wtd": -9.6,
+      "sentiment": 39,
+      "watchers": "832"
+    },
+    {
+      "symbol": "SLS",
+      "wtd": 53.9,
+      "sentiment": 75,
+      "watchers": null
+    },
+    {
+      "symbol": "ELVN",
+      "wtd": 11,
+      "sentiment": 52,
+      "watchers": null
+    },
+    {
+      "symbol": "ATOM",
+      "wtd": -21.3,
+      "sentiment": 33,
+      "watchers": "11.3k",
+      "chatter": "Oversold"
+    },
+    {
+      "symbol": "PENG",
+      "wtd": -7.3,
+      "sentiment": 76,
+      "watchers": "2.6k"
+    },
+    {
+      "symbol": "TWST",
+      "wtd": 14,
+      "sentiment": 80,
+      "watchers": null
+    },
+    {
+      "symbol": "BLZE",
+      "wtd": 77.8,
+      "sentiment": 76,
+      "watchers": null,
+      "chatter": "Overheated"
+    },
+    {
+      "symbol": "ABSI",
+      "wtd": 47,
+      "sentiment": 79,
+      "watchers": null,
+      "chatter": "Overheated"
+    },
+    {
+      "symbol": "ORKA",
+      "wtd": 25.2,
+      "sentiment": 75,
+      "watchers": null,
+      "chatter": "Overheated"
+    }
   ],
   "market_context": {
     "benchmark": "IWM",

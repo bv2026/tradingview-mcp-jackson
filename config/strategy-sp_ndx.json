@@ -1,48 +1,254 @@
 {
   "instrument_type": "sp_ndx",
-  "watchlist_source": "CSV/momentum-sp500-2026-06-26.csv + CSV/momentum-nasdaq100-2026-06-26.csv — IN symbols deduplicated, S&P rank priority",
+  "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\momentum-sp500-2026-06-26.csv + C:\\work\\tradingview-mcp-jackson\\CSV\\momentum-nasdaq100-2026-06-26.csv — IN symbols, S&P rank priority",
   "default_timeframe": "D",
   "watchlist": [
-    { "symbol": "SNDK",  "wtd": -4.3,  "sentiment": 67, "watchers": "25.5k" },
-    { "symbol": "MU",    "wtd": -0.1,  "sentiment": 83, "watchers": "204.8k" },
-    { "symbol": "INTC",  "wtd": -4.2,  "sentiment": 49, "watchers": "203.8k" },
-    { "symbol": "WDC",   "wtd": -21.4, "sentiment": 67, "watchers": "19.6k" },
-    { "symbol": "STX",   "wtd": -15.9, "sentiment": 75, "watchers": "12.9k" },
-    { "symbol": "DELL",  "wtd": -2.4,  "sentiment": 36, "watchers": "28.1k" },
-    { "symbol": "GLW",   "wtd": 13.4,  "sentiment": 78, "watchers": "14.0k" },
-    { "symbol": "AMAT",  "wtd": 1.6,   "sentiment": 66, "watchers": "33.8k" },
-    { "symbol": "AMD",   "wtd": -2.9,  "sentiment": 43, "watchers": "560.2k" },
-    { "symbol": "MRNA",  "wtd": 5.2,   "sentiment": 45, "watchers": "110.8k" },
-    { "symbol": "TER",   "wtd": -0.2,  "sentiment": 68, "watchers": "7.7k" },
-    { "symbol": "LITE",  "wtd": -3.9,  "sentiment": 38, "watchers": "13.4k" },
-    { "symbol": "LRCX",  "wtd": -2.6,  "sentiment": 79, "watchers": "20.8k" },
-    { "symbol": "COHR",  "wtd": -2.3,  "sentiment": 51, "watchers": "8.8k" },
-    { "symbol": "CIEN",  "wtd": 12.0,  "sentiment": 43, "watchers": "6.7k" },
-    { "symbol": "GNRC",  "wtd": -0.2,  "sentiment": 48, "watchers": "5.6k" },
-    { "symbol": "FIX",   "wtd": -5.8,  "sentiment": 41, "watchers": "2.0k" },
-    { "symbol": "Q",     "wtd": -6.4,  "sentiment": 59, "watchers": "917" },
-    { "symbol": "DVA",   "wtd": 4.4,   "sentiment": 30, "watchers": "2.3k" },
-    { "symbol": "FTNT",  "wtd": 4.6,   "sentiment": 56, "watchers": "12.5k" },
-    { "symbol": "VRT",   "wtd": -8.7,  "sentiment": 58, "watchers": "18.1k" },
-    { "symbol": "HPE",   "wtd": -7.8,  "sentiment": 36, "watchers": "12.3k" },
-    { "symbol": "DDOG",  "wtd": 7.5,   "sentiment": 27, "watchers": "25.4k" },
-    { "symbol": "CAT",   "wtd": 1.2,   "sentiment": 59, "watchers": "34.9k" },
-    { "symbol": "ON",    "wtd": -25.5, "sentiment": 51, "watchers": "12.7k" },
-    { "symbol": "MRVL",  "wtd": -14.1, "sentiment": 28, "watchers": "47.4k" },
-    { "symbol": "ARM",   "wtd": -23.9, "sentiment": 39, "watchers": "32.8k" },
-    { "symbol": "ASML",  "wtd": -7.0,  "sentiment": 63, "watchers": "30.5k" },
-    { "symbol": "PANW",  "wtd": 5.7,   "sentiment": 38, "watchers": "38.5k" },
-    { "symbol": "TXN",   "wtd": -11.6, "sentiment": 62, "watchers": "13.0k" },
-    { "symbol": "CRWD",  "wtd": 2.4,   "sentiment": 32, "watchers": "61.2k" },
-    { "symbol": "CSCO",  "wtd": -4.8,  "sentiment": 40, "watchers": "61.2k" },
-    { "symbol": "MPWR",  "wtd": -16.0, "sentiment": 41, "watchers": "2.4k" },
-    { "symbol": "ADI",   "wtd": -10.9, "sentiment": 53, "watchers": "4.7k" },
-    { "symbol": "ODFL",  "wtd": -1.0,  "sentiment": 44, "watchers": "1.8k" },
-    { "symbol": "MCHP",  "wtd": -11.9, "sentiment": 28, "watchers": "5.3k" },
-    { "symbol": "CSX",   "wtd": 4.4,   "sentiment": 43, "watchers": "6.6k" },
-    { "symbol": "NXPI",  "wtd": -11.6, "sentiment": 47, "watchers": "11.3k" },
-    { "symbol": "MNST",  "wtd": 5.5,   "sentiment": null, "watchers": null },
-    { "symbol": "SBUX",  "wtd": 3.9,   "sentiment": null, "watchers": null }
+    {
+      "symbol": "SNDK",
+      "wtd": -4.3,
+      "sentiment": 67,
+      "watchers": "25.5k"
+    },
+    {
+      "symbol": "MU",
+      "wtd": -0.1,
+      "sentiment": 83,
+      "watchers": "204.8k"
+    },
+    {
+      "symbol": "INTC",
+      "wtd": -4.2,
+      "sentiment": 49,
+      "watchers": "203.8k"
+    },
+    {
+      "symbol": "WDC",
+      "wtd": -21.4,
+      "sentiment": 67,
+      "watchers": "19.6k"
+    },
+    {
+      "symbol": "STX",
+      "wtd": -15.9,
+      "sentiment": 75,
+      "watchers": "12.9k"
+    },
+    {
+      "symbol": "DELL",
+      "wtd": -2.4,
+      "sentiment": 36,
+      "watchers": "28.1k",
+      "chatter": "Quietest"
+    },
+    {
+      "symbol": "GLW",
+      "wtd": 13.4,
+      "sentiment": 78,
+      "watchers": "14.0k"
+    },
+    {
+      "symbol": "AMAT",
+      "wtd": 1.6,
+      "sentiment": 66,
+      "watchers": "33.8k"
+    },
+    {
+      "symbol": "AMD",
+      "wtd": -2.9,
+      "sentiment": 43,
+      "watchers": "560.2k"
+    },
+    {
+      "symbol": "MRNA",
+      "wtd": 5.2,
+      "sentiment": 45,
+      "watchers": "110.8k"
+    },
+    {
+      "symbol": "TER",
+      "wtd": -0.2,
+      "sentiment": 68,
+      "watchers": "7.7k"
+    },
+    {
+      "symbol": "LITE",
+      "wtd": -3.9,
+      "sentiment": 38,
+      "watchers": "13.4k"
+    },
+    {
+      "symbol": "LRCX",
+      "wtd": -2.6,
+      "sentiment": 79,
+      "watchers": "20.8k"
+    },
+    {
+      "symbol": "COHR",
+      "wtd": -2.3,
+      "sentiment": 51,
+      "watchers": "8.8k"
+    },
+    {
+      "symbol": "CIEN",
+      "wtd": 12,
+      "sentiment": 43,
+      "watchers": "6.7k"
+    },
+    {
+      "symbol": "GNRC",
+      "wtd": -0.2,
+      "sentiment": 48,
+      "watchers": "5.6k"
+    },
+    {
+      "symbol": "FIX",
+      "wtd": -5.8,
+      "sentiment": 41,
+      "watchers": "2.0k"
+    },
+    {
+      "symbol": "Q",
+      "wtd": -6.4,
+      "sentiment": 59,
+      "watchers": "917"
+    },
+    {
+      "symbol": "DVA",
+      "wtd": 4.4,
+      "sentiment": 30,
+      "watchers": "2.3k"
+    },
+    {
+      "symbol": "FTNT",
+      "wtd": 4.6,
+      "sentiment": 56,
+      "watchers": "12.5k"
+    },
+    {
+      "symbol": "VRT",
+      "wtd": -8.7,
+      "sentiment": 58,
+      "watchers": "18.1k"
+    },
+    {
+      "symbol": "HPE",
+      "wtd": -7.8,
+      "sentiment": 36,
+      "watchers": "12.3k",
+      "chatter": "Quietest"
+    },
+    {
+      "symbol": "DDOG",
+      "wtd": 7.5,
+      "sentiment": 27,
+      "watchers": "25.4k"
+    },
+    {
+      "symbol": "CAT",
+      "wtd": 1.2,
+      "sentiment": 59,
+      "watchers": "34.9k"
+    },
+    {
+      "symbol": "ON",
+      "wtd": -25.5,
+      "sentiment": 51,
+      "watchers": "12.7k"
+    },
+    {
+      "symbol": "MRVL",
+      "wtd": -14.1,
+      "sentiment": 28,
+      "watchers": "47.4k",
+      "chatter": "Oversold"
+    },
+    {
+      "symbol": "ARM",
+      "wtd": -23.9,
+      "sentiment": 39,
+      "watchers": "32.8k"
+    },
+    {
+      "symbol": "ASML",
+      "wtd": -7,
+      "sentiment": 63,
+      "watchers": "30.5k"
+    },
+    {
+      "symbol": "PANW",
+      "wtd": 5.7,
+      "sentiment": 38,
+      "watchers": "38.5k",
+      "chatter": "Quietest"
+    },
+    {
+      "symbol": "TXN",
+      "wtd": -11.6,
+      "sentiment": 62,
+      "watchers": "13.0k"
+    },
+    {
+      "symbol": "CRWD",
+      "wtd": 2.4,
+      "sentiment": 32,
+      "watchers": "61.2k",
+      "chatter": "Quietest"
+    },
+    {
+      "symbol": "CSCO",
+      "wtd": -4.8,
+      "sentiment": 40,
+      "watchers": "61.2k"
+    },
+    {
+      "symbol": "MPWR",
+      "wtd": -16,
+      "sentiment": 41,
+      "watchers": "2.4k"
+    },
+    {
+      "symbol": "ADI",
+      "wtd": -10.9,
+      "sentiment": 53,
+      "watchers": "4.7k"
+    },
+    {
+      "symbol": "ODFL",
+      "wtd": -1,
+      "sentiment": 44,
+      "watchers": "1.8k"
+    },
+    {
+      "symbol": "MCHP",
+      "wtd": -11.9,
+      "sentiment": 28,
+      "watchers": "5.3k",
+      "chatter": "Oversold"
+    },
+    {
+      "symbol": "CSX",
+      "wtd": 4.4,
+      "sentiment": 43,
+      "watchers": "6.6k"
+    },
+    {
+      "symbol": "NXPI",
+      "wtd": -11.6,
+      "sentiment": 47,
+      "watchers": "11.3k"
+    },
+    {
+      "symbol": "MNST",
+      "wtd": 5.5,
+      "sentiment": 45,
+      "watchers": null
+    },
+    {
+      "symbol": "SBUX",
+      "wtd": 3.9,
+      "sentiment": 52,
+      "watchers": null
+    }
   ],
   "market_context": {
     "benchmark": "SPY",
