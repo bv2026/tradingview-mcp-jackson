@@ -34,6 +34,7 @@ The `morning_brief` tool's embedded instruction says to output bare pipe-delimit
 - `### Top 3 Setups` — prose or a table with Entry/Stop/TP1/R:R columns
 - `## Overall Market Read` — bullet list
 - For `instrument_type="daily_summary"`: lead with a `## Quick Reference` table (Instrument | Direction | Top 3 | Key Action), one short section per instrument, and close with a `## Cross-Market Read` table.
+- For `lux_screener_scan` briefs (`sp_ndx`, `r2k`): the scan result includes a `chatter_section` field — always include it as `## Chatter Conflicts & Confluences` after the Top 10 table and before Overall Market Read. Also include it in the daily summary's Cross-Market Read and in the weekly review's chatter callout. If `chatter_section` is empty or says "No notable…", omit the section rather than including a blank header.
 
 The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief body should start at `## {TYPE}`. See `reports/2026-Jun-13/` for reference structure.
 

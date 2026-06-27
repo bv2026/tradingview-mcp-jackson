@@ -135,12 +135,42 @@ function scoreSymbol(so, pac, osc) {
 }
 
 function buildMarkdownTable(rows) {
-  const header = '| SYMBOL | WTD | S&O RATING | SIGNAL | SQUEEZE | PAC STRUCTURE | OSC DIV | HWO | SCORE |';
-  const sep    = '|---|---|---|---|---|---|---|---|---|';
+  const header = '| SYMBOL | WTD | S&O RATING | SIGNAL | SQUEEZE | PAC STRUCTURE | OSC DIV | HWO | SCORE | CHATTER |';
+  const sep    = '|---|---|---|---|---|---|---|---|---|---|';
   const lines = rows.map(r =>
-    `| ${r.symbol} | ${r.wtd != null ? r.wtd + '%' : '—'} | ${r.so['RATING'] || '—'} | ${r.so['SIGNAL'] || '—'} | ${r.so['SQUEEZE'] || '—'} | ${r.pac['STRUCTURE'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} | ${r.osc['HWO SIGNAL'] || '—'} | ${r.score} |`
+    `| ${r.symbol} | ${r.wtd != null ? r.wtd + '%' : '—'} | ${r.so['RATING'] || '—'} | ${r.so['SIGNAL'] || '—'} | ${r.so['SQUEEZE'] || '—'} | ${r.pac['STRUCTURE'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} | ${r.osc['HWO SIGNAL'] || '—'} | ${r.score} | ${r.chatter || '—'} |`
   );
   return [header, sep, ...lines].join('\n');
+}
+
+function buildChatterSection(sorted) {
+  // Conflict = Overheated in top half, Oversold in bottom half (confirms breakdown)
+  // Opportunity = Oversold with decent score (contrarian), Quietest with high score (stealth)
+  const lines = [];
+
+  const overheatedTop = sorted.filter(r => r.chatter === 'Overheated' && r.score >= 3);
+  const oversoldStrong = sorted.filter(r => r.chatter === 'Oversold' && r.score >= 2);
+  const oversoldWeak   = sorted.filter(r => r.chatter === 'Oversold' && r.score < 0);
+  const quietestHigh   = sorted.filter(r => r.chatter === 'Quietest' && r.score >= 3);
+  const loudestTop     = sorted.filter(r => r.chatter === 'Loudest' && r.score >= 3);
+
+  if (overheatedTop.length) {
+    lines.push(`**⚠ Overheated + Strong Setup (size smaller, no gap-chasing):** ${overheatedTop.map(r => `${r.symbol} (${r.score})`).join(', ')}`);
+  }
+  if (oversoldStrong.length) {
+    lines.push(`**↩ Oversold + Intact Technicals (contrarian bounce watch):** ${oversoldStrong.map(r => `${r.symbol} (${r.score})`).join(', ')}`);
+  }
+  if (oversoldWeak.length) {
+    lines.push(`**✗ Oversold + Weak Technicals (washout confirmed, avoid):** ${oversoldWeak.map(r => `${r.symbol} (${r.score})`).join(', ')}`);
+  }
+  if (quietestHigh.length) {
+    lines.push(`**👁 Quietest + High Score (stealth setup, under radar):** ${quietestHigh.map(r => `${r.symbol} (${r.score})`).join(', ')}`);
+  }
+  if (loudestTop.length) {
+    lines.push(`**📢 Loudest + Strong Setup (crowd confirming, watch for exhaustion):** ${loudestTop.map(r => `${r.symbol} (${r.score})`).join(', ')}`);
+  }
+
+  return lines.length ? lines.join('\n') : '— No notable chatter conflicts or confluences this week.';
 }
 
 export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' } = {}) {
@@ -214,10 +244,11 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
       const pac = pacMap[sym] || {};
       const osc = oscMap[sym] || {};
       allRows[sym] = {
-        symbol: sym,
+        symbol:    sym,
         wtd:       metaMap[sym]?.wtd ?? null,
         sentiment: metaMap[sym]?.sentiment ?? null,
         watchers:  metaMap[sym]?.watchers ?? null,
+        chatter:   metaMap[sym]?.chatter ?? null,
         so,
         pac,
         osc,
@@ -233,16 +264,20 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
   const avoidList     = sorted.slice(-10).reverse();
 
   const topSection = topCandidates.length
-    ? topCandidates.map(r =>
-        `- **${r.symbol}** — Score ${r.score} | ${r.so['RATING'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} divergence | ${r.pac['STRUCTURE'] || '—'} | Squeeze ${r.so['SQUEEZE'] || '—'}`
-      ).join('\n')
+    ? topCandidates.map(r => {
+        const chatter = r.chatter ? ` | ⚠ ${r.chatter}` : '';
+        return `- **${r.symbol}** — Score ${r.score} | ${r.so['RATING'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} divergence | ${r.pac['STRUCTURE'] || '—'} | Squeeze ${r.so['SQUEEZE'] || '—'}${chatter}`;
+      }).join('\n')
     : '- No symbols scanned';
 
   const avoidSection = avoidList.length
-    ? avoidList.map(r =>
-        `- **${r.symbol}** — Score ${r.score} | ${r.so['RATING'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} divergence | ${r.pac['STRUCTURE'] || '—'}`
-      ).join('\n')
+    ? avoidList.map(r => {
+        const chatter = r.chatter ? ` | ⚠ ${r.chatter}` : '';
+        return `- **${r.symbol}** — Score ${r.score} | ${r.so['RATING'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} divergence | ${r.pac['STRUCTURE'] || '—'}${chatter}`;
+      }).join('\n')
     : '- None';
+
+  const chatterSection = buildChatterSection(sorted);
 
   return {
     success: true,
@@ -255,5 +290,6 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
     top_section: topSection,
     avoid_list: avoidList.map(r => r.symbol),
     avoid_section: avoidSection,
+    chatter_section: chatterSection,
   };
 }
