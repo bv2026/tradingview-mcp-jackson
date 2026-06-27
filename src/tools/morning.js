@@ -8,9 +8,9 @@ export function registerMorningTools(server) {
     'Run a morning scan for a specific instrument type. Reads live symbols from the TradingView screener, ensures required LuxAlgo indicators are on the chart, scans each symbol, and returns structured data with strategy rules for Claude to generate a session bias. Requires rules.json (screener sources) and strategy-{type}.json (bias criteria).',
     {
       instrument_type: z
-        .enum(['stocks', 'ark', 'etf', 'futures', 'indices', 'crypto', 'crypto_perps', 'stwits_lg', 'stwits_sm', 'all'])
+        .enum(['stocks', 'ark', 'etf', 'futures', 'indices', 'crypto', 'crypto_perps', 'sp_ndx', 'r2k', 'all'])
         .default('stocks')
-        .describe('Instrument type to scan. Use "all" to run all 8 briefs (stocks, etf, ark, crypto, crypto_perps, futures, stwits_lg, stwits_sm) sequentially and auto-save each report plus a daily-summary.md. stwits_lg / stwits_sm = StockTwits top-momentum watchlists (SPX+NDX large-cap / Russell small-cap) sourced from the static watchlist in their strategy files. Default: stocks.'),
+        .describe('Instrument type to scan. Use "all" to run all 8 briefs (stocks, etf, ark, crypto, crypto_perps, futures, sp_ndx, r2k) sequentially and auto-save each report plus a daily-summary.md. sp_ndx = weekly S&P 500 + Nasdaq 100 momentum names (rebuilt Saturdays). r2k = weekly Russell 2000 momentum names. Default: stocks.'),
       rules_path: z
         .string()
         .optional()
@@ -64,7 +64,7 @@ export function registerMorningTools(server) {
         .optional()
         .describe('Date string YYYY-MM-DD. Defaults to today.'),
       instrument_type: z
-        .enum(['stocks', 'ark', 'crypto', 'crypto_perps', 'futures', 'etf', 'indices', 'stwits_lg', 'stwits_sm'])
+        .enum(['stocks', 'ark', 'crypto', 'crypto_perps', 'futures', 'etf', 'indices', 'sp_ndx', 'r2k'])
         .optional()
         .describe('Retrieve a specific instrument brief. Omit to list all briefs saved today.'),
     },
