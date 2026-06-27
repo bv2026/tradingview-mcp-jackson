@@ -33,7 +33,7 @@ export function registerMorningTools(server) {
         .string()
         .describe("The text to save. Full analysis for normal saves; 4-line summary block for is_summary=true; all 6 summaries stacked for instrument_type='daily_summary'."),
       instrument_type: z
-        .enum(['stocks', 'ark', 'crypto', 'crypto_perps', 'futures', 'etf', 'indices', 'stwits_lg', 'stwits_sm', 'daily_summary'])
+        .enum(['stocks', 'ark', 'crypto', 'crypto_perps', 'futures', 'etf', 'indices', 'stwits_lg', 'stwits_sm', 'sp_ndx', 'r2k', 'daily_summary'])
         .default('stocks')
         .describe('Instrument type. Use "daily_summary" to save the combined all-briefs summary to daily-summary.md.'),
       is_summary: z

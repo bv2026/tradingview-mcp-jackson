@@ -17,6 +17,7 @@ import { registerPaneTools } from './tools/pane.js';
 import { registerTabTools } from './tools/tab.js';
 import { registerScreenerTools } from './tools/screener.js';
 import { registerMorningTools } from './tools/morning.js';
+import { registerLuxScreenerTools } from './tools/lux_screener.js';
 import { launch as launchTradingView } from './core/health.js';
 
 const server = new McpServer(
@@ -88,6 +89,7 @@ registerTabTools(server);
 // Screener-driven morning workflow
 registerScreenerTools(server);
 registerMorningTools(server);
+registerLuxScreenerTools(server);
 
 process.stderr.write(
   '⚠  tradingview-mcp  |  Unofficial tool. Not affiliated with TradingView Inc. or Anthropic.\n'

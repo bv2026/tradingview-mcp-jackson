@@ -59,6 +59,31 @@ The StockTwits watchlists refresh **weekly** (Friday-close data), so the daily r
 
 ---
 
+## 🔬 LuxAlgo batch screener scan
+
+Scans a watchlist through 3 LuxAlgo screeners (S&O, PAC, OSC) on the **LUXALGO_SCREENERS** chart tab and returns a ranked table + top 10 / bottom 10.
+
+```
+lux screener scan sp_ndx        # S&P 500 + Nasdaq 100 momentum (40 names)
+lux screener scan r2k            # Russell 2000 momentum (25 names)
+lux screener scan stwits_lg      # prior-week StockTwits SPX+NDX list
+lux screener scan stwits_sm      # prior-week StockTwits Russell list
+```
+
+**Score = S&O rating (+3/+2/0/−2) + Signal (+2/+1/−1) + OSC Div (+2/−2) + HWO (+1/−1) + PAC Structure (+1/−2)**
+Top 10 = highest score. Bottom 10 = lowest score. Saves to `reports/{date}/{type}.md`.
+
+**Watchlist sources:**
+| Type | Source |
+|---|---|
+| `sp_ndx` | `CSV/momentum-sp500-*.csv` + `CSV/momentum-nasdaq100-*.csv` — IN symbols combined |
+| `r2k` | `CSV/momentum-russell2000-*.csv` — IN symbols |
+| `stwits_lg/sm` | `config/strategy-stwits_lg/sm.json` — rebuilt each Saturday |
+
+**Prerequisites:** LUXALGO_SCREENERS tab must be open in TradingView with all 3 screeners (S&O, PAC, OSC) loaded and healthy (no "!" error icons). If they show errors after a code change, delete and re-add them from the Indicators search dialog.
+
+---
+
 ## ⚙️ When a restart is needed
 
 A **Claude Desktop restart** is required only after **code changes** to the MCP server (e.g. adding a new instrument type to the tool enums). It is **NOT** needed for:
