@@ -8,7 +8,7 @@ export function registerMorningTools(server) {
     'Run a morning scan for a specific instrument type. Reads live symbols from the TradingView screener, ensures required LuxAlgo indicators are on the chart, scans each symbol, and returns structured data with strategy rules for Claude to generate a session bias. Requires rules.json (screener sources) and strategy-{type}.json (bias criteria).',
     {
       instrument_type: z
-        .enum(['stocks', 'ark', 'etf', 'futures', 'indices', 'crypto', 'crypto_perps', 'sp_ndx', 'r2k', 'thematic_etfs', 'all'])
+        .enum(['stocks', 'ark', 'etf', 'futures', 'indices', 'crypto', 'crypto_perps', 'sp_ndx', 'r2k', 'thematic_etfs', 'thematic_etfs_1', 'thematic_etfs_2', 'all'])
         .default('stocks')
         .describe('Instrument type to scan. Use "all" to run all 8 briefs (stocks, etf, ark, crypto, crypto_perps, futures, sp_ndx, r2k) sequentially and auto-save each report plus a daily-summary.md. sp_ndx = weekly S&P 500 + Nasdaq 100 momentum names (rebuilt Saturdays). r2k = weekly Russell 2000 momentum names. thematic_etfs = full thematic ETF watchlist (~90 ETFs across 8 themes, weekly TF, grouped output). Default: stocks.'),
       rules_path: z
@@ -33,7 +33,7 @@ export function registerMorningTools(server) {
         .string()
         .describe("The text to save. Full analysis for normal saves; 4-line summary block for is_summary=true; all 6 summaries stacked for instrument_type='daily_summary'."),
       instrument_type: z
-        .enum(['stocks', 'ark', 'crypto', 'crypto_perps', 'futures', 'etf', 'indices', 'sp_ndx', 'r2k', 'thematic_stocks', 'thematic_etfs', 'daily_summary'])
+        .enum(['stocks', 'ark', 'crypto', 'crypto_perps', 'futures', 'etf', 'indices', 'sp_ndx', 'r2k', 'thematic_stocks', 'thematic_etfs', 'thematic_etfs_1', 'thematic_etfs_2', 'daily_summary'])
         .default('stocks')
         .describe('Instrument type. Use "daily_summary" to save the combined all-briefs summary to daily-summary.md.'),
       is_summary: z
@@ -64,7 +64,7 @@ export function registerMorningTools(server) {
         .optional()
         .describe('Date string YYYY-MM-DD. Defaults to today.'),
       instrument_type: z
-        .enum(['stocks', 'ark', 'crypto', 'crypto_perps', 'futures', 'etf', 'indices', 'sp_ndx', 'r2k', 'thematic_stocks', 'thematic_etfs'])
+        .enum(['stocks', 'ark', 'crypto', 'crypto_perps', 'futures', 'etf', 'indices', 'sp_ndx', 'r2k', 'thematic_stocks', 'thematic_etfs', 'thematic_etfs_1', 'thematic_etfs_2'])
         .optional()
         .describe('Retrieve a specific instrument brief. Omit to list all briefs saved today.'),
     },

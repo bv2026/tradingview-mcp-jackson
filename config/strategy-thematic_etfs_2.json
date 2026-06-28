@@ -1,0 +1,345 @@
+{
+  "instrument_type": "thematic_etfs_2",
+  "max_symbols": 41,
+  "watchlist": [
+    {
+      "symbol": "IBIT",
+      "name": "iShares Bitcoin Trust",
+      "theme": "Crypto (under financials)",
+      "sub_group": "ETF BTC spot",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "FBTC",
+      "name": "Fidelity Wise Origin BTC",
+      "theme": "Crypto (under financials)",
+      "sub_group": "ETF BTC spot",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "ETHA",
+      "name": "iShares Ethereum Trust",
+      "theme": "Crypto (under financials)",
+      "sub_group": "ETF ETH spot",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "BSOL",
+      "name": "Bitwise Solana (staked)",
+      "theme": "Crypto (under financials)",
+      "sub_group": "ETF SOL spot",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "FSOL",
+      "name": "Fidelity Solana",
+      "theme": "Crypto (under financials)",
+      "sub_group": "ETF SOL spot",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "SSK",
+      "name": "REX-Osprey Solana Staking",
+      "theme": "Crypto (under financials)",
+      "sub_group": "ETF SOL spot",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "XLI",
+      "name": "Industrial Select SPDR",
+      "theme": "Industrials/defense",
+      "sub_group": "ETF broad",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "VIS",
+      "name": "Vanguard Industrials",
+      "theme": "Industrials/defense",
+      "sub_group": "ETF broad",
+      "signal": "Extended"
+    },
+    {
+      "symbol": "ITA",
+      "name": "iShares US Aero & Defense",
+      "theme": "Industrials/defense",
+      "sub_group": "ETF aero/def",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "PPA",
+      "name": "Invesco Aerospace & Defense",
+      "theme": "Industrials/defense",
+      "sub_group": "ETF aero/def",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "XAR",
+      "name": "SPDR S&P Aerospace & Defense",
+      "theme": "Industrials/defense",
+      "sub_group": "ETF aero/def",
+      "signal": "Buy"
+    },
+    {
+      "symbol": "SHLD",
+      "name": "Global X Defense Tech",
+      "theme": "Industrials/defense",
+      "sub_group": "ETF def-tech",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "EUAD",
+      "name": "Select STOXX Eu Aero & Def",
+      "theme": "Industrials/defense",
+      "sub_group": "ETF EU def",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "IDEF",
+      "name": "iShares Defense Industrials",
+      "theme": "Industrials/defense",
+      "sub_group": "ETF def",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "KDEF",
+      "name": "PLUS Korea Defense",
+      "theme": "Industrials/defense",
+      "sub_group": "ETF KR def",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "FITE",
+      "name": "SPDR Kensho Future Security",
+      "theme": "Industrials/defense",
+      "sub_group": "ETF sec-tech",
+      "signal": "Buy"
+    },
+    {
+      "symbol": "DFEN",
+      "name": "Direxion 3x Aero&Def Bull",
+      "theme": "Industrials/defense",
+      "sub_group": "ETF lev",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "PAVE",
+      "name": "Global X US Infrastructure",
+      "theme": "Industrials/defense",
+      "sub_group": "ETF infra",
+      "signal": "Extended"
+    },
+    {
+      "symbol": "XLE",
+      "name": "Energy Select SPDR",
+      "theme": "Energy",
+      "sub_group": "ETF broad",
+      "signal": "Buy"
+    },
+    {
+      "symbol": "VDE",
+      "name": "Vanguard Energy",
+      "theme": "Energy",
+      "sub_group": "ETF broad",
+      "signal": "Buy"
+    },
+    {
+      "symbol": "FENY",
+      "name": "Fidelity Energy",
+      "theme": "Energy",
+      "sub_group": "ETF broad",
+      "signal": "Buy"
+    },
+    {
+      "symbol": "IYE",
+      "name": "iShares US Energy",
+      "theme": "Energy",
+      "sub_group": "ETF broad",
+      "signal": "Buy"
+    },
+    {
+      "symbol": "XOP",
+      "name": "SPDR S&P Oil & Gas E&P",
+      "theme": "Energy",
+      "sub_group": "ETF E&P",
+      "signal": "Buy"
+    },
+    {
+      "symbol": "OIH",
+      "name": "VanEck Oil Services",
+      "theme": "Energy",
+      "sub_group": "ETF services",
+      "signal": "Buy"
+    },
+    {
+      "symbol": "AMLP",
+      "name": "Alerian MLP",
+      "theme": "Energy",
+      "sub_group": "ETF midstream",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "UNG",
+      "name": "US Natural Gas Fund",
+      "theme": "Energy",
+      "sub_group": "ETF commodity",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "USO",
+      "name": "US Oil Fund",
+      "theme": "Energy",
+      "sub_group": "ETF commodity",
+      "signal": "Buy"
+    },
+    {
+      "symbol": "IXC",
+      "name": "iShares Global Energy",
+      "theme": "Energy",
+      "sub_group": "ETF global",
+      "signal": "Buy"
+    },
+    {
+      "symbol": "XLP",
+      "name": "Consumer Staples SPDR",
+      "theme": "Consumer def/discount",
+      "sub_group": "ETF staples",
+      "signal": "Buy"
+    },
+    {
+      "symbol": "VDC",
+      "name": "Vanguard Consumer Staples",
+      "theme": "Consumer def/discount",
+      "sub_group": "ETF staples",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "FSTA",
+      "name": "Fidelity Consumer Staples",
+      "theme": "Consumer def/discount",
+      "sub_group": "ETF staples",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "KXI",
+      "name": "iShares Global Cons Staples",
+      "theme": "Consumer def/discount",
+      "sub_group": "ETF global stpl",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "XRT",
+      "name": "SPDR S&P Retail eq-wt",
+      "theme": "Consumer def/discount",
+      "sub_group": "ETF retail",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "RTH",
+      "name": "VanEck Retail",
+      "theme": "Consumer def/discount",
+      "sub_group": "ETF retail",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "ONLN",
+      "name": "ProShares Online Retail",
+      "theme": "Consumer def/discount",
+      "sub_group": "ETF online",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "PSCD",
+      "name": "Invesco S&P SC Cons Disc",
+      "theme": "Consumer def/discount",
+      "sub_group": "ETF discount",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "UFO",
+      "name": "Procure Space",
+      "theme": "Space",
+      "sub_group": "ETF space",
+      "signal": "Buy"
+    },
+    {
+      "symbol": "ARKX",
+      "name": "ARK Space Exploration",
+      "theme": "Space",
+      "sub_group": "ETF space",
+      "signal": "Buy"
+    },
+    {
+      "symbol": "MARS",
+      "name": "Roundhill Space",
+      "theme": "Space",
+      "sub_group": "ETF space",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "UFOD",
+      "name": "Tuttle Capital UFO",
+      "theme": "Space",
+      "sub_group": "ETF space",
+      "signal": "Skip"
+    },
+    {
+      "symbol": "SPCI",
+      "name": "Tuttle Space Industry Income",
+      "theme": "Space",
+      "sub_group": "ETF space inc",
+      "signal": "Skip"
+    }
+  ],
+  "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\Watchlist_ETFs.csv",
+  "watchlist_generated": "2026-06-28",
+  "default_timeframe": "W",
+  "screener_name": null,
+  "required_indicators": [
+    "Trendlines with Breaks Oscillator [LuxAlgo]",
+    "Nadaraya-Watson Envelope [LuxAlgo]",
+    "Volume"
+  ],
+  "market_context": {
+    "benchmark": "SPY",
+    "benchmark_ma_type": "SMA",
+    "benchmark_ma_period": 50,
+    "benchmark_filter": "SPY must be above its 50-day SMA for broad ETF longs. If below, only inverse/defensive ETFs are candidates."
+  },
+  "bias_criteria": {
+    "bullish": [
+      "ETF is printing higher highs and higher lows on the weekly",
+      "TWB Histogram is positive and rising (momentum accelerating)",
+      "Price approaching upper NW Envelope band but not extended outside it",
+      "Volume is above average on up-weeks"
+    ],
+    "bearish": [
+      "ETF is printing lower highs and lower lows on the weekly",
+      "TWB Histogram is negative and falling",
+      "Price extended outside lower NW Envelope band"
+    ],
+    "neutral": [
+      "ETF is consolidating inside NW bands with no directional TWB signal",
+      "Volume is below average — no rotational pressure visible"
+    ]
+  },
+  "entry_criteria": {
+    "long": [
+      "Weekly consolidation after prior uptrend (flag or horizontal resistance breakout)",
+      "TWB Histogram turns positive or crosses above Signal on weekly",
+      "Volume expansion on breakout week",
+      "Price moving toward upper NW band but not fully outside it"
+    ]
+  },
+  "exit_criteria": {
+    "stop_loss": "Below prior weekly swing low. For thematic ETFs, wider stops are acceptable given weekly TF.",
+    "take_profit_1": "Scale 1/3 out when price touches upper NW Envelope band on the weekly.",
+    "take_profit_2": "Trail remaining via weekly 9 EMA."
+  },
+  "risk_rules": [
+    "ETFs are diversified — use normal sizing (not reduced like individual names)",
+    "Leveraged ETFs (SOXL, DFEN, FNGU, RAM): half-size and tighter stop due to decay",
+    "Inverse/commodity ETFs (UNG, USO): verify sector thesis before entry",
+    "No bullish entries if SPY is below its 50-day SMA"
+  ],
+  "asset_notes": "Thematic ETF watchlist — same 8 themes as stock watchlist, ETF vehicle for each theme. Weekly timeframe for macro rotation. Sub-group field identifies the ETF type (broad, alt-wt, lev, sector, geo). Signal field from watchlist CSV is starting context — scan all regardless. Group output by theme to see which themes have broad ETF strength vs. weakness."
+}

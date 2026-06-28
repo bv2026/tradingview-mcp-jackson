@@ -9,7 +9,9 @@
     "etf":          { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
     "sp_ndx":       { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
     "r2k":          { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
-    "thematic_etfs": { "chart_id": "8UitTI02", "layout_name": "MY-STKS" }
+    "thematic_etfs":   { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
+    "thematic_etfs_1": { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
+    "thematic_etfs_2": { "chart_id": "8UitTI02", "layout_name": "MY-STKS" }
   },
 
   "screener_sources": {
@@ -22,7 +24,9 @@
     "crypto_perps":  "MOMENTUM-PERPS",
     "sp_ndx":        null,
     "r2k":           null,
-    "thematic_etfs": null
+    "thematic_etfs":   null,
+    "thematic_etfs_1": null,
+    "thematic_etfs_2": null
   },
 
   "risk_rules": [

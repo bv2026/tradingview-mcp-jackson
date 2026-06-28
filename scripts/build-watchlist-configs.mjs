@@ -97,13 +97,12 @@ function main() {
     watchlist: stocksRows,
   });
 
-  const etfsOut = writeConfig('config/strategy-thematic_etfs.json', {
-    instrument_type:    'thematic_etfs',
+  // ETF strategy fields shared across full list and splits
+  const etfStrategyFields = {
     watchlist_source:   etfsCsv,
     watchlist_generated: generated,
     default_timeframe:  'W',
     screener_name:      null,
-    max_symbols:        etfsRows.length,
     required_indicators: [
       'Trendlines with Breaks Oscillator [LuxAlgo]',
       'Nadaraya-Watson Envelope [LuxAlgo]',
@@ -152,14 +151,33 @@ function main() {
       'No bullish entries if SPY is below its 50-day SMA',
     ],
     asset_notes: 'Thematic ETF watchlist — same 8 themes as stock watchlist, ETF vehicle for each theme. Weekly timeframe for macro rotation. Sub-group field identifies the ETF type (broad, alt-wt, lev, sector, geo). Signal field from watchlist CSV is starting context — scan all regardless. Group output by theme to see which themes have broad ETF strength vs. weakness.',
-    watchlist: etfsRows,
-  });
+  };
+
+  // Split ETFs into two halves by theme group to avoid scan timeouts (~90 total):
+  // Group 1: AI semis + AI power/grid + Healthcare + Financials (~49 ETFs)
+  // Group 2: Crypto + Industrials/defense + Energy + Consumer def/discount + Space (~41 ETFs)
+  const ETF_GROUP1_THEMES = new Set([
+    'AI semis — compute/logic',
+    'AI semis — memory/HBM',
+    'AI semis — geography',
+    'AI power/grid [BRIDGE]',
+    'Healthcare',
+    'Financials',
+  ]);
+  const etfsGroup1 = etfsRows.filter(r => ETF_GROUP1_THEMES.has(r.theme));
+  const etfsGroup2 = etfsRows.filter(r => !ETF_GROUP1_THEMES.has(r.theme));
+
+  const etfsOut  = writeConfig('config/strategy-thematic_etfs.json',   { instrument_type: 'thematic_etfs',   max_symbols: etfsRows.length,   watchlist: etfsRows,   ...etfStrategyFields });
+  const etfs1Out = writeConfig('config/strategy-thematic_etfs_1.json', { instrument_type: 'thematic_etfs_1', max_symbols: etfsGroup1.length, watchlist: etfsGroup1, ...etfStrategyFields });
+  const etfs2Out = writeConfig('config/strategy-thematic_etfs_2.json', { instrument_type: 'thematic_etfs_2', max_symbols: etfsGroup2.length, watchlist: etfsGroup2, ...etfStrategyFields });
 
   console.log(`\nthematic_stocks: ${stocksRows.length} symbols → ${stocksOut}`);
   const stockThemes = groupBy(stocksRows, 'theme');
   Object.entries(stockThemes).forEach(([t, n]) => console.log(`  ${n.toString().padStart(3)} — ${t}`));
 
-  console.log(`\nthematic_etfs: ${etfsRows.length} symbols → ${etfsOut}`);
+  console.log(`\nthematic_etfs:   ${etfsRows.length} symbols → ${etfsOut}`);
+  console.log(`thematic_etfs_1: ${etfsGroup1.length} symbols (AI semis + AI power/grid + Healthcare + Financials) → ${etfs1Out}`);
+  console.log(`thematic_etfs_2: ${etfsGroup2.length} symbols (Crypto + Industrials + Energy + Consumer + Space) → ${etfs2Out}`);
   const etfThemes = groupBy(etfsRows, 'theme');
   Object.entries(etfThemes).forEach(([t, n]) => console.log(`  ${n.toString().padStart(3)} — ${t}`));
 
