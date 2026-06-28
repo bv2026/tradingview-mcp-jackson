@@ -1,0 +1,10 @@
+# Normalize text files so Windows and WSL see the same content in Git.
+* text=auto eol=lf
+
+# Windows launcher scripts should keep CRLF on checkout.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.vbs text eol=crlf
+
+# Shell scripts should stay LF.
+*.sh text eol=lf
