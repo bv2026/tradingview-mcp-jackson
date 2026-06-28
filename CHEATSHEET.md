@@ -37,21 +37,27 @@ node scripts/build-watchlist-configs.mjs   # rebuild thematic_stocks + thematic_
 
 **Weekly narrative prompt** (paste after running `build-weekly-review.mjs`):
 ```
-Read reports/weekly/2026-W26-data.json and write the weekly review to reports/weekly/2026-W26.md.
+Look in C:\work\tradingview-mcp-jackson\reports\weekly\ and find the most recent
+*-data.json file that does NOT yet have a matching *.md file — that is this week's
+data bundle. Read it, then write the narrative to the same folder with the same
+week tag (e.g. if the bundle is 2026-W26-data.json, write 2026-W26.md).
 
-Structure it as:
-## Week 26 Review (2026)
+For style reference, read the most recent *.md that already exists in that folder.
+
+Structure the report as:
+
+## Week {N} Review ({YEAR})
 
 One short section per instrument that had data. For each:
-- Top 3 setups — highest conviction names (most days flagged, strong accel_seq, follow-through pct_move)
-- Names to avoid — weak/mixed conviction or poor follow-through
+- **Top 3 setups** — highest conviction names (most days flagged, strong accel_seq,
+  positive follow-through in pct_move)
+- **Names to avoid** — weak/mixed conviction or negative follow-through
 - A 1-2 sentence market read for that instrument
 
-Close with a ## Cross-Market Read — 3-5 bullets on what was consistent across instruments.
-
-Use the prior week's report (reports/weekly/2026-W25.md) as a style reference.
+Close with:
+## Cross-Market Read
+3-5 bullets on themes consistent across instruments this week.
 ```
-> Update the week tag (`W26`, `W25`) each Saturday.
 
 > `build-weekly-review.mjs` writes the data bundle to `reports/weekly/{YYYY-Www}-data.json`; Claude then writes `reports/weekly/{YYYY-Www}.md`.
 > `build-momentum-watchlists.mjs` auto-picks the newest dated CSVs from `CSV/` (momentum-sp500, momentum-nasdaq100, momentum-russell2000, market-chatter) and rewrites `config/strategy-sp_ndx.json` and `config/strategy-r2k.json`. **No restart needed.**
