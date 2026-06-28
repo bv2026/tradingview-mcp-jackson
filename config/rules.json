@@ -7,20 +7,22 @@
     "futures":      { "chart_id": "PtVmcfrM", "layout_name": "MY-FUTURES" },
     "ark":          { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
     "etf":          { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
-    "stwits_lg":    { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
-    "stwits_sm":    { "chart_id": "8UitTI02", "layout_name": "MY-STKS" }
+    "sp_ndx":       { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
+    "r2k":          { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
+    "thematic_etfs": { "chart_id": "8UitTI02", "layout_name": "MY-STKS" }
   },
 
   "screener_sources": {
-    "stocks":       "MOMENTUM",
-    "etf":          "MOMENTUM-ETF",
-    "futures":      null,
-    "ark":          "MOMENTUM-ARK",
-    "indices":      "MOMENTUM-INDICES",
-    "crypto":       "MOMENTUM-CRYPTO",
-    "crypto_perps": "MOMENTUM-PERPS",
-    "stwits_lg":    null,
-    "stwits_sm":    null
+    "stocks":        "MOMENTUM",
+    "etf":           "MOMENTUM-ETF",
+    "futures":       null,
+    "ark":           "MOMENTUM-ARK",
+    "indices":       "MOMENTUM-INDICES",
+    "crypto":        "MOMENTUM-CRYPTO",
+    "crypto_perps":  "MOMENTUM-PERPS",
+    "sp_ndx":        null,
+    "r2k":           null,
+    "thematic_etfs": null
   },
 
   "risk_rules": [
