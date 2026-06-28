@@ -15,7 +15,8 @@
     "start": "node src/server.js",
     "tv": "node src/cli/index.js",
     "test": "node --test tests/sanity.test.js",
-    "test:sanity": "node --test tests/sanity.test.js"
+    "test:sanity": "node --test tests/sanity.test.js",
+    "sync:tool-count": "node scripts/sync-tool-count.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
