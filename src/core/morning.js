@@ -5,7 +5,7 @@
  * on the chart, scans each symbol, and returns structured data for Claude to apply
  * the strategy rules and generate a session brief.
  */
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -549,8 +549,6 @@ export function getSession({ date, instrument_type } = {}) {
   const folder = dateFolderName(now);
   const reportDir = join(REPORTS_DIR, folder);
 
-  const types = ['stocks', 'etf', 'ark', 'crypto', 'crypto_perps', 'futures'];
-
   if (instrument_type) {
     const filePath = join(reportDir, `${instrument_type}.md`);
     if (existsSync(filePath)) {
@@ -566,8 +564,10 @@ export function getSession({ date, instrument_type } = {}) {
     return { success: false, error: `No ${instrument_type} report found in ${reportDir}`, reports_dir: REPORTS_DIR };
   }
 
-  // No instrument_type: list what's saved today
-  const available = types.filter(t => existsSync(join(reportDir, `${t}.md`)));
+  // No instrument_type: list what's saved today (dynamic scan so all types are discovered)
+  const available = existsSync(reportDir)
+    ? readdirSync(reportDir).filter(f => f.endsWith('.md')).map(f => f.replace(/\.md$/, ''))
+    : [];
   if (available.length > 0) {
     return {
       success: true,
