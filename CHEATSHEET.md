@@ -32,8 +32,26 @@ node scripts/build-watchlist-configs.mjs   # rebuild thematic_stocks + thematic_
 
 | Goal | Prompt |
 |---|---|
-| Narrate the weekly review (after running the script) | `write the weekly review` |
-| Read back a weekly review | `get the weekly review for W25` |
+| Narrate the weekly review (after running the script) | see full prompt below |
+| Read back a weekly review | `get the weekly review for W26` |
+
+**Weekly narrative prompt** (paste after running `build-weekly-review.mjs`):
+```
+Read reports/weekly/2026-W26-data.json and write the weekly review to reports/weekly/2026-W26.md.
+
+Structure it as:
+## Week 26 Review (2026)
+
+One short section per instrument that had data. For each:
+- Top 3 setups — highest conviction names (most days flagged, strong accel_seq, follow-through pct_move)
+- Names to avoid — weak/mixed conviction or poor follow-through
+- A 1-2 sentence market read for that instrument
+
+Close with a ## Cross-Market Read — 3-5 bullets on what was consistent across instruments.
+
+Use the prior week's report (reports/weekly/2026-W25.md) as a style reference.
+```
+> Update the week tag (`W26`, `W25`) each Saturday.
 
 > `build-weekly-review.mjs` writes the data bundle to `reports/weekly/{YYYY-Www}-data.json`; Claude then writes `reports/weekly/{YYYY-Www}.md`.
 > `build-momentum-watchlists.mjs` auto-picks the newest dated CSVs from `CSV/` (momentum-sp500, momentum-nasdaq100, momentum-russell2000, market-chatter) and rewrites `config/strategy-sp_ndx.json` and `config/strategy-r2k.json`. **No restart needed.**
