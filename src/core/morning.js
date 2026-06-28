@@ -482,9 +482,13 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
       `If strategy has tradeable_exchanges defined, flag any symbol NOT available on those exchanges as SKIP.`,
       instrument === 'ark'
         ? `Output one line per symbol: SYMBOL | STATUS: [BASE_BUILDING/BREAKOUT_READY/EXTENDED/SKIP] | RS: [+/-] | SIGNAL: [key observation] | CLUSTER: [cluster name]`
+        : instrument === 'thematic_etfs'
+        ? `GROUP output by theme. Each symbol carries a 'theme' and 'sub_group' field — use them to organize the analysis. For each theme: write a "### {Theme}" header, then a markdown table: | ETF | SUB-GROUP | BIAS | TWB | NW | SIGNAL |. After the table, write one sentence: the theme's overall rotation direction (bullish / bearish / mixed). End with a "## Cross-Theme Read" summary listing which 2-3 themes show the strongest ETF breadth.`
         : `Output one line per symbol: SYMBOL | BIAS: [long/short/neutral] | SIGNAL: [key observation] | WATCH: [what to monitor]`,
       instrument === 'ark'
         ? `Then list top 3 BREAKOUT_READY candidates (or BASE_BUILDING if none are ready) with entry_criteria checklist and cluster warning if applicable.`
+        : instrument === 'thematic_etfs'
+        ? `Then list top 3 ETF setups across all themes with entry_criteria checklist and which theme they represent.`
         : `Then list top 3 candidates (longs or shorts depending on BTC TWB direction) with entry_criteria checklist.`,
       `End with a one-sentence overall market read.`,
       `Be direct. No preamble.`,

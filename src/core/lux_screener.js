@@ -143,6 +143,39 @@ function buildMarkdownTable(rows) {
   return [header, sep, ...lines].join('\n');
 }
 
+function buildThematicTable(rows) {
+  // Group by theme preserving first-seen order, sort by score within each theme
+  const themeOrder = [];
+  const byTheme = {};
+  for (const r of rows) {
+    const theme = r.theme || 'Other';
+    if (!byTheme[theme]) { byTheme[theme] = []; themeOrder.push(theme); }
+    byTheme[theme].push(r);
+  }
+  for (const theme of themeOrder) {
+    byTheme[theme].sort((a, b) => b.score - a.score);
+  }
+
+  const header = '| SYMBOL | SUB-GROUP | S&O RATING | SIGNAL | PAC STRUCTURE | OSC DIV | HWO | SCORE |';
+  const sep    = '|---|---|---|---|---|---|---|---|';
+
+  const sections = [];
+  for (const theme of themeOrder) {
+    const themeRows = byTheme[theme];
+    const bullish = themeRows.filter(r => r.score >= 3).length;
+    const bearish = themeRows.filter(r => r.score <= -2).length;
+    const bias = bullish > bearish ? '▲' : bearish > bullish ? '▼' : '→';
+    sections.push(`### ${theme} ${bias} (${bullish}B / ${bearish}Br / ${themeRows.length} total)`);
+    sections.push(header);
+    sections.push(sep);
+    for (const r of themeRows) {
+      sections.push(`| ${r.symbol} | ${r.sub_group || '—'} | ${r.so['RATING'] || '—'} | ${r.so['SIGNAL'] || '—'} | ${r.pac['STRUCTURE'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} | ${r.osc['HWO SIGNAL'] || '—'} | ${r.score} |`);
+    }
+    sections.push('');
+  }
+  return sections.join('\n');
+}
+
 function buildChatterSection(sorted) {
   // Conflict = Overheated in top half, Oversold in bottom half (confirms breakdown)
   // Opportunity = Oversold with decent score (contrarian), Quietest with high score (stealth)
@@ -249,6 +282,8 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
         sentiment: metaMap[sym]?.sentiment ?? null,
         watchers:  metaMap[sym]?.watchers ?? null,
         chatter:   metaMap[sym]?.chatter ?? null,
+        theme:     metaMap[sym]?.theme ?? null,
+        sub_group: metaMap[sym]?.sub_group ?? null,
         so,
         pac,
         osc,
@@ -278,6 +313,7 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
     : '- None';
 
   const chatterSection = buildChatterSection(sorted);
+  const isThematic = sorted.some(r => r.theme);
 
   return {
     success: true,
@@ -285,7 +321,7 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
     timeframe,
     symbol_count: sorted.length,
     batch_count: batches.length,
-    table: buildMarkdownTable(sorted),
+    table: isThematic ? buildThematicTable(sorted) : buildMarkdownTable(sorted),
     top_candidates: topCandidates.map(r => r.symbol),
     top_section: topSection,
     avoid_list: avoidList.map(r => r.symbol),

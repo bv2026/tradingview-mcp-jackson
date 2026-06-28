@@ -10,7 +10,7 @@ Quick reference for the daily/weekly trading workflow. Prompts are what you type
 |---|---|
 | **Run all 8 briefs + daily summary** | `morning brief all` |
 | Single core brief | `morning brief stocks` (or `etf`, `ark`, `crypto`, `crypto_perps`, `futures`) |
-| Single momentum brief | `morning brief sp_ndx` (or `r2k`) |
+| Single momentum brief | `morning brief sp_ndx` (or `r2k`, `thematic_etfs`) |
 | Read back a saved brief | `get the stocks brief` (or any type) |
 | Read today's daily summary | `get the daily summary` |
 
@@ -64,20 +64,38 @@ The sp_ndx and r2k lists refresh **weekly** from Friday-close CSV exports. The d
 Scans a watchlist through 3 LuxAlgo screeners (S&O, PAC, OSC) on the **LUXALGO_SCREENERS** chart tab and returns a ranked table + top 10 / bottom 10.
 
 ```
-lux screener scan sp_ndx        # S&P 500 + Nasdaq 100 momentum (40 names, current week)
-lux screener scan r2k            # Russell 2000 momentum (25 names, current week)
+lux screener scan sp_ndx          # S&P 500 + Nasdaq 100 momentum (40 names, current week)
+lux screener scan r2k              # Russell 2000 momentum (25 names, current week)
+lux screener scan thematic_stocks  # Full thematic watchlist (121 stocks, 8 themes, grouped output)
 ```
 
 **Score = S&O rating (+3/+2/0/−2) + Signal (+2/+1/−1) + OSC Div (+2/−2) + HWO (+1/−1) + PAC Structure (+1/−2)**
-Top 10 = highest score. Bottom 10 = lowest score. Saves to `reports/{date}/{type}.md`.
+Top 10 = highest score. Bottom 10 = lowest score. For `thematic_stocks`, output is grouped by theme with per-theme bullish/bearish count. Saves to `reports/{date}/{type}.md`.
 
 **Watchlist sources:**
 | Type | Source |
 |---|---|
 | `sp_ndx` | `CSV/momentum-sp500-*.csv` + `CSV/momentum-nasdaq100-*.csv` — IN symbols combined |
 | `r2k` | `CSV/momentum-russell2000-*.csv` — IN symbols |
+| `thematic_stocks` | `CSV/Watchlist_Stocks.csv` — all 121 symbols, 8 themes, rebuilt via `build-watchlist-configs.mjs` |
 
 **Prerequisites:** LUXALGO_SCREENERS tab must be open in TradingView with all 3 screeners (S&O, PAC, OSC) loaded and healthy (no "!" error icons). If they show errors after a code change, delete and re-add them from the Indicators search dialog.
+
+---
+
+## 🗂️ Thematic ETF scan (`morning brief thematic_etfs`)
+
+Full thematic ETF watchlist (~90 ETFs, 8 themes) scanned via TWB+NW+Vol on the **weekly** timeframe. Output grouped by theme with per-theme rotation read and a Cross-Theme summary.
+
+```
+morning brief thematic_etfs        # weekly TWB/NW/Vol scan, output by theme
+```
+
+Run in **parallel with `morning brief etf`** (MOMENTUM-ETF screener) for the first few weeks — they target different vehicles (live top-ranked ETFs vs. the static thematic list). After validation, `thematic_etfs` replaces `morning brief etf`.
+
+**Watchlist source:** `CSV/Watchlist_ETFs.csv` → `config/strategy-thematic_etfs.json`
+**Rebuild:** `node scripts/build-watchlist-configs.mjs` (when watchlist changes — not weekly)
+**NOT in `all` run** yet — run standalone.
 
 ---
 
@@ -124,6 +142,7 @@ If a brief is rejected with an "invalid enum value" error for a new instrument t
 | Weekly reviews | `reports/weekly/` |
 | Strategy rules per type | `config/strategy-{type}.json` |
 | Screener/chart-tab config | `config/rules.json` |
-| Scripts | `scripts/build-momentum-watchlists.mjs`, `scripts/build-weekly-review.mjs` |
+| Scripts | `scripts/build-momentum-watchlists.mjs`, `scripts/build-watchlist-configs.mjs`, `scripts/build-weekly-review.mjs` |
 | Raw scan data | `~/.tradingview-mcp/sessions/` |
 | Momentum source CSVs | `CSV/momentum-sp500-*.csv`, `CSV/momentum-nasdaq100-*.csv`, `CSV/momentum-russell2000-*.csv`, `CSV/market-chatter-*.csv` |
+| Thematic watchlist CSVs | `CSV/Watchlist_Stocks.csv`, `CSV/Watchlist_ETFs.csv` |
