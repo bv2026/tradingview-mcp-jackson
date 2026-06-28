@@ -178,6 +178,12 @@ Overall: BTC TWB negative — short side in play. Wait for dead-cat bounces befo
 4. Save it: *"save this brief"* (uses `session_save`)
 5. Next morning, compare: *"get yesterday's session"* (uses `session_get`)
 
+### Weekly Review Workflow
+
+1. Run `scripts/build-weekly-review.mjs` to generate `reports/weekly/YYYY-Www-data.json`
+2. Read that bundle and write the narrative weekly review into `reports/weekly/YYYY-Www.md`
+3. Use the weekly markdown as the source of truth for next-week planning
+
 ### Strategy Files
 
 Each brief loads its own strategy file:
