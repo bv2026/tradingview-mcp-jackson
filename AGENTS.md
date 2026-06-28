@@ -1,4 +1,4 @@
-# TradingView MCP — Claude Instructions
+# TradingView MCP — Codex Instructions
 
 84 tools for reading and controlling a live TradingView Desktop chart via CDP (port 9222).
 
@@ -19,11 +19,11 @@ screener_get screener_name="MOMENTUM-CRYPTO" max_symbols=9
 screener_get screener_name="MOMENTUM-PERPS" max_symbols=12
 ```
 
-**Step 2 — run brief** — pulls live symbols, scans each symbol, returns structured data for Claude to apply strategy rules.
+**Step 2 — run brief** — pulls live symbols, scans each symbol, returns structured data for Codex to apply strategy rules.
 
 **Step 3 — save brief** (optional):
 ```
-session_save brief="<Claude's output>"
+session_save brief="<Codex's output>"
 session_get   # retrieve today's or yesterday's saved brief
 ```
 
@@ -287,7 +287,7 @@ These tools can return large payloads. Follow these rules to avoid context bloat
 ## Architecture
 
 ```
-Claude Code ←→ MCP Server (stdio) ←→ CDP (localhost:9222) ←→ TradingView Desktop (Electron)
+Codex ←→ MCP Server (stdio) ←→ CDP (localhost:9222) ←→ TradingView Desktop (Electron)
 ```
 
 Pine graphics path: `study._graphics._primitivesCollection.dwglines.get('lines').get(false)._primitivesDataById`

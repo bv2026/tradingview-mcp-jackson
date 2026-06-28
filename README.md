@@ -234,7 +234,7 @@ Claude reads `CLAUDE.md` automatically when working in this project. It contains
 
 ---
 
-## Tool Reference (81 MCP tools)
+## Tool Reference (84 MCP tools)
 
 ### Morning Brief (new in this fork)
 
@@ -357,7 +357,7 @@ Full command list: `tv --help`
 Claude Code  ←→  MCP Server (stdio)  ←→  CDP (port 9222)  ←→  TradingView Desktop (Electron)
 ```
 
-- **78 original tools** + **3 morning brief tools** = 81 MCP tools total
+- **84 MCP tools** total
 - **Transport**: MCP over stdio + CLI (`tv` command)
 - **Connection**: Chrome DevTools Protocol on localhost:9222
 - **No external network calls** — everything runs locally
