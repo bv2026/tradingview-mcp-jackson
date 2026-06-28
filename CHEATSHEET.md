@@ -22,11 +22,12 @@ Quick reference for the daily/weekly trading workflow. Prompts are what you type
 
 ## 📅 Weekly routine (Saturdays)
 
-Run these two terminal commands, then ask Claude to narrate:
+Run these terminal commands, then ask Claude to narrate:
 
 ```bash
-node scripts/build-weekly-review.mjs      # consolidate Mon–Fri across all instruments
-node scripts/build-momentum-watchlists.mjs  # rebuild sp_ndx + r2k from the week's CSVs
+node scripts/build-weekly-review.mjs       # consolidate Mon–Fri across all instruments
+node scripts/build-momentum-watchlists.mjs # rebuild sp_ndx + r2k from the week's CSVs
+node scripts/build-watchlist-configs.mjs   # rebuild thematic_stocks + thematic_etfs_1/_2 (if CSVs changed)
 ```
 
 | Goal | Prompt |
@@ -53,8 +54,10 @@ node scripts/build-momentum-watchlists.mjs  # rebuild sp_ndx + r2k from the week
 The sp_ndx and r2k lists refresh **weekly** from Friday-close CSV exports. The daily run monitors a fixed candidate set for entry triggers.
 
 - **Saturday:** drop 4 dated CSVs into `CSV/`, then `node scripts/build-momentum-watchlists.mjs` — rebuilds both watchlists + chatter annotations.
+- **Saturday (if thematic watchlists changed):** update `CSV/Watchlist_Stocks.csv` and/or `CSV/Watchlist_ETFs.csv`, then `node scripts/build-watchlist-configs.mjs` — regenerates all thematic configs (stocks + etfs_1 + etfs_2).
 - **Saturday:** `lux screener scan sp_ndx` and `lux screener scan r2k` — run the LuxAlgo batch scan, save as `sp_ndx.md` and `r2k.md`.
-- **Daily (Mon–Fri):** `morning brief sp_ndx` and `morning brief sp_ndx` — TWB/NW/Vol scan for entry triggers.
+- **Saturday (optional):** `morning brief thematic_etfs_1` then `morning brief thematic_etfs_2` — weekly macro rotation review across all 8 ETF themes.
+- **Daily (Mon–Fri):** `morning brief sp_ndx` and `morning brief r2k` — TWB/NW/Vol scan for entry triggers.
 - By Thu/Fri the weekly data is stale vs price — the live `morning brief stocks` (core) provides fresher mid-week discovery.
 
 ---
@@ -83,19 +86,22 @@ Top 10 = highest score. Bottom 10 = lowest score. For `thematic_stocks`, output 
 
 ---
 
-## 🗂️ Thematic ETF scan (`morning brief thematic_etfs`)
+## 🗂️ Thematic ETF scan
 
-Full thematic ETF watchlist (~90 ETFs, 8 themes) scanned via TWB+NW+Vol on the **weekly** timeframe. Output grouped by theme with per-theme rotation read and a Cross-Theme summary.
+Full thematic ETF watchlist (~90 ETFs, 8 themes) scanned via TWB+NW+Vol on the **weekly** timeframe. Split into two halves (~49 + 41 ETFs) to avoid the MCP timeout on weekly scans. Output grouped by theme with per-theme rotation read and a Cross-Theme summary.
 
 ```
-morning brief thematic_etfs        # weekly TWB/NW/Vol scan, output by theme
+morning brief thematic_etfs_1      # AI semis + AI power/grid + Healthcare + Financials (~49 ETFs)
+morning brief thematic_etfs_2      # Crypto + Industrials/defense + Energy + Consumer + Space (~41 ETFs)
 ```
 
-Run in **parallel with `morning brief etf`** (MOMENTUM-ETF screener) for the first few weeks — they target different vehicles (live top-ranked ETFs vs. the static thematic list). After validation, `thematic_etfs` replaces `morning brief etf`.
+Run **both halves** and save each independently. Run standalone (not in `all`).
 
-**Watchlist source:** `CSV/Watchlist_ETFs.csv` → `config/strategy-thematic_etfs.json`
-**Rebuild:** `node scripts/build-watchlist-configs.mjs` (when watchlist changes — not weekly)
-**NOT in `all` run** yet — run standalone.
+**Watchlist source:** `CSV/Watchlist_ETFs.csv` → auto-generates `strategy-thematic_etfs_1.json` + `strategy-thematic_etfs_2.json`  
+**Rebuild:** `node scripts/build-watchlist-configs.mjs` (when watchlist changes — not weekly)  
+**NOT in `all` run** — run standalone on whichever day you want macro rotation context.
+
+> The single `thematic_etfs` type (full 90-ETF list) still exists in the enum but will time out — always use `_1`/`_2` split.
 
 ---
 
