@@ -9,14 +9,13 @@ const CHART_API = KNOWN_PATHS.chartApi;
 const BARS_PATH = KNOWN_PATHS.mainSeriesBars;
 
 function buildGraphicsJS(collectionName, mapKey, filter) {
-  const safeFilter = (filter || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
   return `
     (function() {
       var chart = window.TradingViewApi._activeChartWidgetWV.value()._chartWidget;
       var model = chart.model();
       var sources = model.model().dataSources();
       var results = [];
-      var filter = '${safeFilter}';
+      var filter = ${JSON.stringify(filter || '')};
       for (var si = 0; si < sources.length; si++) {
         var s = sources[si];
         if (!s.metaInfo) continue;
