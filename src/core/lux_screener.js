@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import * as chart from './chart.js';
 import * as indicators from './indicators.js';
 import * as data from './data.js';
+import { evaluate } from '../connection.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../../');
@@ -22,6 +23,9 @@ const PROJECT_ROOT = resolve(__dirname, '../../');
 const TICKER_INPUT_IDS = ['in_4', 'in_8', 'in_12', 'in_16', 'in_20', 'in_24', 'in_28', 'in_32', 'in_36', 'in_40'];
 const POLL_INTERVAL_MS = 1500;
 const POLL_MAX_ATTEMPTS = 8; // up to 12 seconds total
+
+const CHART_API = 'window.TradingViewApi._activeChartWidgetWV.value()';
+const DEFAULTS_PATH = join(PROJECT_ROOT, 'config', 'lux-screener-defaults.json');
 
 /**
  * Find the chart tab that has all 3 LuxAlgo screeners loaded.
@@ -75,6 +79,139 @@ function loadWatchlist(instrumentType) {
   throw new Error(`No strategy-${instrumentType}.json found.`);
 }
 
+function loadDefaults() {
+  try {
+    return JSON.parse(readFileSync(DEFAULTS_PATH, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extract ticker overrides (in_4..in_40) from a full PAC input array.
+ * Returns { in_4: "BINANCE:BTCUSDT", ... } with correct exchange prefixes.
+ */
+function extractTickerOverrides(pacInputs) {
+  const overrides = {};
+  for (const inp of (pacInputs || [])) {
+    if (TICKER_INPUT_IDS.includes(inp.id)) overrides[inp.id] = inp.value;
+  }
+  return overrides;
+}
+
+/**
+ * Build a full input array for a protected indicator from getInputsInfo() defvals.
+ * Includes ALL fields (including the encrypted `text` blob) so setInputValues restores properly.
+ */
+async function captureProtectedInputs(studyId) {
+  const escapedId = studyId.replace(/'/g, "\\'");
+  return evaluate(`
+    (function() {
+      var chart = ${CHART_API};
+      var study = chart.getStudyById('${escapedId}');
+      if (!study) return null;
+      var info = study.getInputsInfo();
+      if (!info || info.length === 0) return null;
+      var arr = [];
+      for (var i = 0; i < info.length; i++) {
+        if (info[i].defval !== undefined) arr.push({ id: info[i].id, value: info[i].defval });
+      }
+      return arr.length > 0 ? arr : null;
+    })()
+  `);
+}
+
+/**
+ * Capture full pre-scan state so we can restore exactly after the scan.
+ * PAC: not protected — reads getInputValues() directly.
+ * S&O/OSC: protected (getInputValues returns []) — reads getInputsInfo() defvals including
+ *   the encrypted `text` blob so the indicators don't go blank on restore.
+ * Falls back to saved defaults file if live capture fails for PAC.
+ */
+async function capturePreScanState(pacStudy, soStudy, oscStudy) {
+  const escapedPacId = pacStudy.id.replace(/'/g, "\\'");
+  let pacInputs = null;
+  let source = 'live';
+  try {
+    pacInputs = await evaluate(`
+      (function() {
+        var chart = ${CHART_API};
+        var study = chart.getStudyById('${escapedPacId}');
+        if (!study) return null;
+        var vals = study.getInputValues();
+        return (vals && vals.length > 0) ? vals : null;
+      })()
+    `);
+  } catch {}
+
+  const defaults = loadDefaults();
+  if (!pacInputs || pacInputs.length === 0) {
+    if (defaults?.pac_inputs?.length > 0) {
+      pacInputs = defaults.pac_inputs;
+      source = 'defaults_file';
+    }
+  }
+
+  // Capture S&O and OSC from getInputsInfo() (includes encrypted text blob)
+  let soInputs = null;
+  let oscInputs = null;
+  try { soInputs  = await captureProtectedInputs(soStudy.id);  } catch {}
+  try { oscInputs = await captureProtectedInputs(oscStudy.id); } catch {}
+  if (!soInputs  && defaults?.so_inputs?.length  > 0) soInputs  = defaults.so_inputs;
+  if (!oscInputs && defaults?.osc_inputs?.length > 0) oscInputs = defaults.osc_inputs;
+
+  return { pacInputs, soInputs, oscInputs, source };
+}
+
+/**
+ * Restore a study using its captured input array, with ticker overrides re-applied.
+ * This preserves the encrypted `text` blob for protected indicators.
+ */
+async function restoreStudyInputs(studyId, capturedInputs, tickerOverrides) {
+  const escapedId = studyId.replace(/'/g, "\\'");
+  // Apply ticker overrides back into the captured array
+  const restored = capturedInputs.map(inp =>
+    tickerOverrides.hasOwnProperty(inp.id) ? { id: inp.id, value: tickerOverrides[inp.id] } : inp
+  );
+  const inputsJson = JSON.stringify(restored);
+  return evaluate(`
+    (function() {
+      var chart = ${CHART_API};
+      var study = chart.getStudyById('${escapedId}');
+      if (!study) return { error: 'Study not found' };
+      var inputs = ${inputsJson};
+      study.setInputValues(inputs);
+      return { ok: true, count: inputs.length };
+    })()
+  `);
+}
+
+/**
+ * Restore all 3 screeners to exactly the state captured before the scan.
+ * All 3 use direct setInputValues with their captured arrays (preserves encrypted text blob).
+ */
+async function restoreScreenerDefaults(soStudy, pacStudy, oscStudy, preState) {
+  const results = {};
+  const tickerOverrides = extractTickerOverrides(preState?.pacInputs);
+
+  if (preState?.pacInputs?.length > 0) {
+    try { results.pac = await restoreStudyInputs(pacStudy.id, preState.pacInputs, {}); }
+    catch (e) { results.pac = { error: e.message }; }
+  }
+  // S&O and OSC use bare symbols (e.g. "BTCUSDT") not exchange-prefixed — use their own defvals as-is
+  if (preState?.soInputs?.length > 0) {
+    try { results.so  = await restoreStudyInputs(soStudy.id,  preState.soInputs,  {}); }
+    catch (e) { results.so  = { error: e.message }; }
+  }
+  if (preState?.oscInputs?.length > 0) {
+    try { results.osc = await restoreStudyInputs(oscStudy.id, preState.oscInputs, {}); }
+    catch (e) { results.osc = { error: e.message }; }
+  }
+
+  results.capture_source = preState?.source;
+  return results;
+}
+
 function chunk(arr, size) {
   const out = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
@@ -89,7 +226,7 @@ function parseTableRows(rows) {
     const cells = row.split('|').map(c => c.trim());
     // First cell is "TICKER • TF" e.g. "SNDK • D"
     const ticker = cells[0].split('•')[0].trim();
-    if (!ticker) continue;
+    if (!ticker || ticker.toLowerCase().includes('not found')) continue;
     const entry = {};
     headers.forEach((h, i) => { if (i > 0 && h) entry[h] = cells[i] || ''; });
     map[ticker] = entry;
@@ -221,15 +358,20 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
   const pacStudy = studies.find(s => s.name.includes('PAC'));
   const oscStudy = studies.find(s => s.name.includes('OSC'));
 
-  // 3. Load watchlist
+  // 3. Capture pre-scan state so we can restore exactly after the scan
+  const preState = await capturePreScanState(pacStudy, soStudy, oscStudy);
+
+  // 4. Load watchlist
   const watchlist = loadWatchlist(instrument_type);
   const metaMap = Object.fromEntries(watchlist.map(e => [e.symbol, e]));
   const symbols = watchlist.map(e => e.symbol);
 
-  // 4. Batch scan
+  // 5. Batch scan
   const batches = chunk(symbols, 10);
   const allRows = {};
 
+  let restoreResult;
+  try {
   for (let bi = 0; bi < batches.length; bi++) {
     const batch = batches[bi];
 
@@ -292,6 +434,11 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
     }
   }
 
+  } finally {
+    // Always restore screener to defaults so it isn't left on scan residue
+    restoreResult = await restoreScreenerDefaults(soStudy, pacStudy, oscStudy, preState);
+  }
+
   // 5. Sort by score descending
   const sorted = Object.values(allRows).sort((a, b) => b.score - a.score);
 
@@ -321,6 +468,7 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
     timeframe,
     symbol_count: sorted.length,
     batch_count: batches.length,
+    restore_debug: restoreResult,
     table: isThematic ? buildThematicTable(sorted) : buildMarkdownTable(sorted),
     top_candidates: topCandidates.map(r => r.symbol),
     top_section: topSection,
