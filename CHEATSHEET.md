@@ -8,15 +8,26 @@ Quick reference for the daily/weekly trading workflow. Prompts are what you type
 
 | Goal | Prompt |
 |---|---|
-| **Run all 8 briefs + daily summary** | `morning brief all` |
+| **Run all briefs + thematic reports + daily summary** | `morning brief all` |
 | Single core brief | `morning brief stocks` (or `etf`, `ark`, `crypto`, `crypto_perps`, `futures`) |
-| Single momentum brief | `morning brief sp_ndx` (or `r2k`, `thematic_etfs`) |
+| Single momentum brief | `morning brief sp_ndx` (or `r2k`) |
+| Thematic stocks scan (121 symbols) | `lux screener scan thematic_stocks` |
+| Thematic ETF scan | `morning brief thematic_etfs_1` then `morning brief thematic_etfs_2` |
 | Read back a saved brief | `get the stocks brief` (or any type) |
 | Read today's daily summary | `get the daily summary` |
 
-> `all` covers **all 8** instruments (stocks, etf, ark, crypto, crypto_perps, futures, sp_ndx, r2k) and auto-writes a daily-summary.
+> `all` covers **all 8 standard** instruments (stocks, etf, ark, crypto, crypto_perps, futures, sp_ndx, r2k) **plus thematic reports**: lux_screener_scan thematic_stocks (121 symbols → `thematic_stocks.md` + `thematic_stocks-summary.md`), morning_brief thematic_etfs_1 + thematic_etfs_2 (`thematic_etfs_1.md`, `thematic_etfs_2.md`, `thematic_etfs-summary.md`), and a final `daily-summary.md`.
 
-**Reports land in:** `reports/{YYYY-Mon-DD}/{type}.md` + `daily-summary.md`
+**Reports land in:** `reports/{YYYY-Mon-DD}/`
+
+| File | Contents |
+|---|---|
+| `{type}.md` | Full brief per instrument |
+| `thematic_stocks.md` | All 121 stocks, grouped by theme, with all LuxAlgo signals |
+| `thematic_stocks-summary.md` | Theme-level table + top picks (score ≥ 5) + avoid list |
+| `thematic_etfs_1.md` / `thematic_etfs_2.md` | Full ETF briefs (49 + 41 ETFs) |
+| `thematic_etfs-summary.md` | Combined ETF rotation summary across all 8 themes |
+| `daily-summary.md` | Quick-reference 4-line block per instrument (all types) |
 
 ---
 
@@ -64,24 +75,22 @@ Close with:
 
 ---
 
-## 🧩 The two brief families
+## 🧩 The three brief families
 
-| | **Core** (6) | **Momentum** (2) |
-|---|---|---|
-| Source | Live TradingView MOMENTUM screeners | Weekly CSV exports (momentum-sp500/nasdaq100/russell2000) |
-| Refresh | Live, every run | Weekly (Saturday script) |
-| Types | stocks, etf, ark, crypto, crypto_perps, futures | sp_ndx (S&P+NDX combined), r2k (Russell 2000) |
-| In `all` run? | ✅ Yes | ✅ Yes |
-| Extra signal | — | Retail sentiment / WTD / watchers / chatter per symbol |
+| | **Core** (6) | **Momentum** (2) | **Thematic** (3) |
+|---|---|---|---|
+| Source | Live TradingView MOMENTUM screeners | Weekly CSV exports | Weekly CSV watchlists |
+| Refresh | Live, every run | Weekly (Saturday script) | Weekly (Saturday script) |
+| Types | stocks, etf, ark, crypto, crypto_perps, futures | sp_ndx, r2k | thematic_stocks (lux scan), thematic_etfs_1/_2 |
+| In `all` run? | ✅ Yes | ✅ Yes | ✅ Yes |
+| Extra signal | — | Retail sentiment / WTD / watchers / chatter | LuxAlgo S&O+PAC+OSC scores (stocks); TWB+NW+Vol grouped by theme (ETFs) |
+| Summary file? | — | — | ✅ `thematic_stocks-summary.md`, `thematic_etfs-summary.md` |
 
-### Momentum watchlist recommended cadence
-The sp_ndx and r2k lists refresh **weekly** from Friday-close CSV exports. The daily run monitors a fixed candidate set for entry triggers.
+### Watchlist recommended cadence
 
-- **Saturday:** drop 4 dated CSVs into `CSV/`, then `node scripts/build-momentum-watchlists.mjs` — rebuilds both watchlists + chatter annotations.
+- **Saturday:** drop 4 dated CSVs into `CSV/`, then `node scripts/build-momentum-watchlists.mjs` — rebuilds sp_ndx + r2k watchlists + chatter annotations.
 - **Saturday (if thematic watchlists changed):** update `CSV/Watchlist_Stocks.csv` and/or `CSV/Watchlist_ETFs.csv`, then `node scripts/build-watchlist-configs.mjs` — regenerates all thematic configs (stocks + etfs_1 + etfs_2).
-- **Saturday:** `lux screener scan sp_ndx` and `lux screener scan r2k` — run the LuxAlgo batch scan, save as `sp_ndx.md` and `r2k.md`.
-- **Saturday (optional):** `morning brief thematic_etfs_1` then `morning brief thematic_etfs_2` — weekly macro rotation review across all 8 ETF themes.
-- **Daily (Mon–Fri):** `morning brief sp_ndx` and `morning brief r2k` — TWB/NW/Vol scan for entry triggers.
+- **Daily (Mon–Fri):** `morning brief all` — runs everything: all 8 core/momentum briefs + thematic_stocks LuxAlgo scan (121 symbols) + thematic_etfs_1/_2 + all summary files + daily-summary.
 - By Thu/Fri the weekly data is stale vs price — the live `morning brief stocks` (core) provides fresher mid-week discovery.
 
 ---
@@ -110,22 +119,36 @@ Top 10 = highest score. Bottom 10 = lowest score. For `thematic_stocks`, output 
 
 ---
 
-## 🗂️ Thematic ETF scan
+## 🗂️ Thematic reports
 
-Full thematic ETF watchlist (~90 ETFs, 8 themes) scanned via TWB+NW+Vol on the **weekly** timeframe. Split into two halves (~49 + 41 ETFs) to avoid the MCP timeout on weekly scans. Output grouped by theme with per-theme rotation read and a Cross-Theme summary.
+### Thematic Stocks — 121 symbols, 8 themes (LuxAlgo scan)
+
+```
+lux screener scan thematic_stocks  # 121 stocks grouped by theme, S&O+PAC+OSC scores
+```
+
+Runs via `lux_screener_scan` (not `morning_brief`). Output: full per-symbol table by theme + top 10 / bottom 10. Auto-generates two files when run as part of `all`:
+- `thematic_stocks.md` — all 121 symbols with every signal
+- `thematic_stocks-summary.md` — theme-level table + top picks (score ≥ 5) + avoid list
+
+**Watchlist source:** `CSV/Watchlist_Stocks.csv` → `config/strategy-thematic_stocks.json`  
+**Rebuild:** `node scripts/build-watchlist-configs.mjs`
+
+### Thematic ETFs — ~90 ETFs, 8 themes (TWB+NW+Vol, weekly TF)
 
 ```
 morning brief thematic_etfs_1      # AI semis + AI power/grid + Healthcare + Financials (~49 ETFs)
 morning brief thematic_etfs_2      # Crypto + Industrials/defense + Energy + Consumer + Space (~41 ETFs)
 ```
 
-Run **both halves** and save each independently. Run standalone (not in `all`).
+Split into two halves to avoid MCP timeout on weekly scans. Auto-generates three files when run as part of `all`:
+- `thematic_etfs_1.md` + `thematic_etfs_2.md` — full per-ETF analysis by theme
+- `thematic_etfs-summary.md` — combined rotation summary across all 8 ETF themes
 
-**Watchlist source:** `CSV/Watchlist_ETFs.csv` → auto-generates `strategy-thematic_etfs_1.json` + `strategy-thematic_etfs_2.json`  
-**Rebuild:** `node scripts/build-watchlist-configs.mjs` (when watchlist changes — not weekly)  
-**NOT in `all` run** — run standalone on whichever day you want macro rotation context.
+**Watchlist source:** `CSV/Watchlist_ETFs.csv` → `config/strategy-thematic_etfs_1.json` + `strategy-thematic_etfs_2.json`  
+**Rebuild:** `node scripts/build-watchlist-configs.mjs` (when watchlist changes)
 
-> The single `thematic_etfs` type (full 90-ETF list) still exists in the enum but will time out — always use `_1`/`_2` split.
+> The single `thematic_etfs` type (full 90-ETF list) exists in the enum but will time out — always use `_1`/`_2` split. The summary is saved under `thematic_etfs` type.
 
 ---
 

@@ -10,7 +10,7 @@ export function registerMorningTools(server) {
       instrument_type: z
         .enum(['stocks', 'ark', 'etf', 'futures', 'indices', 'crypto', 'crypto_perps', 'sp_ndx', 'r2k', 'thematic_etfs', 'thematic_etfs_1', 'thematic_etfs_2', 'all'])
         .default('stocks')
-        .describe('Instrument type to scan. Use "all" to run all 8 briefs (stocks, etf, ark, crypto, crypto_perps, futures, sp_ndx, r2k) sequentially and auto-save each report plus a daily-summary.md. sp_ndx = weekly S&P 500 + Nasdaq 100 momentum names (rebuilt Saturdays). r2k = weekly Russell 2000 momentum names. thematic_etfs = full thematic ETF watchlist (~90 ETFs across 8 themes, weekly TF, grouped output). Default: stocks.'),
+        .describe('Instrument type to scan. Use "all" to run all standard briefs (stocks, etf, ark, crypto, crypto_perps, futures, sp_ndx, r2k) plus thematic reports (thematic_stocks 121-symbol LuxAlgo scan + summary, thematic_etfs_1 + thematic_etfs_2 + combined ETF summary) sequentially, auto-saving each report and a final daily-summary.md. sp_ndx = weekly S&P 500 + Nasdaq 100 momentum (~40 names, Saturdays). r2k = weekly Russell 2000 (~25 names, Saturdays). thematic_etfs_1/_2 = 90 ETFs across 8 themes. thematic_stocks runs via lux_screener_scan (not morning_brief). Default: stocks.'),
       rules_path: z
         .string()
         .optional()

@@ -281,6 +281,7 @@ async function scanSymbol(symbol, timeframe, scanWaitMs, opts = {}) {
 }
 
 const ALL_INSTRUMENTS = ['stocks', 'etf', 'ark', 'crypto', 'crypto_perps', 'futures', 'sp_ndx', 'r2k'];
+const THEMATIC_INSTRUMENTS = ['thematic_etfs_1', 'thematic_etfs_2'];
 
 export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = {}) {
   const instrument = instrument_type || 'stocks';
@@ -292,6 +293,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
       mode: 'all',
       generated_at: new Date().toISOString(),
       instruments: ALL_INSTRUMENTS,
+      thematic_instruments: THEMATIC_INSTRUMENTS,
       instruction: [
         `Run morning_brief sequentially for each of these instrument types IN ORDER: ${ALL_INSTRUMENTS.join(', ')}.`,
         `For each instrument_type:`,
@@ -300,7 +302,17 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
         `3. Write the full analysis (symbol table, top 3 setups, overall market read) under a markdown header: ## STOCKS / ## CRYPTO / ## CRYPTO PERPS / ## FUTURES / etc.`,
         `4. Call session_save with your full analysis text and the matching instrument_type.`,
         `5. Proceed to the next instrument_type.`,
-        `After ALL ${ALL_INSTRUMENTS.length} briefs are complete, call session_save one final time with instrument_type="daily_summary" — write a 4-line block per instrument (line 1 = "## TYPE | BIAS", line 2 = benchmark status, line 3 = "TOP 3: ...", line 4 = "SKIP: ..."), all stacked into one file. This is the single file the user reads each morning.`,
+        `After ALL ${ALL_INSTRUMENTS.length} standard briefs are complete, run the thematic reports in order:`,
+        `THEMATIC STEP 1 — Thematic Stocks (all 121 symbols):`,
+        `Call lux_screener_scan with instrument_type="thematic_stocks". This returns a full per-symbol table grouped by theme.`,
+        `Write the full grouped report (all 121 symbols, all themes, with S&O/PAC/OSC signals and scores) and call session_save with instrument_type="thematic_stocks".`,
+        `Then write a theme-level summary (one row per theme showing bias/bull-bear count/top names/best score, plus a "Top Picks" table of all symbols scoring ≥ 5, plus a bottom-10 avoid table) and call session_save with instrument_type="thematic_stocks" and is_summary=true.`,
+        `THEMATIC STEP 2 — Thematic ETFs (90 ETFs across 8 themes):`,
+        `Call morning_brief with instrument_type="thematic_etfs_1", write the full analysis, call session_save instrument_type="thematic_etfs_1".`,
+        `Call morning_brief with instrument_type="thematic_etfs_2", write the full analysis, call session_save instrument_type="thematic_etfs_2".`,
+        `Then write a combined thematic ETF summary (one row per ETF theme across both halves showing bias/leading ETFs/fading ETFs, plus a "Top ETF Picks" table of all ETFs scoring bullish TWB with room to NW band, plus avoid list) and call session_save with instrument_type="thematic_etfs" and is_summary=true.`,
+        `FINAL STEP — Daily Summary:`,
+        `Call session_save one final time with instrument_type="daily_summary" — write a 4-line block per instrument covering ALL instruments including thematic (line 1 = "## TYPE | BIAS", line 2 = benchmark status, line 3 = "TOP 3: ...", line 4 = "SKIP: ..."), all stacked into one file. This is the single file the user reads each morning.`,
         `Be direct. No preamble between sections.`,
       ].join(' '),
     };
