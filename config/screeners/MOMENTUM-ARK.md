@@ -1,8 +1,8 @@
 # MOMENTUM-ARK — Stock Screener
 
 **Type:** Stock Screener  
-**Used by:** `morning_brief instrument_type="ark"`  
-**rules.json key:** `"ark": "MOMENTUM-ARK"`
+**Used by:** `morning_brief instrument_type="momentum_ark"`  
+**rules.json key:** `"momentum_ark": "MOMENTUM-ARK"`
 
 ## Filters
 
@@ -25,7 +25,7 @@ Custom tab — columns: Price, Chg %, Perf % 1W, 1M, 3M, 6M, YTD, 1Y, 3Y, 10Y, A
 
 ## Notes
 
-- Scoped to `ark-stock-list` watchlist — must be created first (116 symbols from strategy-ark.json)
+- Scoped to `ark-stock-list` watchlist — must be created first (116 symbols from strategy-momentum_ark.json)
 - No market cap filter needed — watchlist already curated
 - 1M sort (not 3M) because ARK names move faster — 3M can miss recent rotations
 - Only `Price > EMA(50)` as gate — removes stocks in downtrend
@@ -34,4 +34,4 @@ Custom tab — columns: Price, Chg %, Perf % 1W, 1M, 3M, 6M, YTD, 1Y, 3Y, 10Y, A
 
 ## Watchlist Import (ark-stock-list)
 
-See `strategy-ark.json` for the full 116-symbol list with exchange prefixes (NASDAQ:NVDA format).
+See `strategy-momentum_ark.json` for the full 116-symbol list with exchange prefixes (NASDAQ:NVDA format).

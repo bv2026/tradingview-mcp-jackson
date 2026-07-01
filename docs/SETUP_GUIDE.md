@@ -20,7 +20,7 @@ Copy the example rules file:
 cp ~/tradingview-mcp-jackson/rules.example.json ~/tradingview-mcp-jackson/rules.json
 ```
 
-`rules.json` maps instrument types to TradingView screener names. The strategy files (`strategy-stocks.json`, `strategy-crypto.json`, `strategy-crypto_perps.json`) contain all bias criteria, entry/exit rules, and risk rules — they are pre-configured and ready to use.
+`rules.json` maps instrument types to TradingView screener names. The strategy files (`strategy-momentum_stocks.json`, `strategy-crypto.json`, `strategy-crypto_perps.json`) contain all bias criteria, entry/exit rules, and risk rules — they are pre-configured and ready to use.
 
 Tell the user: "Open `rules.json` and verify the screener names match the saved screens in your TradingView account. Each screener must be open and visible in TradingView for the morning brief to read it."
 
@@ -127,7 +127,7 @@ If `cdp_connected: false`, TradingView is not running with `--remote-debugging-p
 Three briefs available — run each with its screener window open in TradingView:
 
 ```
-morning_brief instrument_type="stocks"         # equity momentum, long only
+morning_brief instrument_type="momentum_stocks" # equity momentum, long only
 morning_brief instrument_type="crypto"         # crypto spot, BTC 50d SMA benchmark, long only
 morning_brief instrument_type="crypto_perps"   # perps, BTC TWB signal = long or short
 ```
@@ -172,7 +172,7 @@ Then `tv status`, `tv quote`, `tv pine compile`, etc. work from anywhere.
 ## What to Read Next
 
 - `rules.json` — Screener name mappings per instrument type
-- `strategy-stocks.json` — Stocks bias/entry/exit/risk rules
+- `strategy-momentum_stocks.json` — Momentum stocks bias/entry/exit/risk rules
 - `strategy-crypto.json` — Crypto spot bias/entry/exit/risk rules (long only, BTC 50d SMA benchmark)
 - `strategy-crypto_perps.json` — Crypto perps rules (long + short, BTC TWB signal benchmark)
 - `CLAUDE.md` — Full decision tree + strategy reference (auto-loaded by Claude Code)

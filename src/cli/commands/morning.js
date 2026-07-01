@@ -14,7 +14,7 @@ register("brief", {
       type: "string",
       short: "t",
       description:
-        "Instrument type: stocks | etf | ark | crypto | crypto_perps | futures | all (default: stocks)",
+        "Instrument type: momentum_stocks | momentum_etf | momentum_ark | crypto | crypto_perps | futures | all (default: momentum_stocks)",
     },
   },
   handler: async ({ rules, type }) =>
@@ -57,7 +57,7 @@ register("session", {
             type: "string",
             short: "t",
             description:
-              "Instrument type: stocks | etf | ark | crypto | crypto_perps | futures | daily_summary (default: stocks)",
+              "Instrument type: momentum_stocks | momentum_etf | momentum_ark | crypto | crypto_perps | futures | daily_summary (default: momentum_stocks)",
           },
           summary: {
             type: "boolean",

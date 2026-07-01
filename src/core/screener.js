@@ -66,7 +66,7 @@ function filterPerpsSymbols(symbols) {
   });
 }
 
-export async function get({ screener_name, max_symbols } = {}) {
+export async function get({ screener_name, max_symbols, offset } = {}) {
   const sc = await getScreenerClient(screener_name);
   if (!sc) {
     throw new Error(
@@ -125,8 +125,9 @@ export async function get({ screener_name, max_symbols } = {}) {
       ? filterCryptoSymbols(allSymbols)
       : allSymbols;
 
+  const start = offset && offset > 0 ? offset : 0;
   const limit = max_symbols && max_symbols > 0 ? max_symbols : filtered.length;
-  const symbols = filtered.slice(0, limit);
+  const symbols = filtered.slice(start, start + limit);
 
   return {
     success: true,
@@ -135,6 +136,7 @@ export async function get({ screener_name, max_symbols } = {}) {
     screener_type: screenerType,
     total_in_screener: allSymbols.length,
     total_after_filter: filtered.length,
+    offset: start,
     symbols_returned: symbols.length,
     max_symbols: limit,
     symbols,

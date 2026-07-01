@@ -160,7 +160,7 @@ This is the feature that turns this from a toolkit into a daily habit. Three ind
 2. Run one or more briefs:
 
 ```
-morning_brief instrument_type="stocks"         # equity momentum
+morning_brief instrument_type="momentum_stocks" # equity momentum
 morning_brief instrument_type="crypto"         # crypto spot (Coinbase)
 morning_brief instrument_type="crypto_perps"   # crypto perps long or short
 ```
@@ -190,7 +190,7 @@ Each brief loads its own strategy file:
 
 | Brief | Command | Screener | Strategy File | Side |
 |-------|---------|----------|---------------|------|
-| Stocks | `instrument_type="stocks"` | `MOMENTUM` | `strategy-stocks.json` | Long only |
+| Momentum Stocks | `instrument_type="momentum_stocks"` | `MOMENTUM` | `strategy-momentum_stocks.json` | Long only |
 | Crypto Spot | `instrument_type="crypto"` | `MOMENTUM-CRYPTO` | `strategy-crypto.json` | Long only |
 | Crypto Perps | `instrument_type="crypto_perps"` | `MOMENTUM-PERPS` | `strategy-crypto_perps.json` | **Long + Short** |
 

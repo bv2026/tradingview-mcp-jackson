@@ -21,7 +21,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const CONFIG = join(ROOT, 'config');
 
-const ALL_INSTRUMENTS = ['stocks', 'etf', 'ark', 'crypto', 'crypto_perps', 'futures'];
+const ALL_INSTRUMENTS = ['momentum_stocks', 'momentum_etf', 'momentum_ark', 'crypto', 'crypto_perps', 'futures'];
 
 function loadJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
@@ -50,7 +50,7 @@ describe('rules.json completeness', () => {
   });
 
   it('screener-based instruments point to a non-null screener name', () => {
-    for (const inst of ['stocks', 'etf', 'crypto', 'crypto_perps']) {
+    for (const inst of ['momentum_stocks', 'momentum_etf', 'crypto', 'crypto_perps']) {
       assert.ok(rules.screener_sources[inst], `screener_sources["${inst}"] should be non-null`);
     }
   });
@@ -90,10 +90,10 @@ describe('strategy files', () => {
       }
     });
 
-    it(`strategy-${inst}.json max_symbols is a positive integer`, () => {
+    it(`strategy-${inst}.json max_symbols is a non-negative integer (0 = uncapped, scan full screener)`, () => {
       const { max_symbols } = loadJson(path);
-      assert.ok(Number.isInteger(max_symbols) && max_symbols > 0,
-        `max_symbols must be a positive integer, got ${max_symbols}`);
+      assert.ok(Number.isInteger(max_symbols) && max_symbols >= 0,
+        `max_symbols must be a non-negative integer, got ${max_symbols}`);
     });
 
     it(`strategy-${inst}.json required_indicators includes all 3 LuxAlgo indicators`, () => {
@@ -105,13 +105,13 @@ describe('strategy files', () => {
     });
   }
 
-  it('stocks and etf both have max_symbols = 20 (consistency)', () => {
-    assert.equal(loadJson(join(CONFIG, 'strategy-stocks.json')).max_symbols, 20);
-    assert.equal(loadJson(join(CONFIG, 'strategy-etf.json')).max_symbols, 20);
+  it('momentum_stocks and momentum_etf both have max_symbols = 0 (uncapped — scan full screener)', () => {
+    assert.equal(loadJson(join(CONFIG, 'strategy-momentum_stocks.json')).max_symbols, 0);
+    assert.equal(loadJson(join(CONFIG, 'strategy-momentum_etf.json')).max_symbols, 0);
   });
 
-  it('watchlist instruments (ark, futures) have non-empty watchlist array', () => {
-    for (const inst of ['ark', 'futures']) {
+  it('watchlist instruments (momentum_ark, futures) have non-empty watchlist array', () => {
+    for (const inst of ['momentum_ark', 'futures']) {
       const { watchlist } = loadJson(join(CONFIG, `strategy-${inst}.json`));
       assert.ok(Array.isArray(watchlist) && watchlist.length > 0,
         `strategy-${inst}.json must have a non-empty watchlist array`);
@@ -119,7 +119,7 @@ describe('strategy files', () => {
   });
 
   it('screener instruments have a screener_name string', () => {
-    for (const inst of ['stocks', 'etf', 'ark', 'crypto', 'crypto_perps']) {
+    for (const inst of ['momentum_stocks', 'momentum_etf', 'momentum_ark', 'crypto', 'crypto_perps']) {
       const { screener_name } = loadJson(join(CONFIG, `strategy-${inst}.json`));
       assert.ok(typeof screener_name === 'string' && screener_name.length > 0,
         `strategy-${inst}.json must have a non-empty screener_name`);
@@ -264,8 +264,8 @@ describe('session file I/O round-trip', () => {
   });
 
   it('is_summary=true writes to {type}-summary.md', () => {
-    const saved = save({ brief: 'Short summary', instrument_type: 'stocks', is_summary: true, date: today });
-    assert.ok(saved.path.endsWith('stocks-summary.md'), `Expected stocks-summary.md, got: ${saved.path}`);
+    const saved = save({ brief: 'Short summary', instrument_type: 'momentum_stocks', is_summary: true, date: today });
+    assert.ok(saved.path.endsWith('momentum_stocks-summary.md'), `Expected momentum_stocks-summary.md, got: ${saved.path}`);
   });
 
   it('folder name format is YYYY-Mon-DD', () => {

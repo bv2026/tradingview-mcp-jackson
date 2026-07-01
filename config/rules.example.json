@@ -2,8 +2,8 @@
   "_comment": "Copy this to rules.json and adjust screener names to match your TradingView saved screens.",
 
   "screener_sources": {
-    "stocks":  "MOMENTUM",
-    "etf":     "MOMENTUM-ETF",
+    "momentum_stocks":  "MOMENTUM",
+    "momentum_etf":     "MOMENTUM-ETF",
     "futures": "MOMENTUM-FUTURES",
     "indices": "MOMENTUM-INDICES",
     "crypto":       "MOMENTUM-CRYPTO",

@@ -49,9 +49,9 @@ Use a specific study filter when you know the indicator name:
 
 ## Morning Workflow
 
-### Stocks
-- `Run morning_brief instrument_type="stocks" and give me my session bias.`
-- `Run the stocks brief and show me top 3 long candidates.`
+### Momentum Stocks
+- `Run morning_brief instrument_type="momentum_stocks" and give me my session bias.`
+- `Run the momentum stocks brief and show me top 3 long candidates.`
 
 ### Crypto Spot
 - `Run morning_brief instrument_type="crypto" — check BTC benchmark first, then give me alt bias.`

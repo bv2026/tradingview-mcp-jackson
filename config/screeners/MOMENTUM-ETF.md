@@ -1,8 +1,8 @@
 # MOMENTUM-ETF — ETF Screener
 
 **Type:** ETF Screener  
-**Used by:** `morning_brief instrument_type="etf"`  
-**rules.json key:** `"etf": "MOMENTUM-ETF"`
+**Used by:** `morning_brief instrument_type="momentum_etf"`  
+**rules.json key:** `"momentum_etf": "MOMENTUM-ETF"`
 
 ## Filters
 

@@ -280,11 +280,11 @@ async function scanSymbol(symbol, timeframe, scanWaitMs, opts = {}) {
   return reading;
 }
 
-const ALL_INSTRUMENTS = ['stocks', 'etf', 'ark', 'crypto', 'crypto_perps', 'futures', 'sp_ndx', 'r2k'];
+const ALL_INSTRUMENTS = ['momentum_stocks', 'momentum_etf', 'momentum_ark', 'crypto', 'crypto_perps', 'futures', 'sp_ndx', 'r2k'];
 const THEMATIC_INSTRUMENTS = ['thematic_etfs_1', 'thematic_etfs_2'];
 
-export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = {}) {
-  const instrument = instrument_type || 'stocks';
+export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, offset, max_symbols } = {}) {
+  const instrument = instrument_type || 'momentum_stocks';
 
   // "all" mode — instruct Claude to call morning_brief for each type sequentially
   if (instrument === 'all') {
@@ -299,7 +299,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
         `For each instrument_type:`,
         `1. Call morning_brief with that instrument_type.`,
         `2. Apply the returned bias_criteria and instruction to the symbols_scanned data.`,
-        `3. Write the full analysis (symbol table, top 3 setups, overall market read) under a markdown header: ## STOCKS / ## CRYPTO / ## CRYPTO PERPS / ## FUTURES / etc.`,
+        `3. Write the full analysis (symbol table, top 3 setups, overall market read) under a markdown header: ## MOMENTUM STOCKS / ## CRYPTO / ## CRYPTO PERPS / ## FUTURES / etc.`,
         `4. Call session_save with your full analysis text and the matching instrument_type.`,
         `5. Proceed to the next instrument_type.`,
         `After ALL ${ALL_INSTRUMENTS.length} standard briefs are complete, run the thematic reports in order:`,
@@ -337,7 +337,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
   // Resolve screener name from rules.json (null = use static watchlist from strategy file)
   const screenerName = rules.screener_sources?.[instrument] ?? null;
 
-  const maxSymbols = strategy.max_symbols || 10;
+  const maxSymbols = max_symbols ?? strategy.max_symbols ?? 10;
   const timeframe = strategy.default_timeframe || 'D';
 
   let symbols, screenerResult;
@@ -356,7 +356,11 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
         `No screener configured for "${instrument}" and no watchlist found in strategy-${instrument}.json.`
       );
     }
-    symbols = staticList.slice(0, maxSymbols).map(entry => {
+    const start = offset && offset > 0 ? offset : 0;
+    const windowed = maxSymbols && maxSymbols > 0
+      ? staticList.slice(start, start + maxSymbols)
+      : staticList.slice(start);
+    symbols = windowed.map(entry => {
       if (entry && typeof entry === 'object') {
         const { symbol, ...meta } = entry;
         if (symbol && Object.keys(meta).length) symbolMeta[symbol] = meta;
@@ -364,10 +368,10 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
       }
       return entry;
     });
-    screenerResult = { name: `static:${instrument}`, total_in_screener: symbols.length };
+    screenerResult = { name: `static:${instrument}`, total_in_screener: staticList.length, offset: start };
   } else {
     // Live screener path
-    const result = await screener.get({ screener_name: screenerName, max_symbols: maxSymbols });
+    const result = await screener.get({ screener_name: screenerName, max_symbols: maxSymbols, offset });
     symbols = result.symbols || [];
     screenerResult = result;
     if (symbols.length === 0) {
@@ -488,16 +492,16 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
         ? `PERPS BENCHMARK: The FIRST symbol in symbols_scanned is always BTC perp. Read its TWB Histogram. If POSITIVE → market in uptrend → scan all alts for LONG setups using bullish_long criteria. If NEGATIVE → market in downtrend → scan all alts for SHORT setups using bearish_short criteria. Do NOT default to "no trades" on negative BTC TWB — negative means SHORT side is in play. Commodity perps (SILVER, GOLD) use their own TWB signal independently of BTC. Output top 3 LONG candidates OR top 3 SHORT candidates depending on BTC TWB direction.`
         : instrument === 'futures'
         ? `FUTURES REGIME DETECTION: Each symbol is evaluated independently — no single benchmark. For each symbol, determine which regime applies using regime_detection rules: TRENDING (TWB Histogram clearly directional for 3+ bars, HH/HL or LL/LH structure) or MEAN_REVERTING (TWB near zero or reversing, RSI extreme, price extended beyond NW band). Then apply the matching bias_criteria (trend_long, trend_short, mean_rev_long, mean_rev_short). Check macro_overlays in market_context: DXY direction affects metals/FX, ZB/ZN direction affects equity index, VX1! level sets overall risk mode. Output one line per symbol with its regime tag. End with top 3 setups across all sectors.`
-        : instrument === 'ark'
+        : instrument === 'momentum_ark'
         ? `ARK RELATIVE STRENGTH + BASE BREAKOUT: First check benchmark_status (QQQ vs its 50-day EMA, computed in the payload). If benchmark_status.above is false, all signals are SKIP (wait for market). If benchmark_status.near is true, the benchmark is borderline — reduce conviction. If benchmark_status.available is false, the benchmark could not be measured — be conservative. For each symbol: (1) RELATIVE STRENGTH — compare the stock's recent price action to QQQ. If QQQ is down 2% over 20 days and the stock is down 0.5%, RS is positive. If QQQ is up 3% and stock is flat, RS is negative — skip it. (2) BASE CHECK — is the stock in a 2-6 week tight consolidation after a prior move up? Volume should be contracting during the base. NW Envelope: price should be inside bands (no recent ▲ signal = not yet extended). (3) BREAKOUT SIGNAL — TWB Histogram turning positive or printing a breakout. Assign each symbol one of: BASE_BUILDING (positive RS, base forming, volume contracting), BREAKOUT_READY (base complete, TWB triggering), EXTENDED (NW ▲ already printed, move played out — skip), SKIP (QQQ below 50d EMA, stock below 50d EMA, negative RS, or earnings within 5 days). Note the correlation cluster (ai_semis / fintech_crypto / autonomy_space / ai_software / genomics) — flag if multiple names from same cluster would be entered simultaneously.`
         : `Check benchmark_status first (computed in the payload — the benchmark price vs its configured moving average). If benchmark_status.above is false, the benchmark is below its ${strategy.market_context?.benchmark_ma_period || 50}-day ${strategy.market_context?.benchmark_ma_type || 'SMA'} — default ALL symbols to neutral/bearish (no long entries). If benchmark_status.near is true, treat the benchmark as borderline and reduce conviction. If benchmark_status.available is false, the benchmark could not be measured — be conservative on longs. IMPORTANT: bearish signals = exit/avoid on longs only. Do NOT suggest short entries.`,
       `If strategy has tradeable_exchanges defined, flag any symbol NOT available on those exchanges as SKIP.`,
-      instrument === 'ark'
+      instrument === 'momentum_ark'
         ? `Output one line per symbol: SYMBOL | STATUS: [BASE_BUILDING/BREAKOUT_READY/EXTENDED/SKIP] | RS: [+/-] | SIGNAL: [key observation] | CLUSTER: [cluster name]`
         : (instrument === 'thematic_etfs' || instrument === 'thematic_etfs_1' || instrument === 'thematic_etfs_2')
         ? `GROUP output by theme. Each symbol carries a 'theme' and 'sub_group' field — use them to organize the analysis. For each theme: write a "### {Theme}" header, then a markdown table: | ETF | SUB-GROUP | BIAS | TWB | NW | SIGNAL |. After the table, write one sentence: the theme's overall rotation direction (bullish / bearish / mixed). End with a "## Cross-Theme Read" summary listing which 2-3 themes show the strongest ETF breadth.`
         : `Output one line per symbol: SYMBOL | BIAS: [long/short/neutral] | SIGNAL: [key observation] | WATCH: [what to monitor]`,
-      instrument === 'ark'
+      instrument === 'momentum_ark'
         ? `Then list top 3 BREAKOUT_READY candidates (or BASE_BUILDING if none are ready) with entry_criteria checklist and cluster warning if applicable.`
         : (instrument === 'thematic_etfs' || instrument === 'thematic_etfs_1' || instrument === 'thematic_etfs_2')
         ? `Then list top 3 ETF setups across all themes with entry_criteria checklist and which theme they represent.`
@@ -520,7 +524,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms } = 
   return output;
 }
 
-export function saveSession({ brief, instrument_type = 'stocks', is_summary = false, date } = {}) {
+export function saveSession({ brief, instrument_type = 'momentum_stocks', is_summary = false, date } = {}) {
   const now = date ? new Date(date) : new Date();
   const folder = dateFolderName(now);
   const reportDir = join(REPORTS_DIR, folder);

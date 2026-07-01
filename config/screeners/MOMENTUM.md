@@ -1,8 +1,8 @@
 # MOMENTUM — Stock Screener
 
 **Type:** Stock Screener  
-**Used by:** `morning_brief instrument_type="stocks"`  
-**rules.json key:** `"stocks": "MOMENTUM"`
+**Used by:** `morning_brief instrument_type="momentum_stocks"`  
+**rules.json key:** `"momentum_stocks": "MOMENTUM"`
 
 ## Filters
 

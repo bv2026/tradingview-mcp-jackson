@@ -1,12 +1,12 @@
 {
   "chart_tabs": {
     "_note": "chart_id is stable across tab reorders. layout_name is for reference only. Update chart_id here if you create a replacement layout.",
-    "stocks":       { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
+    "momentum_stocks": { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
     "crypto":       { "chart_id": "CqUlBsk4", "layout_name": "MY-CRYPTO" },
     "crypto_perps": { "chart_id": "6y8jPo4Y", "layout_name": "MY-PERPS" },
     "futures":      { "chart_id": "PtVmcfrM", "layout_name": "MY-FUTURES" },
-    "ark":          { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
-    "etf":          { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
+    "momentum_ark":    { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
+    "momentum_etf":    { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
     "sp_ndx":       { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
     "r2k":          { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
     "thematic_etfs":   { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
@@ -15,10 +15,10 @@
   },
 
   "screener_sources": {
-    "stocks":        "MOMENTUM",
-    "etf":           "MOMENTUM-ETF",
+    "momentum_stocks": "MOMENTUM",
+    "momentum_etf":    "MOMENTUM-ETF",
     "futures":       null,
-    "ark":           "MOMENTUM-ARK",
+    "momentum_ark":    "MOMENTUM-ARK",
     "indices":       "MOMENTUM-INDICES",
     "crypto":        "MOMENTUM-CRYPTO",
     "crypto_perps":  "MOMENTUM-PERPS",
