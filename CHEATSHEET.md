@@ -9,16 +9,18 @@ Quick reference for the daily/weekly trading workflow. Prompts are what you type
 | Goal | Prompt |
 |---|---|
 | **Run all briefs + thematic reports + daily summary** | `morning brief all` |
-| Single core brief | `morning brief stocks` (or `etf`, `ark`, `crypto`, `crypto_perps`, `futures`) |
+| Single core brief | `morning brief momentum_stocks` (or `momentum_etf`, `momentum_ark`, `crypto`, `crypto_perps`, `futures`) |
 | Single momentum brief | `morning brief sp_ndx` (or `r2k`) |
 | Thematic stocks scan (121 symbols) | `lux screener scan thematic_stocks` |
 | Thematic ETF scan | `morning brief thematic_etfs_1` then `morning brief thematic_etfs_2` |
-| Read back a saved brief | `get the stocks brief` (or any type) |
+| Read back a saved brief | `get the momentum_stocks brief` (or any type) |
 | Read today's daily summary | `get the daily summary` |
 
-> `all` covers **all 8 standard** instruments (stocks, etf, ark, crypto, crypto_perps, futures, sp_ndx, r2k) **plus thematic reports**: lux_screener_scan thematic_stocks (121 symbols → `thematic_stocks.md` + `thematic_stocks-summary.md`), morning_brief thematic_etfs_1 + thematic_etfs_2 (`thematic_etfs_1.md`, `thematic_etfs_2.md`, `thematic_etfs-summary.md`), and a final `daily-summary.md`.
+> `all` covers **all 8 standard** instruments (momentum_stocks, momentum_etf, momentum_ark, crypto, crypto_perps, futures, sp_ndx, r2k) **plus thematic reports**: lux_screener_scan thematic_stocks (121 symbols → `thematic_stocks.md` + `thematic_stocks-summary.md`), morning_brief thematic_etfs_1 + thematic_etfs_2 (`thematic_etfs_1.md`, `thematic_etfs_2.md`, `thematic_etfs-summary.md`), and a final `daily-summary.md`.
+>
+> Large screeners (momentum_stocks/momentum_etf/momentum_ark, ~100 symbols each) can exceed the tool's ~60-70s timeout on a plain call — batch with `offset`/`max_symbols` (e.g. `offset=0 max_symbols=50` then `offset=50 max_symbols=50`) if a call times out. The `all` workflow instruction batches these three automatically.
 
-**Reports land in:** `reports/{YYYY-Mon-DD}/`
+**Reports land in:** `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/` (daily reports are nested under an ISO 8601 week folder, e.g. `reports/2026-Wk27/2026-Jul-03/`)
 
 | File | Contents |
 |---|---|
@@ -81,7 +83,7 @@ Close with:
 |---|---|---|---|
 | Source | Live TradingView MOMENTUM screeners | Weekly CSV exports | Weekly CSV watchlists |
 | Refresh | Live, every run | Weekly (Saturday script) | Weekly (Saturday script) |
-| Types | stocks, etf, ark, crypto, crypto_perps, futures | sp_ndx, r2k | thematic_stocks (lux scan), thematic_etfs_1/_2 |
+| Types | momentum_stocks, momentum_etf, momentum_ark, crypto, crypto_perps, futures | sp_ndx, r2k | thematic_stocks (lux scan), thematic_etfs_1/_2 |
 | In `all` run? | ✅ Yes | ✅ Yes | ✅ Yes |
 | Extra signal | — | Retail sentiment / WTD / watchers / chatter | LuxAlgo S&O+PAC+OSC scores (stocks); TWB+NW+Vol grouped by theme (ETFs) |
 | Summary file? | — | — | ✅ `thematic_stocks-summary.md`, `thematic_etfs-summary.md` |
@@ -91,7 +93,7 @@ Close with:
 - **Saturday:** drop 4 dated CSVs into `CSV/`, then `node scripts/build-momentum-watchlists.mjs` — rebuilds sp_ndx + r2k watchlists + chatter annotations.
 - **Saturday (if thematic watchlists changed):** update `CSV/Watchlist_Stocks.csv` and/or `CSV/Watchlist_ETFs.csv`, then `node scripts/build-watchlist-configs.mjs` — regenerates all thematic configs (stocks + etfs_1 + etfs_2).
 - **Daily (Mon–Fri):** `morning brief all` — runs everything: all 8 core/momentum briefs + thematic_stocks LuxAlgo scan (121 symbols) + thematic_etfs_1/_2 + all summary files + daily-summary.
-- By Thu/Fri the weekly data is stale vs price — the live `morning brief stocks` (core) provides fresher mid-week discovery.
+- By Thu/Fri the weekly data is stale vs price — the live `morning brief momentum_stocks` (core) provides fresher mid-week discovery.
 
 ---
 
@@ -191,8 +193,9 @@ If a brief is rejected with an "invalid enum value" error for a new instrument t
 
 | Thing | Path |
 |---|---|
-| Daily reports | `reports/{YYYY-Mon-DD}/` |
+| Daily reports | `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/` |
 | Weekly reviews | `reports/weekly/` |
+| Old week folders (8+ weeks) | zipped into `reports/archive/` by the Sunday `tv-mcp-archive-old-reports` task |
 | Strategy rules per type | `config/strategy-{type}.json` |
 | Screener/chart-tab config | `config/rules.json` |
 | Scripts | `scripts/build-momentum-watchlists.mjs`, `scripts/build-watchlist-configs.mjs`, `scripts/build-weekly-review.mjs` |
