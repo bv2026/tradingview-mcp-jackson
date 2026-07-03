@@ -220,9 +220,24 @@ describe('session file I/O round-trip', () => {
     return `${date.getFullYear()}-${MONTHS[date.getMonth()]}-${String(date.getDate()).padStart(2, '0')}`;
   }
 
+  // ISO 8601 week: Monday-start, week 1 = the week containing the year's first Thursday.
+  function weekFolderName(date = new Date()) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = (d.getUTCDay() + 6) % 7;
+    d.setUTCDate(d.getUTCDate() - dayNum + 3);
+    const isoYear = d.getUTCFullYear();
+    const yearStart = Date.UTC(isoYear, 0, 1);
+    const weekNum = Math.ceil(((d.getTime() - yearStart) / 86400000 + 1) / 7);
+    return `${isoYear}-Wk${String(weekNum).padStart(2, '0')}`;
+  }
+
+  function reportDirFor(date) {
+    return join(tmpReports, weekFolderName(date), dateFolderName(date));
+  }
+
   function save({ brief, instrument_type = 'stocks', is_summary = false, date } = {}) {
     const now = date ? new Date(date) : new Date();
-    const dir = join(tmpReports, dateFolderName(now));
+    const dir = reportDirFor(now);
     mkdirSync(dir, { recursive: true });
     const isDailySum = instrument_type === 'daily_summary';
     const filename = isDailySum ? 'daily-summary.md'
@@ -235,7 +250,7 @@ describe('session file I/O round-trip', () => {
 
   function get({ instrument_type, date } = {}) {
     const now = date ? new Date(date) : new Date();
-    const filePath = join(tmpReports, dateFolderName(now), `${instrument_type}.md`);
+    const filePath = join(reportDirFor(now), `${instrument_type}.md`);
     if (!existsSync(filePath)) return { success: false };
     return { success: true, content: readFileSync(filePath, 'utf8') };
   }
@@ -272,5 +287,23 @@ describe('session file I/O round-trip', () => {
     // Use a local date (not UTC string parse) to avoid timezone shift
     const d = new Date(2026, 5, 13); // month is 0-indexed: 5 = June
     assert.equal(dateFolderName(d), '2026-Jun-13');
+  });
+
+  it('week folder format is YYYY-WkNN', () => {
+    const d = new Date(2026, 5, 13); // Sat, 2026-Jun-13 — ISO week 24 of 2026
+    assert.equal(weekFolderName(d), '2026-Wk24');
+  });
+
+  it('week folder handles the year-boundary edge case correctly', () => {
+    // 2025-Dec-29 is a Monday, and Jan 1 2026 (Thursday) falls in that same
+    // Mon-Sun week — per ISO 8601 this week belongs to 2026, not 2025.
+    const d = new Date(2025, 11, 29);
+    assert.equal(weekFolderName(d), '2026-Wk01');
+  });
+
+  it('report path nests day folder under week folder', () => {
+    const saved = save({ brief: 'nesting check', instrument_type: 'futures', date: new Date(2026, 5, 13) });
+    assert.ok(saved.path.includes(`${join('2026-Wk24', '2026-Jun-13')}`),
+      `Expected path to include week/day nesting, got: ${saved.path}`);
   });
 });

@@ -42,7 +42,9 @@ The `morning_brief` tool's embedded instruction says to output bare pipe-delimit
 - For `thematic_stocks` summary (saved with `is_summary=true` as `thematic_stocks-summary.md`): lead with a theme-level summary table `| Theme | Bias | Bull / Bear / Total | Top Names | Best Score |`, then a "Top Picks by Theme" table of all symbols scoring ≥ 5 `| SYMBOL | THEME | S&O RATING | SIGNAL | PAC | OSC DIV | SCORE |`, then an "Avoid" table of bottom 10, then a 2-bullet macro read.
 - For `thematic_etfs` summary (saved with `is_summary=true` as `thematic_etfs-summary.md`): lead with a combined rotation table `| ETF Theme | Bias | Leading ETFs | Fading ETFs |` covering all 8 themes across both halves, then a "Top ETF Picks" table of bullish ETFs with room to NW band, then an avoid list, then a cross-theme macro read.
 
-The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief body should start at `## {TYPE}`. See `reports/2026-Jun-13/` for reference structure.
+The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief body should start at `## {TYPE}`. See `reports/2026-Wk24/2026-Jun-13/` for reference structure.
+
+**Reports folder layout:** `reports/<YYYY-WkNN>/<YYYY-Mon-DD>/<type>.md` — daily reports are nested under an ISO 8601 week folder (Monday-start, year-prefixed so it sorts correctly across year boundaries, e.g. `2026-Wk27`) to keep `reports/` from accumulating hundreds of flat date folders. `reports/weekly/` (weekly review narratives) and `reports/archive/` (zipped old weeks) are separate, un-nested top-level folders — not part of this pattern. A weekly scheduled task (`tv-mcp-archive-old-reports`, Sundays) zips and moves week folders older than 8 weeks into `reports/archive/`; see `scripts/archive-old-reports.mjs`.
 
 **Key files:**
 - `rules.json` — screener name per instrument type

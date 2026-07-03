@@ -39,7 +39,9 @@ The `morning_brief` tool's embedded instruction says to output bare pipe-delimit
 - For `instrument_type="daily_summary"`: lead with a `## Quick Reference` table (Instrument | Direction | Top 3 | Key Action), one short section per instrument, and close with a `## Cross-Market Read` table.
 - For `lux_screener_scan` briefs (`sp_ndx`, `r2k`): the scan result includes a `chatter_section` field — always include it as `## Chatter Conflicts & Confluences` after the Top 10 table and before Overall Market Read. Also include it in the daily summary's Cross-Market Read and in the weekly review's chatter callout. If `chatter_section` is empty or says "No notable…", omit the section rather than including a blank header.
 
-The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief body should start at `## {TYPE}`. See `reports/2026-Jun-13/` for reference structure.
+The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief body should start at `## {TYPE}`. See `reports/2026-Wk24/2026-Jun-13/` for reference structure.
+
+**Reports folder layout:** `reports/<YYYY-WkNN>/<YYYY-Mon-DD>/<type>.md` — daily reports are nested under an ISO 8601 week folder (Monday-start, year-prefixed so it sorts correctly across year boundaries, e.g. `2026-Wk27`) to keep `reports/` from accumulating hundreds of flat date folders. `reports/weekly/` (weekly review narratives) and `reports/archive/` (zipped old weeks) are separate, un-nested top-level folders — not part of this pattern. A weekly scheduled task (`tv-mcp-archive-old-reports`, Sundays) zips and moves week folders older than 8 weeks into `reports/archive/`; see `scripts/archive-old-reports.mjs`.
 
 **Key files:**
 - `rules.json` — screener name per instrument type

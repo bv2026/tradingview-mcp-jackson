@@ -29,6 +29,27 @@ function dateFolderName(date = new Date()) {
   return `${y}-${m}-${d}`;
 }
 
+// ISO 8601 week: Monday-start, week 1 = the week containing the year's first Thursday.
+// isoYear can differ from date.getFullYear() for dates in late Dec / early Jan.
+function isoWeekInfo(date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = (d.getUTCDay() + 6) % 7; // Mon=0 .. Sun=6
+  d.setUTCDate(d.getUTCDate() - dayNum + 3); // shift to this week's Thursday
+  const isoYear = d.getUTCFullYear();
+  const yearStart = Date.UTC(isoYear, 0, 1);
+  const weekNum = Math.ceil(((d.getTime() - yearStart) / 86400000 + 1) / 7);
+  return { isoYear, weekNum };
+}
+
+function weekFolderName(date = new Date()) {
+  const { isoYear, weekNum } = isoWeekInfo(date);
+  return `${isoYear}-Wk${String(weekNum).padStart(2, '0')}`;
+}
+
+function reportDirFor(date = new Date()) {
+  return join(REPORTS_DIR, weekFolderName(date), dateFolderName(date));
+}
+
 function loadRules(rulesPath) {
   const candidates = [
     rulesPath,
@@ -527,7 +548,8 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
 export function saveSession({ brief, instrument_type = 'momentum_stocks', is_summary = false, date } = {}) {
   const now = date ? new Date(date) : new Date();
   const folder = dateFolderName(now);
-  const reportDir = join(REPORTS_DIR, folder);
+  const week = weekFolderName(now);
+  const reportDir = reportDirFor(now);
   mkdirSync(reportDir, { recursive: true });
 
   const isDailySum = instrument_type === 'daily_summary';
@@ -557,23 +579,23 @@ export function saveSession({ brief, instrument_type = 'momentum_stocks', is_sum
   ].join('\n');
 
   writeFileSync(filePath, content, 'utf8');
-  return { success: true, path: filePath, folder };
+  return { success: true, path: filePath, folder: `${week}/${folder}` };
 }
 
 export function getSession({ date, instrument_type } = {}) {
   const now = date ? new Date(date) : new Date();
   const folder = dateFolderName(now);
-  const reportDir = join(REPORTS_DIR, folder);
+  const reportDir = reportDirFor(now);
 
   if (instrument_type) {
     const filePath = join(reportDir, `${instrument_type}.md`);
     if (existsSync(filePath)) {
       return { success: true, path: filePath, content: readFileSync(filePath, 'utf8') };
     }
-    // Try yesterday's folder
+    // Try yesterday's folder (may be in a different ISO week)
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
-    const yPath = join(REPORTS_DIR, dateFolderName(yesterday), `${instrument_type}.md`);
+    const yPath = join(reportDirFor(yesterday), `${instrument_type}.md`);
     if (existsSync(yPath)) {
       return { success: true, note: 'No report for today — returning yesterday', path: yPath, content: readFileSync(yPath, 'utf8') };
     }
@@ -587,7 +609,7 @@ export function getSession({ date, instrument_type } = {}) {
   if (available.length > 0) {
     return {
       success: true,
-      folder,
+      folder: `${weekFolderName(now)}/${folder}`,
       reports_dir: reportDir,
       briefs_available: available,
       note: `Use instrument_type param to read a specific brief (e.g. instrument_type="futures")`,
