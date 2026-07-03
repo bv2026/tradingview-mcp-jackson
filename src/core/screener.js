@@ -211,8 +211,8 @@ async function switchToScreen(name, windowName) {
 
 function mapScreenerType(tvType) {
   const map = {
-    'Stock Screener': 'stocks',
-    'ETF Screener': 'etf',
+    'Stock Screener': 'momentum_stocks',
+    'ETF Screener': 'momentum_etf',
     'Bond Screener': 'bonds',
     'Crypto Coins Screener': 'crypto',
     'CEX Screener': 'crypto_perps',

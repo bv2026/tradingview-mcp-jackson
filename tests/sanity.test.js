@@ -105,9 +105,13 @@ describe('strategy files', () => {
     });
   }
 
-  it('momentum_stocks and momentum_etf both have max_symbols = 0 (uncapped — scan full screener)', () => {
-    assert.equal(loadJson(join(CONFIG, 'strategy-momentum_stocks.json')).max_symbols, 0);
-    assert.equal(loadJson(join(CONFIG, 'strategy-momentum_etf.json')).max_symbols, 0);
+  it('momentum_stocks and momentum_etf both have max_symbols = 50 (capped to avoid tool timeout)', () => {
+    // Uncapped (0) caused morning_brief to scan all ~100 screener symbols in one
+    // MCP call and exceed the ~60-70s tool timeout — see ba2149f. 50 matches the
+    // threshold already proven safe for thematic_etfs; the "all" workflow
+    // auto-batches these two (offset 0 + 50) to still cover the full screener.
+    assert.equal(loadJson(join(CONFIG, 'strategy-momentum_stocks.json')).max_symbols, 50);
+    assert.equal(loadJson(join(CONFIG, 'strategy-momentum_etf.json')).max_symbols, 50);
   });
 
   it('watchlist instruments (momentum_ark, futures) have non-empty watchlist array', () => {
@@ -196,14 +200,16 @@ describe('MCP tool wiring', () => {
     }
   });
 
-  it('getSession types array in core/morning.js includes all 6 instruments', () => {
+  it('getSession discovers available briefs dynamically instead of a fixed types list', () => {
+    // getSession used to enumerate a fixed instrument-type array, which meant every
+    // new instrument_type (momentum_etf, sp_ndx, thematic_stocks, ...) needed a
+    // matching edit here — a maintenance trap. It was refactored to scan the
+    // report directory's .md files instead, so it always reflects whatever
+    // briefs actually got saved that day. Assert the dynamic-scan shape stays in
+    // place rather than reintroducing a fixed list.
     const src = readFileSync(join(ROOT, 'src/core/morning.js'), 'utf8');
-    // Find the types array inside getSession
-    const match = src.match(/const types\s*=\s*\[([^\]]+)\]/);
-    assert.ok(match, 'types array not found in getSession in core/morning.js');
-    for (const inst of ALL_INSTRUMENTS) {
-      assert.ok(match[1].includes(`'${inst}'`), `getSession types missing: '${inst}'`);
-    }
+    assert.ok(/readdirSync\(reportDir\)\.filter\(f => f\.endsWith\('\.md'\)\)/.test(src),
+      'getSession no longer dynamically scans the report directory for .md files');
   });
 });
 

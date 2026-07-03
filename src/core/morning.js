@@ -152,7 +152,7 @@ function computeMA(closes, period, type) {
 
 // Measure the strategy benchmark (e.g. SPY) against its configured moving average.
 // Only runs when market_context defines benchmark_ma_type + benchmark_ma_period
-// (stocks/etf/ark). Switches the chart to the benchmark on the brief timeframe,
+// (momentum_stocks/momentum_etf/momentum_ark). Switches the chart to the benchmark on the brief timeframe,
 // polls for enough bars, computes the MA in code, and compares to the last close.
 // Falls back to benchmark_alt if the primary symbol can't be loaded.
 async function measureBenchmark({ marketContext, timeframe, scanWaitMs }) {
