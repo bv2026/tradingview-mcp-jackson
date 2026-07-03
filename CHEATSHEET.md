@@ -156,7 +156,7 @@ Split into two halves to avoid MCP timeout on weekly scans. Auto-generates three
 
 A **Claude Desktop restart** is required only after **code changes** to the MCP server (e.g. adding a new instrument type to the tool enums). It is **NOT** needed for:
 - Running any brief
-- Rebuilding watchlists (`build-stwits-watchlist.mjs`)
+- Rebuilding watchlists (`build-momentum-watchlists.mjs`, `build-watchlist-configs.mjs`)
 - Running the weekly review
 
 If a brief is rejected with an "invalid enum value" error for a new instrument type → the server hasn't loaded the new code yet → restart Claude Desktop.

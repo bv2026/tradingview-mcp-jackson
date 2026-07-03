@@ -36,7 +36,7 @@ const REPORTS_DIR = join(PROJECT_ROOT, 'reports');
 const WEEKLY_DIR = join(REPORTS_DIR, 'weekly');
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const INSTRUMENTS = ['stocks', 'etf', 'ark', 'crypto', 'crypto_perps', 'futures', 'stwits_lg', 'stwits_sm'];
+const INSTRUMENTS = ['stocks', 'etf', 'ark', 'crypto', 'crypto_perps', 'futures'];
 
 const pad = (n) => String(n).padStart(2, '0');
 const isoDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -56,7 +56,7 @@ function canon(sym) {
 }
 
 // Classify the bias cell into a directional posture, per instrument vocabulary.
-// stocks/etf/stwits/futures use Long/Short/Neutral; ark uses STATUS
+// stocks/etf/futures use Long/Short/Neutral; ark uses STATUS
 // (BREAKOUT_READY / BASE / EXTENDED / SKIP); crypto spot says "Bearish" = stand
 // aside (neutral, long-only), while perps say "Short" = a real short posture.
 function classifyBias(type, cell) {
