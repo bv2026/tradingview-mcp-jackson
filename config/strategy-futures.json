@@ -10,9 +10,10 @@
     "CME:BTC1!", "CME:ETH1!",
     "CBOT:ZC1!", "CBOT:ZW1!", "CBOT:ZS1!",
     "CME:LE1!", "CME:HE1!", "CME:GF1!",
-    "CBOE:VX1!"
+    "CBOE:VX1!",
+    "ICEUS:KC1!", "ICEUS:SB1!"
   ],
-  "max_symbols": 25,
+  "max_symbols": 27,
   "default_timeframe": "D",
   "required_indicators": [
     "Trendlines with Breaks Oscillator [LuxAlgo]",
@@ -136,13 +137,15 @@
     "crypto_cme": ["CME:BTC1!", "CME:ETH1!"],
     "grains": ["CBOT:ZC1!", "CBOT:ZW1!", "CBOT:ZS1!"],
     "livestock": ["CME:LE1!", "CME:HE1!", "CME:GF1!"],
-    "volatility": ["CBOE:VX1!"]
+    "volatility": ["CBOE:VX1!"],
+    "softs": ["ICEUS:KC1!", "ICEUS:SB1!"]
   },
   "asset_notes": {
     "VX1!": "Volatility futures — use as market context signal, not a directional trade. High VX = reduce risk across all positions.",
     "DXY (ICEUS:DX1!)": "Use as macro overlay for metals and FX — do not trade DXY directly unless setup is very clean.",
     "ZB1!/ZN1!": "Bond direction signals equity index bias — rising bonds (falling yields) = tailwind for NQ/ES.",
     "NG1!": "Natural gas is highly seasonal and mean-reverts aggressively. Prefer mean-reversion regime for NG.",
-    "livestock": "LE, HE, GF are seasonal and report-driven (USDA). Trend regime works; size smaller due to low liquidity."
+    "livestock": "LE, HE, GF are seasonal and report-driven (USDA). Trend regime works; size smaller due to low liquidity.",
+    "softs": "KC (Coffee), SB (Sugar) added 2026-07-03 — weather/supply-driven cycles, comparable liquidity to livestock. Size smaller like livestock until a track record builds."
   }
 }
