@@ -1,7 +1,7 @@
 {
   "instrument_type": "momentum_etf",
   "screener_name": "MOMENTUM-ETF",
-  "max_symbols": 0,
+  "max_symbols": 50,
   "default_timeframe": "D",
 
   "required_indicators": [
