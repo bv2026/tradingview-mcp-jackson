@@ -124,15 +124,20 @@ If `cdp_connected: false`, TradingView is not running with `--remote-debugging-p
 
 ## Step 7: Run Your First Morning Brief
 
-Three briefs available — run each with its screener window open in TradingView:
+Several briefs available — run each with its screener window open in TradingView (or use `instrument_type="all"` to run every standard brief plus the thematic reports in one workflow):
 
 ```
 morning_brief instrument_type="momentum_stocks" # equity momentum, long only
-morning_brief instrument_type="crypto"         # crypto spot, BTC 50d SMA benchmark, long only
-morning_brief instrument_type="crypto_perps"   # perps, BTC TWB signal = long or short
+morning_brief instrument_type="momentum_etf"    # equity ETF momentum, long only
+morning_brief instrument_type="momentum_ark"    # ARK-style growth names, base/breakout detection
+morning_brief instrument_type="crypto"          # crypto spot, BTC 50d SMA benchmark, long only
+morning_brief instrument_type="crypto_perps"    # perps, BTC TWB signal = long or short
+morning_brief instrument_type="futures"         # multi-sector futures, trend/mean-reversion regime detection
+morning_brief instrument_type="sp_ndx"          # weekly S&P 500 + Nasdaq 100 momentum (Saturdays)
+morning_brief instrument_type="r2k"             # weekly Russell 2000 momentum (Saturdays)
 ```
 
-Ask Claude: *"Run morning_brief instrument_type='stocks' and give me my session bias"*
+Ask Claude: *"Run morning_brief instrument_type='momentum_stocks' and give me my session bias"*
 
 Claude scans every symbol in the screener, reads the TWB Oscillator + NW Envelope, applies the strategy rules, and outputs one line per symbol plus top 3 candidates.
 

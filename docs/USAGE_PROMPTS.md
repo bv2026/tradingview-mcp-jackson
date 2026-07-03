@@ -49,8 +49,14 @@ Use a specific study filter when you know the indicator name:
 
 ## Morning Workflow
 
-### Momentum Stocks
+### All Briefs In One Go
+- `Run morning_brief instrument_type="all" and work through every standard brief plus the thematic reports, saving each one.`
+- Large screeners (momentum_stocks/momentum_etf/momentum_ark, ~100 symbols each) can exceed the tool's timeout on a single call — batch with `offset`/`max_symbols` (e.g. `offset=0 max_symbols=50` then `offset=50 max_symbols=50`) if a plain call times out.
+
+### Momentum Stocks / ETF / ARK
 - `Run morning_brief instrument_type="momentum_stocks" and give me my session bias.`
+- `Run morning_brief instrument_type="momentum_etf" and show me the top 20 setups by GAP.`
+- `Run morning_brief instrument_type="momentum_ark" — check QQQ benchmark, flag BASE_BUILDING vs BREAKOUT_READY, and watch for cluster overlap.`
 - `Run the momentum stocks brief and show me top 3 long candidates.`
 
 ### Crypto Spot
@@ -61,6 +67,20 @@ Use a specific study filter when you know the indicator name:
 - `Run morning_brief instrument_type="crypto_perps" — check BTC TWB direction and give me the top 3 candidates for that side.`
 - `Run the perps brief. If BTC TWB is negative, give me top short setups. If positive, give me top long setups.`
 - `Run perps brief and separately analyze SILVER using its own TWB signal.`
+
+### Futures
+- `Run morning_brief instrument_type="futures" — detect TRENDING vs MEAN_REVERTING regime per symbol and note the DXY/bond/VX1! macro overlays.`
+
+### Weekly Momentum (Saturdays)
+- `Run morning_brief instrument_type="sp_ndx" and give me the top setups from this week's S&P 500 + Nasdaq 100 list.`
+- `Run morning_brief instrument_type="r2k" and flag any names with crowded/Overheated retail sentiment.`
+
+### Thematic Scans
+- `Run lux_screener_scan instrument_type="thematic_stocks" and give me the grouped-by-theme report plus a summary of top picks and avoid names.`
+- `Run morning_brief instrument_type="thematic_etfs_1" then "thematic_etfs_2" and give me a combined ETF rotation summary across both halves.`
+
+### Weekly Review
+- `Run node scripts/build-weekly-review.mjs to build this week's data bundle, then read it and write the narrative into reports/weekly/YYYY-Www.md.`
 
 ### Session Management
 - `Save this brief with session_save.`

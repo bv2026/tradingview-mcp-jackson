@@ -36,11 +36,25 @@ const REPORTS_DIR = join(PROJECT_ROOT, 'reports');
 const WEEKLY_DIR = join(REPORTS_DIR, 'weekly');
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const INSTRUMENTS = ['stocks', 'etf', 'ark', 'crypto', 'crypto_perps', 'futures'];
+const INSTRUMENTS = ['momentum_stocks', 'momentum_etf', 'momentum_ark', 'crypto', 'crypto_perps', 'futures'];
+// Pre-rename (pre-a706974) session/report filenames, for weeks that straddle the rename.
+const LEGACY_TYPE_ALIAS = { momentum_stocks: 'stocks', momentum_etf: 'etf', momentum_ark: 'ark' };
 
 const pad = (n) => String(n).padStart(2, '0');
 const isoDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const folderName = (d) => `${d.getFullYear()}-${MONTHS[d.getMonth()]}-${pad(d.getDate())}`;
+
+// ISO 8601 week folder name, matching src/core/morning.js's weekFolderName
+// (reports/<YYYY-WkNN>/<YYYY-Mon-DD>/ nesting introduced by 8575589).
+function isoWeekFolderName(d) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = (t.getUTCDay() + 6) % 7;
+  t.setUTCDate(t.getUTCDate() - dayNum + 3);
+  const isoYear = t.getUTCFullYear();
+  const yearStart = Date.UTC(isoYear, 0, 1);
+  const weekNum = Math.ceil(((t.getTime() - yearStart) / 86400000 + 1) / 7);
+  return `${isoYear}-Wk${pad(weekNum)}`;
+}
 
 // Canonical symbol key for joining scan JSON ↔ brief .md across instruments.
 // Strips exchange prefix, a trailing "(…)" label, a perp suffix, and the quote
@@ -62,15 +76,18 @@ function canon(sym) {
 function classifyBias(type, cell) {
   const b = (cell || '').replace(/[*`]/g, '').toLowerCase();
   if (!b) return null;
-  if (type === 'ark') {
-    if (/skip|avoid/.test(b)) return 'neutral';
-    if (/breakout|base|extended|ready/.test(b)) return 'long';
+  if (/momentum_ark|^ark$/.test(type)) {
+    if (/skip|avoid|extended/.test(b)) return 'neutral';
+    if (/breakout|base/.test(b)) return 'long';
     return 'neutral';
   }
   if (/\bskip\b/.test(b)) return 'skip';
   if (/\bshort\b/.test(b)) return 'short';
   if (/\blong\b/.test(b)) return 'long';
   if (/\bwatch\b/.test(b)) return 'watch';
+  // momentum_stocks/etf/sp_ndx/r2k use Bullish/Bearish/Neutral wording, not long/short
+  if (/\bbullish\b/.test(b)) return 'long';
+  if (/\bbearish\b/.test(b)) return 'short';
   return 'neutral'; // includes spot-crypto "Bearish" = stand aside
 }
 
@@ -104,13 +121,18 @@ function weekDays(friday) {
 
 const num = (x) => {
   if (x == null) return null;
-  const v = parseFloat(String(x).replace(/[, ]/g, ''));
+  const v = parseFloat(String(x).replace(/[, ]/g, '').replace(/−/g, '-'));
   return Number.isFinite(v) ? v : null;
 };
 
 // Pull symbol → {close, hist, sig, accel, fresh} from a daily scan JSON.
+// Tries the current filename first, then the pre-rename legacy name (for weeks
+// that straddle a706974's momentum_stocks/etf/ark rename).
 function readScan(date, type) {
-  const path = join(SESSIONS_DIR, `${isoDate(date)}-${type}.json`);
+  let path = join(SESSIONS_DIR, `${isoDate(date)}-${type}.json`);
+  if (!existsSync(path) && LEGACY_TYPE_ALIAS[type]) {
+    path = join(SESSIONS_DIR, `${isoDate(date)}-${LEGACY_TYPE_ALIAS[type]}.json`);
+  }
   if (!existsSync(path)) return null;
   let data;
   try { data = JSON.parse(readFileSync(path, 'utf8')); } catch { return null; }
@@ -127,19 +149,43 @@ function readScan(date, type) {
 }
 
 // Pull symbol → bias ('long'|'short'|'neutral'|'watch'|'skip') from a daily brief .md.
+// Tries the current ISO-week-nested path first, then the pre-restructure flat
+// path with the pre-rename legacy type name (for weeks that straddle both
+// 8575589's week-folder nesting and a706974's instrument rename).
 function readBias(date, type) {
-  const path = join(REPORTS_DIR, folderName(date), `${type}.md`);
+  let path = join(REPORTS_DIR, isoWeekFolderName(date), folderName(date), `${type}.md`);
+  if (!existsSync(path)) {
+    const legacyType = LEGACY_TYPE_ALIAS[type] || type;
+    path = join(REPORTS_DIR, folderName(date), `${legacyType}.md`);
+  }
   if (!existsSync(path)) return null;
   const text = readFileSync(path, 'utf8');
   const out = {};
+  // Header-aware: tables may carry a leading "#"/RANK column (per CLAUDE.md's
+  // formatting convention), so column position isn't fixed. Locate the
+  // SYMBOL/ETF and BIAS/STATUS columns from each table's own header row, and
+  // only read tables that actually have a bias-like column (this naturally
+  // skips the "Top 20 Setups" table, which has no BIAS/STATUS column).
+  let symCol = -1, biasCol = -1;
   for (const line of text.split('\n')) {
-    if (!line.trim().startsWith('|')) continue;
-    const cells = line.split('|').map((c) => c.trim());
-    // data row: cells[1]=symbol cell, cells[2]=bias/status cell
-    const raw = (cells[1] || '').replace(/[*`]/g, '').trim();
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('|')) { symCol = -1; biasCol = -1; continue; }
+    const cells = trimmed.split('|').map((c) => c.trim());
+    if (/^-+$/.test((cells[1] || '').replace(/[: ]/g, ''))) continue; // separator row
+    const upper = cells.map((c) => c.toUpperCase());
+    const looksLikeHeader = upper.some((c) => c === 'SYMBOL' || c === 'ETF' || c === 'BIAS' || c === 'STATUS');
+    if (looksLikeHeader) {
+      symCol = upper.findIndex((c) => c === 'SYMBOL' || c === 'ETF');
+      biasCol = upper.findIndex((c) => c === 'BIAS' || c === 'STATUS');
+      continue;
+    }
+    if (symCol < 0 || biasCol < 0) continue; // not inside a symbol+bias table
+    // Cells may carry an exchange prefix (CBOE:VLUE, NYSE:LMT) — drop it before
+    // extracting the ticker token, or the exchange name gets read as the symbol.
+    const raw = (cells[symCol] || '').replace(/[*`]/g, '').trim().split(':').pop().trim();
     const m = raw.match(/^([A-Z0-9][A-Z0-9.!\-]*)/i); // leading ticker token (ES1!, BTC, ARM)
-    if (!m || m[1].toUpperCase() === 'SYMBOL') continue;
-    const bias = classifyBias(type, cells[2]);
+    if (!m) continue;
+    const bias = classifyBias(type, cells[biasCol]);
     if (!bias) continue;
     out[canon(m[1])] = bias;
   }

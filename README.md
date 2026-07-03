@@ -20,7 +20,7 @@ Built on top of the original [tradingview-mcp](https://github.com/tradesdontlie/
 | Feature | What it does |
 |---------|-------------|
 | `morning_brief` | One command that scans your screener, reads all your indicators, and returns structured data for Claude to generate your session bias |
-| **3 independent briefs** | Stocks, crypto spot, and crypto perps — each with its own screener, strategy, and bias logic |
+| **8 independent briefs + thematic scans** | Momentum stocks/ETF/ARK, crypto spot/perps, futures, weekly S&P-Nasdaq, weekly Russell 2000, plus thematic stock/ETF scans — each with its own screener, strategy, and bias logic. `instrument_type="all"` runs the whole set. |
 | **Crypto perps (long + short)** | Perps brief uses BTC TWB signal direction to determine side — negative = scan for shorts, positive = scan for longs |
 | `session_save` / `session_get` | Saves your daily brief to `~/.tradingview-mcp/sessions/` so you can compare today vs yesterday |
 | `rules.json` | Maps instrument types to screener names. Strategy files hold all bias/entry/exit/risk rules |
@@ -152,18 +152,27 @@ tv brief
 
 ## Morning Brief Workflow
 
-This is the feature that turns this from a toolkit into a daily habit. Three independent briefs, each with its own screener and strategy.
+This is the feature that turns this from a toolkit into a daily habit. Eight independent daily/weekly briefs plus two thematic scans, each with its own screener and strategy — or run `instrument_type="all"` to work through every standard brief and both thematic reports in one session.
 
 **Before every session:**
 
-1. TradingView is open with all screener windows visible (stocks, crypto, perps)
+1. TradingView is open with all screener windows visible (stocks, ETF, ARK, crypto, perps, futures)
 2. Run one or more briefs:
 
 ```
 morning_brief instrument_type="momentum_stocks" # equity momentum
-morning_brief instrument_type="crypto"         # crypto spot (Coinbase)
-morning_brief instrument_type="crypto_perps"   # crypto perps long or short
+morning_brief instrument_type="momentum_etf"    # equity ETF momentum
+morning_brief instrument_type="momentum_ark"    # ARK-style growth names
+morning_brief instrument_type="crypto"          # crypto spot (Coinbase)
+morning_brief instrument_type="crypto_perps"    # crypto perps long or short
+morning_brief instrument_type="futures"         # multi-sector futures
+morning_brief instrument_type="sp_ndx"          # weekly S&P/Nasdaq momentum (Saturdays)
+morning_brief instrument_type="r2k"             # weekly Russell 2000 momentum (Saturdays)
 ```
+
+Large screeners (~100 symbols) can exceed the tool's timeout on a plain call — batch with `offset`/`max_symbols` if needed (e.g. `offset=0 max_symbols=50` then `offset=50 max_symbols=50`).
+
+Thematic scans (separate from the above, run via `lux_screener_scan` and `morning_brief instrument_type="thematic_etfs_1"/"thematic_etfs_2"`) cover ~121 stocks and ~90 ETFs across 8 themes — see `CLAUDE.md` for the full formatting spec.
 
 3. Claude scans every symbol in the screener, reads TWB Oscillator + NW Envelope, applies the strategy rules, and prints one line per symbol:
 
@@ -191,8 +200,13 @@ Each brief loads its own strategy file:
 | Brief | Command | Screener | Strategy File | Side |
 |-------|---------|----------|---------------|------|
 | Momentum Stocks | `instrument_type="momentum_stocks"` | `MOMENTUM` | `strategy-momentum_stocks.json` | Long only |
+| Momentum ETF | `instrument_type="momentum_etf"` | `MOMENTUM-ETF` | `strategy-momentum_etf.json` | Long only |
+| Momentum ARK | `instrument_type="momentum_ark"` | `MOMENTUM-ARK` | `strategy-momentum_ark.json` | Long only (base/breakout detection) |
 | Crypto Spot | `instrument_type="crypto"` | `MOMENTUM-CRYPTO` | `strategy-crypto.json` | Long only |
 | Crypto Perps | `instrument_type="crypto_perps"` | `MOMENTUM-PERPS` | `strategy-crypto_perps.json` | **Long + Short** |
+| Futures | `instrument_type="futures"` | static watchlist | `strategy-futures.json` | Trend/mean-reversion regime, both sides |
+| Weekly S&P/Nasdaq | `instrument_type="sp_ndx"` | static (weekly CSV) | `strategy-sp_ndx.json` | Long only |
+| Weekly Russell 2000 | `instrument_type="r2k"` | static (weekly CSV) | `strategy-r2k.json` | Long only |
 
 ### How the Benchmark Works
 
