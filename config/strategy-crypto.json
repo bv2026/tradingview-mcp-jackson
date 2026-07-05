@@ -14,6 +14,8 @@
   "market_context": {
     "benchmark": "COINBASE:BTCUSD",
     "benchmark_alt": "COINBASE:ETHUSD",
+    "benchmark_ma_type": "SMA",
+    "benchmark_ma_period": 50,
     "benchmark_filter": "BTC must be above its 50-day SMA for any altcoin bullish bias. If BTC is below its 50-day SMA, default all alts to neutral or bearish — alts rarely sustain moves when BTC is in a downtrend. ETH can act as secondary confirmation for non-BTC majors.",
     "cycle_note": "Be aware of the broader BTC halving cycle. Post-halving alt seasons (6-18 months after halving) historically produce the strongest momentum signals. In late bear markets, even strong TWB signals are traps — require BTC above 200-day SMA as an additional filter."
   },
