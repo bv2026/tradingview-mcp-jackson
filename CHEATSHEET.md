@@ -199,6 +199,6 @@ If a brief is rejected with an "invalid enum value" error for a new instrument t
 | Strategy rules per type | `config/strategy-{type}.json` |
 | Screener/chart-tab config | `config/rules.json` |
 | Scripts | `scripts/build-momentum-watchlists.mjs`, `scripts/build-watchlist-configs.mjs`, `scripts/build-weekly-review.mjs` |
-| Raw scan data | `~/.tradingview-mcp/sessions/` |
+| Raw scan data | `~/.tradingview-mcp/sessions/{date}-{type}.json` — one file per day per instrument; batched calls (offset 0, 50, ...) merge by symbol into the same file rather than overwriting, so the weekly review always sees the full day's scan |
 | Momentum source CSVs | `CSV/momentum-sp500-*.csv`, `CSV/momentum-nasdaq100-*.csv`, `CSV/momentum-russell2000-*.csv`, `CSV/market-chatter-*.csv` |
 | Thematic watchlist CSVs | `CSV/Watchlist_Stocks.csv`, `CSV/Watchlist_ETFs.csv` |
