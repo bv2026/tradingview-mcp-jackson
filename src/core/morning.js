@@ -555,10 +555,35 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
     ].filter(Boolean).join(' '),
   };
 
-  // Auto-save raw scan data with date + instrument stamp
+  // Auto-save raw scan data with date + instrument stamp. Merge with any
+  // existing same-day file instead of overwriting — a batched "all" run
+  // calls this multiple times per day (offset 0, 50, ...) and each call's
+  // save used to clobber the previous batch, silently losing whichever
+  // symbols weren't in the last batch (e.g. the top of the screener if the
+  // final batch covered the tail). Merge by symbol so the saved file always
+  // accumulates every batch scanned so far. The in-memory `output` returned
+  // to the caller is untouched — it still reflects only this call's batch,
+  // since that's what the "all" workflow's per-batch processing expects.
   try {
     mkdirSync(SESSIONS_DIR, { recursive: true });
-    writeFileSync(briefPath, JSON.stringify(output, null, 2));
+    let toWrite = output;
+    if (existsSync(briefPath)) {
+      try {
+        const prev = JSON.parse(readFileSync(briefPath, 'utf8'));
+        const bySymbol = new Map();
+        for (const r of prev.symbols_scanned || []) bySymbol.set(r.symbol, r);
+        for (const r of results) bySymbol.set(r.symbol, r); // this run's data wins on overlap
+        const merged = [...bySymbol.values()];
+        const mergedFresh = merged.filter(r => r.fresh).length;
+        toWrite = {
+          ...output,
+          symbols_scanned: merged,
+          screener: { ...output.screener, symbols_scanned: merged.length },
+          scan_quality: { fresh: mergedFresh, stale: merged.length - mergedFresh, total: merged.length },
+        };
+      } catch (_) { /* corrupt/old file — fall back to writing just this run's results */ }
+    }
+    writeFileSync(briefPath, JSON.stringify(toWrite, null, 2));
     output.saved_to = briefPath;
   } catch (err) {
     output.save_error = err.message;
