@@ -14,6 +14,7 @@ import { evaluate, KNOWN_PATHS } from '../connection.js';
 import * as chart from './chart.js';
 import * as data from './data.js';
 import * as screener from './screener.js';
+import { classifyResults } from './classify.js';
 
 // CannonEdge project ingests this project's futures brief into its own DB —
 // see cannonedge/tv_brief.py. Fire-and-forget: ingestion failing here should
@@ -313,7 +314,7 @@ async function scanSymbol(symbol, timeframe, scanWaitMs, opts = {}) {
       try { indicators = await data.getStudyValues(); } catch (_) {}
     }
   }
-  const nwSignals = await data.getPineLabels({ study_filter: 'Nadaraya-Watson' });
+  const nwSignals = await data.getPineLabels({ study_filter: 'Nadaraya-Watson', max_labels: 1 });
 
   const reading = { symbol, timeframe, indicators, quote, nw_envelope_signals: nwSignals, fresh };
   if (!fresh) {
@@ -478,8 +479,14 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
     }
   }
 
-  const freshCount = results.filter(r => r.fresh).length;
-  const staleCount = results.length - freshCount;
+  // Precompute hist/sig/gap/bias/nw_position (and an instrument-specific regime/status tag)
+  // per symbol, replacing the ad-hoc Python parsing this used to require by hand each morning.
+  const classifiedResults = classifyResults(results, instrument, {
+    correlationClusters: strategy.asset_notes?.correlation_clusters,
+  });
+
+  const freshCount = classifiedResults.filter(r => r.fresh).length;
+  const staleCount = classifiedResults.length - freshCount;
 
   // Restore original chart state (symbol + timeframe, not indicators — Option B)
   if (originalSymbol) {
@@ -509,7 +516,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
       symbols_scanned: symbols.length,
     },
     indicators_added_to_chart: indicatorsAdded,
-    scan_quality: { fresh: freshCount, stale: staleCount, total: results.length },
+    scan_quality: { fresh: freshCount, stale: staleCount, total: classifiedResults.length },
     benchmark_status: benchmarkStatus,
     strategy: {
       market_context: strategy.market_context || null,
@@ -522,11 +529,17 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
       ],
       asset_notes: strategy.asset_notes || null,
     },
-    symbols_scanned: results,
+    symbols_scanned: classifiedResults,
     instruction: [
-      `For each symbol in symbols_scanned, apply the bias_criteria from the strategy to the indicator readings.`,
-      `TWB Oscillator values (Histogram, Signal, Trendline Break) come from the 'indicators' field.`,
-      `Nadaraya-Watson Envelope signals come from the 'nw_envelope_signals' field. Labels are ▲ (price crossed above a band) or ▼ (price crossed below a band) at the price level where it occurred. The MOST RECENT label (first in the array) tells you current band position relative to price.`,
+      `Each symbol already carries precomputed fields — do not re-derive them from the raw 'indicators'/'nw_envelope_signals' strings: 'hist'/'sig' are the parsed TWB Histogram/Signal (numeric, comma/unicode-minus/bond-tick strings already normalized), 'gap' = hist - sig, 'bias' = "bullish"/"bearish"/"neutral" from the sign of gap, 'nw_position' = "extended" (price crossed above the NW band) / "early" (crossed below) / "n/a" from the most recent NW label.`,
+      instrument === 'momentum_ark'
+        ? `Each symbol also carries 'ark_status' (BASE_BUILDING/EXTENDED/SKIP — BREAKOUT_READY is NOT auto-assigned, see below) and 'cluster' (correlation cluster name or null).`
+        : instrument === 'futures'
+        ? `Each symbol also carries 'regime' (TRENDING_LONG/TRENDING_SHORT/MEAN_REVERTING) — a single-bar approximation only; it does not check multi-bar persistence or cross-report corroboration (e.g. BTC1!/ETH1! against the same day's crypto/crypto_perps briefs). Treat it as a starting hypothesis and override using regime_detection + macro_overlays + judgment as before.`
+        : ['momentum_stocks', 'momentum_etf', 'sp_ndx', 'r2k'].includes(instrument)
+        ? `Each symbol also carries 'momentum_tag' (bullish-early/bullish-extended/bearish-neutral/neutral) derived from bias + nw_position — use it as a starting point for the bias_criteria call, not a substitute for it (catalyst/volume/structure checks still require judgment).`
+        : null,
+      `Apply the strategy's bias_criteria/entry_criteria/exit_criteria using these precomputed fields plus 'quote' (price/volume) and any 'stocktwits' metadata — the raw indicator/label extraction is already done.`,
       `DATA QUALITY: each symbol has a 'fresh' flag. Any symbol with fresh:false (or stale:true / an 'error') was NOT confirmed live on the chart — its readings may be the previously-loaded symbol's data. Mark such symbols SKIP (re-scan) and do not base a setup on them. Check scan_quality for the overall fresh/stale counts.`,
       Object.keys(symbolMeta).length
         ? `STOCKTWITS SIGNAL: symbols carry a 'stocktwits' field with retail sentiment (bull %), weekly performance (wtd), and watcher count from the source watchlist. Use sentiment as a CONTEXT layer on top of the technicals, not a standalone signal: sentiment ≥ ~50 with a confirming TWB/NW setup = retail conviction behind the move (supportive); sentiment ≥ ~80 = crowded/late — flag caution even on a clean technical; sentiment < ~40 on a mover = weak retail support — require a stronger technical to act. High watcher counts amplify both effects. Note the sentiment read in each symbol's WATCH field.`
@@ -572,7 +585,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
         const prev = JSON.parse(readFileSync(briefPath, 'utf8'));
         const bySymbol = new Map();
         for (const r of prev.symbols_scanned || []) bySymbol.set(r.symbol, r);
-        for (const r of results) bySymbol.set(r.symbol, r); // this run's data wins on overlap
+        for (const r of classifiedResults) bySymbol.set(r.symbol, r); // this run's data wins on overlap
         const merged = [...bySymbol.values()];
         const mergedFresh = merged.filter(r => r.fresh).length;
         toWrite = {
