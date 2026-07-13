@@ -27,6 +27,8 @@ session_save brief="<Claude's output>"
 session_get   # retrieve today's or yesterday's saved brief
 ```
 
+**Precomputed fields (as of `src/core/classify.js`):** each symbol in `symbols_scanned` already carries `hist`/`sig` (parsed TWB Histogram/Signal, comma/unicode-minus/bond-tick strings normalized to numbers), `gap` (hist − sig), `bias` (bullish/bearish/neutral from gap sign), and `nw_position` (extended/early/n/a from the most recent NW label — `nw_envelope_signals` is trimmed to 1 label since only the most recent is ever used). `momentum_stocks`/`momentum_etf`/`sp_ndx`/`r2k` also carry `momentum_tag` (bullish-early/bullish-extended/bearish-neutral/neutral); `momentum_ark` carries `ark_status` (BASE_BUILDING/EXTENDED/SKIP — BREAKOUT_READY is never auto-assigned, it still requires the RS-vs-QQQ check by hand) and `cluster`; `futures` carries `regime` (TRENDING_LONG/TRENDING_SHORT/MEAN_REVERTING — a single-bar approximation, override with regime_detection/macro_overlays/cross-report judgment as before). Use these fields directly for the GAP sort and tables below instead of re-parsing the raw `indicators`/`nw_envelope_signals` strings.
+
 **Brief formatting convention (REQUIRED for `session_save`):**
 The `morning_brief` tool's embedded instruction says to output bare pipe-delimited lines (`SYMBOL | BIAS: ... | SIGNAL: ...`). Do NOT save that raw form — it does not render as a table in markdown. Always reshape the analysis into proper GitHub-flavored markdown before calling `session_save`:
 - `## {TYPE}` section, then `**Benchmark:**` and `**Theme:**` bullet blocks
