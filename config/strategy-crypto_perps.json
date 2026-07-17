@@ -24,56 +24,39 @@
     "oi_note": "Open interest is NOT in the brief payload either — check it manually on Coinbase before entry if available. Guidance: rising OI with rising price = healthy uptrend (confirms long); rising OI with falling price = short pressure building (confirms short); falling OI = trend exhaustion on either side — reduce size."
   },
 
-  "bias_criteria_note": "Perps allow both longs AND shorts. BTC TWB signal determines which side to trade. Apply bullish criteria for longs when BTC TWB positive; bearish criteria for shorts when BTC TWB negative. Commodity perps (SILVER, GOLD) are exempt from BTC benchmark — apply their own TWB signal independently.",
+  "bias_note": "BTC TWB Histogram is the benchmark signal — readable from chart via data_get_study_values. NW Envelope position is the extension check. Funding rate and OI are NOT available in TradingView — check manually on Coinbase before entry. Commodity perps (SILVER, GOLD) exempt from BTC benchmark.",
 
   "bias_criteria": {
-    "bullish_long": [
-      "BTC perp TWB Histogram is positive (market uptrend confirmed)",
+    "long": [
+      "BTC perp TWB Histogram > 0 (market uptrend — scan alts for longs)",
       "Symbol TWB Histogram positive and above its signal line",
-      "Symbol printing higher highs and higher lows on Daily",
-      "Breakout candle volume above 5-10 day average",
-      "Price approaching but NOT extended outside upper NW Envelope band",
-      "Funding rate neutral or negative (longs not crowded)",
-      "Open interest rising with price"
+      "NW: price inside bands or approaching upper band (not extended outside)"
     ],
-    "bearish_short": [
-      "BTC perp TWB Histogram is negative (market downtrend confirmed)",
+    "short": [
+      "BTC perp TWB Histogram < 0 (market downtrend — scan alts for shorts)",
       "Symbol TWB Histogram negative and below its signal line",
-      "Symbol printing lower highs and lower lows on Daily",
-      "Breakdown candle volume above 5-10 day average",
-      "Price at or below lower NW Envelope band (extended short = wait for bounce to short)",
-      "Funding rate positive (longs paying — squeeze risk adds fuel to short)",
-      "Open interest rising as price falls (shorts piling in = trend confirmation)"
+      "NW: price bouncing up into lower band after initial drop (do NOT chase the drop)"
     ],
     "neutral_skip": [
-      "BTC TWB Histogram near zero — no clear direction",
-      "Symbol TWB flat, histogram and signal lines converging",
-      "Price chopping inside NW Envelope bands with no trend",
-      "Volume below average — no conviction",
-      "Funding rate near zero — no crowding either way"
+      "BTC TWB Histogram near zero — no clear direction, skip or reduce size",
+      "Symbol TWB flat with histogram and signal lines converging"
     ]
   },
 
   "entry_criteria": {
     "perp_long": [
-      "BTC TWB Histogram positive (confirmed)",
+      "BTC TWB Histogram positive",
       "Symbol TWB Histogram positive AND above signal line",
-      "Symbol consolidating near local highs — flag, pennant, or horizontal resistance",
       "4H chart confirms same TWB bullish breakout",
-      "Breakout candle volume above average",
-      "Funding rate neutral or negative at entry time",
-      "OI stable or rising",
-      "NW: price approaching upper band but not extended outside it"
+      "NW: price inside bands, not above upper band",
+      "Manual check: funding rate neutral or negative at entry (check Coinbase)"
     ],
     "perp_short": [
-      "BTC TWB Histogram negative (confirmed)",
+      "BTC TWB Histogram negative",
       "Symbol TWB Histogram negative AND below signal line",
-      "Symbol rejecting from a key resistance level or prior breakdown zone",
       "4H chart confirms same TWB bearish breakdown",
-      "Breakdown candle volume above average",
-      "Funding rate positive at entry (shorts get paid) — OR neutral is acceptable",
-      "NW: price bouncing up into the lower band (ideal short entry on the retrace, not the initial drop)",
-      "Do NOT short into an already-extended move — wait for a dead-cat bounce to the lower NW band"
+      "NW: wait for dead-cat bounce to lower band — do NOT enter on initial drop",
+      "Manual check: funding rate neutral or positive at entry (check Coinbase)"
     ]
   },
 

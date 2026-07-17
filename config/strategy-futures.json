@@ -1,4 +1,5 @@
 {
+  "instrument_type": "futures",
   "screener_name": null,
   "screener_note": "No TradingView futures screener exists. Symbol list is static — defined in watchlist below.",
   "watchlist": [

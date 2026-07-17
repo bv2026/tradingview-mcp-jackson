@@ -1,7 +1,8 @@
 {
   "instrument_type": "sp_ndx",
   "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\momentum-sp500-2026-07-10.csv + C:\\work\\tradingview-mcp-jackson\\CSV\\momentum-nasdaq100-2026-07-10.csv — IN symbols, S&P rank priority",
-  "default_timeframe": "D",
+  "default_timeframe": "W",
+  "pipeline": "L1: sp_ndx watchlist (rebuilt Saturdays from S&P 500 + Nasdaq 100 CSVs) → L2: LuxAlgo 3 screeners on 1W (hard filter: BOS + Bullish/Strong Bullish S&O Rating + ▲/▲+ Signal) → L3: NW Envelope per-symbol check",
   "watchlist": [
     {
       "symbol": "SNDK",
@@ -214,61 +215,35 @@
       "watchers": "6.6k"
     }
   ],
-  "market_context": {
-    "benchmark": "SPY",
-    "benchmark_alt": "QQQ",
-    "benchmark_ma_type": "SMA",
-    "benchmark_ma_period": 50,
-    "benchmark_filter": "Benchmark (SPY or QQQ) must be above its 50-day SMA for any bullish bias. If below, default all names to neutral or bearish."
-  },
   "required_indicators": [
-    "Trendlines with Breaks Oscillator [LuxAlgo]",
     "Nadaraya-Watson Envelope [LuxAlgo]",
     "Volume"
   ],
   "max_symbols": 40,
-  "bias_criteria_note": "bearish criteria = exit/avoid signal on longs ONLY. Not short entries.",
-  "bias_criteria": {
-    "bullish": [
-      "Stock is printing higher highs and higher lows on the daily",
-      "Trendlines with Breaks [LuxAlgo] shows a recent bullish B (breakout) signal",
-      "Breakout candle volume is significantly higher than the prior 5-10 day average",
-      "Price is approaching or at the upper Nadaraya-Watson Envelope band but NOT extended outside it",
-      "StockTwits sentiment is supportive (>=50 bull %) and not crowded (<80)"
-    ],
-    "bearish": [
-      "Stock is printing lower highs and lower lows on the daily",
-      "Trendlines with Breaks [LuxAlgo] shows a recent bearish breakdown signal",
-      "Price has broken back below a prior breakout trendline on volume",
-      "Price is extended outside the lower Nadaraya-Watson Envelope band"
-    ],
-    "neutral": [
-      "Stock is consolidating — no clear higher highs/lows pattern",
-      "No breakout signal from Trendlines with Breaks [LuxAlgo]",
-      "Price is chopping inside the Nadaraya-Watson Envelope bands",
-      "Volume is average or below average — no clear catalyst present"
-    ]
+  "nw_position_rules": {
+    "inside": "Room to run — valid entry candidate if R:R ≥ 1.5",
+    "extended": "Price above NW upper band — do not enter, wait for weekly pullback",
+    "below_lower": "Price below NW lower band — avoid"
   },
   "entry_criteria": {
     "long": [
-      "Stock consolidating near local highs (flag, pennant, or horizontal resistance)",
-      "Trendlines with Breaks [LuxAlgo] prints bullish B signal above upper trendline",
-      "Breakout candle volume significantly above 5-10 day average",
-      "Price breaking toward upper Nadaraya-Watson Envelope band but NOT fully outside it"
+      "Symbol passed L2 hard filter (lux_screener_scan output: score ≥ 0)",
+      "NW position = inside (price between lower and upper band)",
+      "R:R ≥ 1.5: reward = NW upper minus price, risk = price minus NW lower",
+      "Sentiment ≥ 40% bull and not crowded (< 80%) — secondary filter only"
     ]
   },
   "exit_criteria": {
-    "stop_loss": "Below breakout candle low or nearest prior swing low. Exit immediately if price closes back below the broken trendline (failed breakout).",
-    "take_profit_1": "Scale out 1/2 to 1/3 of position when price touches or pierces upper Nadaraya-Watson Envelope band — signals short-term exhaustion.",
-    "take_profit_2": "Trail remaining position — exit if price closes below previous day's low, or use 9 EMA as trailing stop after scaling out."
+    "stop_loss": "Below NW Envelope lower band on the weekly.",
+    "take_profit_1": "Scale out 1/3 when price touches upper NW Envelope band on weekly.",
+    "take_profit_2": "Trail remaining via weekly 9 EMA. Exit if closes below for 2 consecutive weeks."
   },
   "risk_rules": [
-    "Minimum R:R of 1:2 before entering any trade",
-    "Stock must be capable of a 5-10% move — avoid low-volatility names",
-    "No bullish entries if SPY or QQQ is below its 50-day SMA",
-    "Exit immediately on a failed breakout — price closes back below the broken trendline",
-    "Maximum 3 open momentum stock positions at once"
+    "Minimum R:R of 1.5",
+    "Do not enter if NW position = extended",
+    "Maximum 3 open positions",
+    "Sentiment ≥ 80% = crowded — reduce size or skip"
   ],
-  "asset_notes": "Large-cap (S&P 500 + Nasdaq 100) momentum names sourced from weekly CSV exports, ranked by S&P rank then NDX rank (S&P priority on duplicates). The 'sentiment' / 'wtd' / 'watchers' / 'chatter' fields are a RETAIL-ATTENTION context layer — confirming when sentiment is supportive, a crowding caution when extreme (>=80), and a weak-support flag when low (<40). Chatter annotations (Overheated/Oversold/Loudest/Quietest) from market-chatter CSV inform position sizing and contrarian watch. Technicals (TWB + NW + volume) remain the primary signal.",
+  "asset_notes": "Large-cap (S&P 500 + Nasdaq 100) momentum names rebuilt weekly from CSV exports. The wtd/sentiment/watchers/chatter fields are retail-attention context — crowding caution when extreme (≥80%), weak-support flag when low (<40%). LuxAlgo 3 screeners (BOS + Bullish rating + ▲ signal) are the primary filter. NW Envelope is the extension check. BOS count in PAC indicates trend strength.",
   "watchlist_generated": "2026-07-11"
 }

@@ -251,7 +251,9 @@ async function verifyChartLive(symbol, timeframe, scanWaitMs, requiredIndicators
   await evaluate(`${CHART_API}.setSymbol('${symbol.replace(/'/g, "\\'")}', {})`);
   await evaluate(`${CHART_API}.setResolution('${timeframe}', {})`);
 
-  const valueIndicator = (requiredIndicators || []).find(i => !/nadaraya/i.test(i)) || '';
+  // Exclude NW Envelope (price overlay, never in study values) and Volume (OHLCV, not a study).
+  // If nothing is left (equity types with only NW + Volume), skip the study readiness check.
+  const valueIndicator = (requiredIndicators || []).find(i => !/nadaraya/i.test(i) && !/^volume$/i.test(i)) || '';
   const valueKey = valueIndicator.toLowerCase().split('[')[0].trim();
 
   let quoteFresh = false, studyLive = false;
@@ -325,7 +327,7 @@ async function scanSymbol(symbol, timeframe, scanWaitMs, opts = {}) {
 }
 
 const ALL_INSTRUMENTS = ['momentum_stocks', 'momentum_etf', 'momentum_ark', 'crypto', 'crypto_perps', 'futures', 'sp_ndx', 'r2k'];
-const THEMATIC_INSTRUMENTS = ['thematic_etfs_1', 'thematic_etfs_2'];
+const THEMATIC_INSTRUMENTS = [];
 
 export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, offset, max_symbols } = {}) {
   const instrument = instrument_type || 'momentum_stocks';
@@ -352,9 +354,9 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
         `Write the full grouped report (all 121 symbols, all themes, with S&O/PAC/OSC signals and scores) and call session_save with instrument_type="thematic_stocks".`,
         `Then write a theme-level summary (one row per theme showing bias/bull-bear count/top names/best score, plus a "Top Picks" table of all symbols scoring ≥ 5, plus a bottom-10 avoid table) and call session_save with instrument_type="thematic_stocks" and is_summary=true.`,
         `THEMATIC STEP 2 — Thematic ETFs (90 ETFs across 8 themes):`,
-        `Call morning_brief with instrument_type="thematic_etfs_1", write the full analysis, call session_save instrument_type="thematic_etfs_1".`,
-        `Call morning_brief with instrument_type="thematic_etfs_2", write the full analysis, call session_save instrument_type="thematic_etfs_2".`,
-        `Then write a combined thematic ETF summary (one row per ETF theme across both halves showing bias/leading ETFs/fading ETFs, plus a "Top ETF Picks" table of all ETFs scoring bullish TWB with room to NW band, plus avoid list) and call session_save with instrument_type="thematic_etfs" and is_summary=true.`,
+        `Call lux_screener_scan with instrument_type="thematic_etfs". This returns a full per-ETF table grouped by theme.`,
+        `Write the full grouped report (all ETFs, all 8 themes, with S&O/PAC/OSC signals and scores) and call session_save with instrument_type="thematic_etfs".`,
+        `Then write a theme-level summary (one row per theme showing bias/leading ETFs/fading ETFs, plus a "Top ETF Picks" table of bullish ETFs with room to NW band, plus avoid list) and call session_save with instrument_type="thematic_etfs" and is_summary=true.`,
         `FINAL STEP — Daily Summary:`,
         `Call session_save one final time with instrument_type="daily_summary" — write a 4-line block per instrument covering ALL instruments including thematic (line 1 = "## TYPE | BIAS", line 2 = benchmark status, line 3 = "TOP 3: ...", line 4 = "SKIP: ..."), all stacked into one file. This is the single file the user reads each morning.`,
         `Be direct. No preamble between sections.`,
@@ -455,9 +457,10 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
   const results = [];
   const CHART_API = KNOWN_PATHS.chartApi;
 
-  // Oscillator key = the value-producing required indicator (TWB); NW Envelope is a price
-  // overlay and never reports in study values, so it can't be the readiness signal.
-  const valueIndicator = (strategy.required_indicators || []).find(i => !/nadaraya/i.test(i)) || '';
+  // Oscillator key = the value-producing required indicator (e.g. TWB for crypto/futures).
+  // NW Envelope is a price overlay (never in study values) and Volume is OHLCV — both excluded.
+  // For equity types that only carry NW + Volume, this returns '' → studyLive bypassed (correct).
+  const valueIndicator = (strategy.required_indicators || []).find(i => !/nadaraya/i.test(i) && !/^volume$/i.test(i)) || '';
   const oscillatorKey = valueIndicator.toLowerCase().split('[')[0].trim();
 
   let prevClose = null; // last confirmed-fresh close, for the echo guard
@@ -472,7 +475,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
   }
 
   // Attach any per-symbol watchlist metadata (StockTwits sentiment/WTD/watchers)
-  // so the brief can weigh it alongside the live TWB/NW readings.
+  // so the brief can weigh it alongside the live NW readings.
   if (Object.keys(symbolMeta).length) {
     for (const r of results) {
       if (r.symbol && symbolMeta[r.symbol]) r.stocktwits = symbolMeta[r.symbol];
@@ -531,7 +534,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
     },
     symbols_scanned: classifiedResults,
     instruction: [
-      `Each symbol already carries precomputed fields — do not re-derive them from the raw 'indicators'/'nw_envelope_signals' strings: 'hist'/'sig' are the parsed TWB Histogram/Signal (numeric, comma/unicode-minus/bond-tick strings already normalized), 'gap' = hist - sig, 'bias' = "bullish"/"bearish"/"neutral" from the sign of gap, 'nw_position' = "extended" (price crossed above the NW band) / "early" (crossed below) / "n/a" from the most recent NW label.`,
+      `Each symbol already carries precomputed fields — use them directly. 'nw_position' = "extended" (price crossed above NW upper band) / "early" (crossed below lower band) / "n/a" from the most recent NW label. For crypto/futures/perps types: 'hist'/'sig' are the parsed TWB Histogram/Signal (numeric, strings already normalized), 'gap' = hist - sig, 'bias' = "bullish"/"bearish"/"neutral" from the sign of gap. For equity types (momentum_stocks/etf/ark/sp_ndx/r2k): TWB is not on the chart — hist/sig/gap/bias will be null/n/a; use nw_position and the lux_screener_scan pre-filter result instead.`,
       instrument === 'momentum_ark'
         ? `Each symbol also carries 'ark_status' (BASE_BUILDING/EXTENDED/SKIP — BREAKOUT_READY is NOT auto-assigned, see below) and 'cluster' (correlation cluster name or null).`
         : instrument === 'futures'
@@ -549,17 +552,17 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
         : instrument === 'futures'
         ? `FUTURES REGIME DETECTION: Each symbol is evaluated independently — no single benchmark. For each symbol, determine which regime applies using regime_detection rules: TRENDING (TWB Histogram clearly directional for 3+ bars, HH/HL or LL/LH structure) or MEAN_REVERTING (TWB near zero or reversing, RSI extreme, price extended beyond NW band). Then apply the matching bias_criteria (trend_long, trend_short, mean_rev_long, mean_rev_short). Check macro_overlays in market_context: DXY direction affects metals/FX, ZB/ZN direction affects equity index, VX1! level sets overall risk mode. Output one line per symbol with its regime tag. End with top 3 setups across all sectors.`
         : instrument === 'momentum_ark'
-        ? `ARK RELATIVE STRENGTH + BASE BREAKOUT: First check benchmark_status (QQQ vs its 50-day EMA, computed in the payload). If benchmark_status.above is false, all signals are SKIP (wait for market). If benchmark_status.near is true, the benchmark is borderline — reduce conviction. If benchmark_status.available is false, the benchmark could not be measured — be conservative. For each symbol: (1) RELATIVE STRENGTH — compare the stock's recent price action to QQQ. If QQQ is down 2% over 20 days and the stock is down 0.5%, RS is positive. If QQQ is up 3% and stock is flat, RS is negative — skip it. (2) BASE CHECK — is the stock in a 2-6 week tight consolidation after a prior move up? Volume should be contracting during the base. NW Envelope: price should be inside bands (no recent ▲ signal = not yet extended). (3) BREAKOUT SIGNAL — TWB Histogram turning positive or printing a breakout. Assign each symbol one of: BASE_BUILDING (positive RS, base forming, volume contracting), BREAKOUT_READY (base complete, TWB triggering), EXTENDED (NW ▲ already printed, move played out — skip), SKIP (QQQ below 50d EMA, stock below 50d EMA, negative RS, or earnings within 5 days). Note the correlation cluster (ai_semis / fintech_crypto / autonomy_space / ai_software / genomics) — flag if multiple names from same cluster would be entered simultaneously.`
-        : `Check benchmark_status first (computed in the payload — the benchmark price vs its configured moving average). If benchmark_status.above is false, the benchmark is below its ${strategy.market_context?.benchmark_ma_period || 50}-day ${strategy.market_context?.benchmark_ma_type || 'SMA'} — default ALL symbols to neutral/bearish (no long entries). If benchmark_status.near is true, treat the benchmark as borderline and reduce conviction. If benchmark_status.available is false, the benchmark could not be measured — be conservative on longs. IMPORTANT: bearish signals = exit/avoid on longs only. Do NOT suggest short entries.`,
+        ? `ARK RELATIVE STRENGTH + BASE BREAKOUT: Symbols here have already passed the LuxAlgo 1W hard filter (BOS + Bullish S&O Rating + ▲ signal) — treat them as BASE_BUILDING by default unless overridden below. For each symbol: (1) RELATIVE STRENGTH — compare the stock's recent price action to QQQ manually. If QQQ is down 2% over 20 days and the stock is down 0.5%, RS is positive. If QQQ is up 3% and stock is flat, RS is negative — skip it. (2) NW ENVELOPE — price should be inside bands (nw_position = "inside"). If nw_position = "extended" (▲ label): EXTENDED, skip. If nw_position = "early" (▼ label): price dipped below lower band, wait for recovery before entering. (3) BREAKOUT_READY — manual upgrade only: confirm positive RS AND tight base structure AND price reclaiming NW bands with volume. SKIP criteria: stock below 50d EMA, clearly negative RS, or earnings within 5 days. Note the correlation cluster (ai_semis / fintech_crypto / autonomy_space / ai_software / genomics) — flag if multiple names from same cluster would be entered simultaneously. ark_status is pre-computed as a starting point but manual RS and earnings checks can override it.`
+        : null,
       `If strategy has tradeable_exchanges defined, flag any symbol NOT available on those exchanges as SKIP.`,
       instrument === 'momentum_ark'
         ? `Output one line per symbol: SYMBOL | STATUS: [BASE_BUILDING/BREAKOUT_READY/EXTENDED/SKIP] | RS: [+/-] | SIGNAL: [key observation] | CLUSTER: [cluster name]`
-        : (instrument === 'thematic_etfs' || instrument === 'thematic_etfs_1' || instrument === 'thematic_etfs_2')
+        : instrument === 'thematic_etfs'
         ? `GROUP output by theme. Each symbol carries a 'theme' and 'sub_group' field — use them to organize the analysis. For each theme: write a "### {Theme}" header, then a markdown table: | ETF | SUB-GROUP | BIAS | TWB | NW | SIGNAL |. After the table, write one sentence: the theme's overall rotation direction (bullish / bearish / mixed). End with a "## Cross-Theme Read" summary listing which 2-3 themes show the strongest ETF breadth.`
         : `Output one line per symbol: SYMBOL | BIAS: [long/short/neutral] | SIGNAL: [key observation] | WATCH: [what to monitor]`,
       instrument === 'momentum_ark'
         ? `Then list top 3 BREAKOUT_READY candidates (or BASE_BUILDING if none are ready) with entry_criteria checklist and cluster warning if applicable.`
-        : (instrument === 'thematic_etfs' || instrument === 'thematic_etfs_1' || instrument === 'thematic_etfs_2')
+        : instrument === 'thematic_etfs'
         ? `Then list top 3 ETF setups across all themes with entry_criteria checklist and which theme they represent.`
         : `Then list top 3 candidates (longs or shorts depending on BTC TWB direction) with entry_criteria checklist.`,
       `End with a one-sentence overall market read.`,

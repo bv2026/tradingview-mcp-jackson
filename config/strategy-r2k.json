@@ -1,7 +1,8 @@
 {
   "instrument_type": "r2k",
   "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\momentum-russell2000-2026-07-10.csv — IN symbols",
-  "default_timeframe": "D",
+  "default_timeframe": "W",
+  "pipeline": "L1: r2k watchlist (rebuilt Saturdays from Russell 2000 CSV) → L2: LuxAlgo 3 screeners on 1W (hard filter: BOS + Bullish/Strong Bullish S&O Rating + ▲/▲+ Signal) → L3: NW Envelope per-symbol check",
   "watchlist": [
     {
       "symbol": "AGL",
@@ -154,63 +155,36 @@
       "watchers": "11.3k"
     }
   ],
-  "market_context": {
-    "benchmark": "IWM",
-    "benchmark_alt": "SPY",
-    "benchmark_ma_type": "SMA",
-    "benchmark_ma_period": 50,
-    "benchmark_filter": "Benchmark (IWM, the Russell 2000 ETF) must be above its 50-day SMA for any bullish small-cap bias. If below, default all names to neutral or bearish — small-caps are high-beta and underperform when the Russell is weak."
-  },
   "required_indicators": [
-    "Trendlines with Breaks Oscillator [LuxAlgo]",
     "Nadaraya-Watson Envelope [LuxAlgo]",
     "Volume"
   ],
   "max_symbols": 30,
-  "bias_criteria_note": "bearish criteria = exit/avoid signal on longs ONLY. Not short entries. Small-caps are higher beta and more gap-prone than large-caps — demand cleaner setups and tighter risk.",
-  "bias_criteria": {
-    "bullish": [
-      "Stock is printing higher highs and higher lows on the daily",
-      "Trendlines with Breaks [LuxAlgo] shows a recent bullish B (breakout) signal",
-      "Breakout candle volume is significantly higher than the prior 5-10 day average",
-      "Price is approaching or at the upper Nadaraya-Watson Envelope band but NOT extended outside it",
-      "StockTwits sentiment is supportive (>=50 bull %) and not crowded (<80)"
-    ],
-    "bearish": [
-      "Stock is printing lower highs and lower lows on the daily",
-      "Trendlines with Breaks [LuxAlgo] shows a recent bearish breakdown signal",
-      "Price has broken back below a prior breakout trendline on volume",
-      "Price is extended outside the lower Nadaraya-Watson Envelope band"
-    ],
-    "neutral": [
-      "Stock is consolidating — no clear higher highs/lows pattern",
-      "No breakout signal from Trendlines with Breaks [LuxAlgo]",
-      "Price is chopping inside the Nadaraya-Watson Envelope bands",
-      "Volume is average or below average — no clear catalyst present"
-    ]
+  "nw_position_rules": {
+    "inside": "Room to run — valid entry candidate if R:R ≥ 1.5",
+    "extended": "Price above NW upper band — small-caps can spike briefly, wait for weekly close back inside before entering",
+    "below_lower": "Price below NW lower band — avoid"
   },
   "entry_criteria": {
     "long": [
-      "Stock consolidating near local highs (flag, pennant, or horizontal resistance)",
-      "Trendlines with Breaks [LuxAlgo] prints bullish B signal above upper trendline",
-      "Breakout candle volume significantly above 5-10 day average",
-      "Price breaking toward upper Nadaraya-Watson Envelope band but NOT fully outside it",
-      "Adequate liquidity — avoid names where a normal position would move the price"
+      "Symbol passed L2 hard filter (lux_screener_scan output: score ≥ 0)",
+      "NW position = inside (price between lower and upper band)",
+      "R:R ≥ 1.5: reward = NW upper minus price, risk = price minus NW lower",
+      "Adequate liquidity — avoid names where a normal position moves the price"
     ]
   },
   "exit_criteria": {
-    "stop_loss": "Below breakout candle low or nearest prior swing low. Exit immediately if price closes back below the broken trendline (failed breakout). Small-caps gap — size for the wider stop.",
-    "take_profit_1": "Scale out 1/2 to 1/3 of position when price touches or pierces upper Nadaraya-Watson Envelope band — signals short-term exhaustion.",
-    "take_profit_2": "Trail remaining position — exit if price closes below previous day's low, or use 9 EMA as trailing stop after scaling out."
+    "stop_loss": "Below NW Envelope lower band on the weekly. Small-caps gap — size for a wider stop.",
+    "take_profit_1": "Scale out 1/3 when price touches upper NW Envelope band on weekly.",
+    "take_profit_2": "Trail remaining via weekly 9 EMA. Exit if closes below for 2 consecutive weeks."
   },
   "risk_rules": [
-    "Minimum R:R of 1:2 before entering any trade",
-    "Small-caps are high-beta — reduce position size vs large-cap momentum trades",
-    "Avoid illiquid names and sub-$5 prices where slippage and gaps dominate",
-    "No bullish entries if IWM is below its 50-day SMA",
-    "Exit immediately on a failed breakout — price closes back below the broken trendline",
-    "Maximum 3 open momentum stock positions at once"
+    "Minimum R:R of 1.5",
+    "Small-caps are high-beta — reduce position size vs large-cap trades",
+    "Do not enter if NW position = extended",
+    "Avoid illiquid names and sub-$5 prices",
+    "Sentiment ≥ 80% in small-caps = crowded pump risk — skip or half-size"
   ],
-  "asset_notes": "Small-cap (Russell 2000) momentum names sourced from weekly CSV exports, ranked by momentum rank. Benchmarked to IWM — small-cap leadership requires the Russell itself to be in an uptrend. The sentiment/wtd/watchers/chatter fields are a RETAIL-ATTENTION context layer; in small-caps high attention + high sentiment can signal a crowded pump, so weight crowding caution more heavily here. Chatter annotations (Overheated in particular) warrant extra sizing caution in small-caps. Many of these are low-priced and gap-prone — liquidity and risk sizing matter more than in the large-cap book.",
+  "asset_notes": "Small-cap (Russell 2000) momentum names rebuilt weekly from CSV. Benchmarked to IWM. Pipeline: LuxAlgo 3 screeners (BOS + Bullish rating + ▲ signal) → NW Envelope extension check. In small-caps, high sentiment + high chatter (Overheated annotation) warrants extra sizing caution. Many names are low-priced and gap-prone — liquidity matters more than in large-cap book.",
   "watchlist_generated": "2026-07-11"
 }

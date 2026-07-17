@@ -27,59 +27,32 @@
     "NASDAQ:GENB", "NASDAQ:ALMR", "NASDAQ:WRD", "NASDAQ:PAYP", "NASDAQ:PRME",
     "NASDAQ:CERS", "NASDAQ:SLMT"
   ],
+  "instrument_type": "momentum_ark",
   "max_symbols": 50,
-  "default_timeframe": "D",
+  "default_timeframe": "W",
+
+  "pipeline": "L1: MOMENTUM-ARK screener (live) → L2: lux_screener_scan 1W (hard filter: BOS + Bullish/Strong Bullish S&O Rating + ▲/▲+ Signal) → L3: NW Envelope per-symbol check on weekly (price inside bands = base coiling, price above upper = extended/already moved)",
+
   "required_indicators": [
-    "Trendlines with Breaks Oscillator [LuxAlgo]",
     "Nadaraya-Watson Envelope [LuxAlgo]",
     "Volume"
   ],
-  "strategy_type": "relative_strength_base_breakout",
-  "strategy_note": "ARK names are narrative and catalyst-driven — they gap 15-30% on news, base for weeks, then move again. Trend-following oscillators whipsaw. This strategy identifies stocks outperforming QQQ that are building a tight base after a prior move, then enters on a volume breakout from that base. TWB is used only as a breakout confirmation signal, not as a trend direction filter. NW Envelope upper band is the price target, not a trend gate.",
-  "market_context": {
-    "benchmark": "QQQ",
-    "benchmark_alt": "SPY",
-    "benchmark_ma_type": "EMA",
-    "benchmark_ma_period": 50,
-    "benchmark_filter": "QQQ must be above its 50-day EMA for any long entries. If QQQ is below 50d EMA, all signals are neutral — wait for market to recover.",
-    "note": "ARK holdings are high-beta growth: genomics, fintech, AI, space, autonomous vehicles. Many are pre-profit. Catalyst and narrative matter more than technicals alone. A stock can have a perfect setup and still fail without a catalyst. Always check for upcoming earnings, FDA dates, product launches before entry."
+
+  "strategy_note": "ARK names are narrative and catalyst-driven — they gap 15-30% on news, base for weeks, then break out again. LuxAlgo BOS on the weekly confirms the broader trend is intact. NW Envelope inside on weekly = price coiling with room to run. NW above upper = the move has already played out. Weekly timeframe same as other equity types.",
+
+  "nw_position_rules": {
+    "inside": "Price inside bands — base coiling, valid entry candidate if R:R ≥ 1:2",
+    "extended": "Price above NW upper band on daily — move already played out, do not enter",
+    "below_lower": "Price below NW lower band — avoid, breakdown in progress"
   },
-  "bias_criteria": {
-    "base_building": [
-      "QQQ above 50-day EMA (benchmark passes)",
-      "Stock outperforming QQQ over last 20 days (RS positive — stock up more or down less than QQQ)",
-      "Stock above its own 50-day EMA",
-      "Price consolidating in a tight range for 2-6 weeks after a prior impulsive move up",
-      "Volume contracting during the base — daily volume declining toward average or below",
-      "NW Envelope: price inside bands with no recent ▲ or ▼ signal — coiling, not extended"
-    ],
-    "breakout_ready": [
-      "All base_building criteria met",
-      "Price approaching the top of the base / prior resistance level",
-      "TWB Histogram turning positive or crossing above signal line after being near zero",
-      "No earnings within 5 trading days — avoid entering into binary events"
-    ],
-    "skip": [
-      "QQQ below 50-day EMA",
-      "Stock below its own 50-day EMA",
-      "Stock underperforming QQQ over last 20 days",
-      "Price extended — NW ▲ signal already printed (upper band already hit, move played out)",
-      "Volume rising during consolidation — distribution pattern, not accumulation",
-      "Earnings within 5 trading days — wait until after the report"
-    ],
-    "neutral": [
-      "No clear base forming — stock in a choppy range with no tightening",
-      "TWB Histogram near zero with no direction — no conviction",
-      "RS vs QQQ flat — neither outperforming nor underperforming"
-    ]
-  },
+
   "entry_criteria": {
     "long": [
-      "Price breaks above the top of the base / resistance level on a single candle",
-      "Breakout candle volume significantly above the contracting base volume (ideally 2x+ the base average)",
-      "TWB prints a breakout signal (B above trendline) on or within 1-2 bars of the breakout",
-      "Price NOT already outside NW upper band — if upper band already hit, skip (extended)",
-      "Identifiable catalyst present or imminent (sector rotation, product news, macro risk-on)"
+      "Symbol passed L2 hard filter (lux_screener_scan 1D output: score ≥ 0)",
+      "NW position = inside (price between lower and upper band on daily)",
+      "R:R ≥ 1:2: reward = NW upper band minus price, risk = price minus NW lower band",
+      "Manual check: RS vs QQQ positive over last 20 days (stock up more or down less than QQQ)",
+      "Manual check: no earnings within 5 trading days — ARK names gap violently on reports"
     ]
   },
   "exit_criteria": {
@@ -91,13 +64,13 @@
   },
   "risk_rules": [
     "Max 1% account risk per trade",
-    "Max 3 open ARK positions at once — these names are highly correlated (TSLA, COIN, PLTR, NVDA move together in risk-on/off)",
-    "No entries if QQQ below 50-day EMA",
+    "Max 3 open ARK positions — these names are highly correlated (TSLA, COIN, PLTR, NVDA move together in risk-on/off)",
+    "Max 1 name per correlation cluster (see asset_notes.correlation_clusters)",
     "Reduce position size 25% vs standard stocks — ARK names are 2-3x beta",
-    "Volume confirmation on breakout is mandatory — a low-volume breakout in these names fails most of the time",
+    "Do not enter if NW position = extended",
+    "Min R:R 1:2 before entry (NW upper band = reward target)",
     "No entry in first 15 minutes of NYSE open (9:30-9:45 ET)",
-    "Never hold through earnings — pre-profit ARK names gap violently on reports",
-    "Min R:R 1:2 before entry (base width = risk; NW upper band = reward target)"
+    "Never hold through earnings — pre-profit ARK names gap violently on reports"
   ],
   "rs_guidance": "Relative strength vs QQQ is the primary filter but cannot be read directly from TV indicators in this scan. Approximate it from the quote data: if SPY/QQQ is -2% over 20 days and the stock is -0.5%, it has positive RS. If SPY is +3% and the stock is flat, RS is negative — skip it.",
   "asset_notes": {

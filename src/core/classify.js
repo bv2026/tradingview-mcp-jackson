@@ -70,15 +70,15 @@ function classifyMomentum(fields) {
 
 // BASE_BUILDING / BREAKOUT_READY / EXTENDED / SKIP.
 // NOTE: this is a partial approximation. RS-vs-QQQ-over-20-days and the earnings-within-5-days
-// check (both named in strategy-momentum_ark.json's bias_criteria) are NOT computed here — no
-// RS/earnings data source is wired up. BREAKOUT_READY specifically requires that RS check, so
-// it's never assigned automatically; the caller must still confirm RS before upgrading a
-// BASE_BUILDING status to BREAKOUT_READY.
+// check are NOT computed here — BREAKOUT_READY requires that RS check and is never auto-assigned.
+// TWB is no longer in ARK's required_indicators; lux_screener_scan (BOS + Bullish rating + ▲
+// signal) is the L2 filter. Symbols reaching this function have already passed that gate, so
+// bias='n/a' (no TWB) → default to BASE_BUILDING rather than SKIP.
 function classifyArk(fields, symbol, correlationClusters) {
   let status;
   if (fields.nw_position === 'extended') status = 'EXTENDED';
-  else if (fields.bias === 'bullish') status = 'BASE_BUILDING';
-  else status = 'SKIP';
+  else if (fields.bias === 'bullish' || fields.bias === 'n/a') status = 'BASE_BUILDING';
+  else status = 'SKIP'; // bias === 'bearish' or unexpected value
 
   let cluster = null;
   for (const [name, members] of Object.entries(correlationClusters || {})) {

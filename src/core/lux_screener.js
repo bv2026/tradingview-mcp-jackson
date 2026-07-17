@@ -69,9 +69,10 @@ function loadWatchlist(instrumentType) {
     if (!existsSync(p)) continue;
     try {
       const s = JSON.parse(readFileSync(p, 'utf8'));
-      if (!Array.isArray(s.watchlist) || s.watchlist.length === 0)
-        throw new Error(`watchlist is empty in ${p}`);
-      return s.watchlist;
+      if (Array.isArray(s.watchlist) && s.watchlist.length > 0) return { watchlist: s.watchlist, screener_name: null };
+      // No static watchlist — return screener_name so runScan can fetch live
+      if (s.screener_name) return { watchlist: null, screener_name: s.screener_name };
+      throw new Error(`watchlist is empty and no screener_name in ${p}`);
     } catch (e) {
       throw new Error(`Failed to load watchlist from ${p}: ${e.message}`);
     }
@@ -234,39 +235,51 @@ function parseTableRows(rows) {
   return map;
 }
 
+/**
+ * Hard-rule filter replacing the old arbitrary composite score.
+ *
+ * Pass criteria (all three required for momentum continuation):
+ *   1. S&O Rating = Bullish or Strong Bullish (≥60% confluence)
+ *   2. PAC Structure = BOS (any count) — CHoCH/CHoCH+ excluded
+ *   3. S&O Signal = ▲ or ▲+ (confirmed bullish direction)
+ *
+ * Sort order within passing symbols (encoded as a numeric score for
+ * backward-compatible ranking — higher = better):
+ *   Signal ▲+ beats ▲ (+1)
+ *   BOS count: each consecutive BOS adds +1 (BOS(5) = 5 pts)
+ *   OSC Bullish divergence adds +1 as tiebreaker
+ *
+ * Symbols that fail any hard filter get score = -99 (sorted to bottom).
+ */
 function scoreSymbol(so, pac, osc) {
+  const soRating = so['RATING'] || '';
+  const signal   = so['SIGNAL'] || '';
+  const struct   = pac['STRUCTURE'] || '';
+
+  // Hard filter 1: S&O Rating must be Bullish or Strong Bullish
+  const ratingOk = soRating.includes('Bullish'); // covers both "Bullish" and "Strong Bullish"
+
+  // Hard filter 2: PAC structure must be BOS (not CHoCH or CHoCH+)
+  const structOk = struct.includes('BOS') && !struct.includes('CHoCH');
+
+  // Hard filter 3: Signal must be bullish direction
+  const signalOk = signal.includes('▲');
+
+  if (!ratingOk || !structOk || !signalOk) return -99;
+
+  // Sort score for passing symbols
   let score = 0;
 
-  // S&O Rating
-  const soRating = so['RATING'] || '';
-  if (soRating.includes('Strong Bullish')) score += 3;
-  else if (soRating.includes('Bullish')) score += 2;
-  else if (soRating.includes('Neutral')) score += 0;
-  else score -= 2; // bearish
+  // Signal strength: ▲+ beats ▲
+  if (signal.includes('▲+')) score += 1;
 
-  // S&O Signal
-  const signal = so['SIGNAL'] || '';
-  if (signal.includes('▲+')) score += 2;
-  else if (signal.includes('▲')) score += 1;
-  else if (signal.includes('▼')) score -= 1;
+  // BOS count — extract the number from "BOS (N)"
+  const bosMatch = struct.match(/BOS\s*\((\d+)\)/i);
+  if (bosMatch) score += parseInt(bosMatch[1], 10);
 
-  // OSC Divergences
+  // Bullish divergence as tiebreaker
   const div = osc['DIVERGENCES'] || '';
-  if (div.includes('Bullish')) score += 2;
-  else if (div.includes('Bearish')) score -= 2;
-
-  // OSC HWO Signal
-  const hwo = osc['HWO SIGNAL'] || '';
-  if (hwo.includes('Up')) score += 1;
-  else if (hwo.includes('Down') || hwo.includes('Overbought')) score -= 1;
-
-  // OSC Overflow (overextended)
-  if (osc['OVERFLOW'] && osc['OVERFLOW'] !== 'None' && osc['OVERFLOW'] !== '') score -= 1;
-
-  // PAC Structure
-  const struct = pac['STRUCTURE'] || '';
-  if (struct.includes('CHoCH')) score -= 2;
-  else if (struct.includes('BOS')) score += 1;
+  if (div.includes('Bullish')) score += 1;
 
   return score;
 }
@@ -361,8 +374,18 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
   // 3. Capture pre-scan state so we can restore exactly after the scan
   const preState = await capturePreScanState(pacStudy, soStudy, oscStudy);
 
-  // 4. Load watchlist
-  const watchlist = loadWatchlist(instrument_type);
+  // 4. Load watchlist — static list or live screener fetch
+  const { watchlist: staticList, screener_name } = loadWatchlist(instrument_type);
+  let watchlist;
+  if (staticList) {
+    watchlist = staticList;
+  } else {
+    // No static watchlist: fetch live from TradingView screener
+    const { get: screenerGet } = await import('./screener.js');
+    const screenerResult = await screenerGet({ screener_name });
+    // screener returns EXCHANGE:SYMBOL strings; normalize to bare symbol objects
+    watchlist = screenerResult.symbols.map(s => ({ symbol: s.includes(':') ? s.split(':')[1] : s }));
+  }
   const metaMap = Object.fromEntries(watchlist.map(e => [e.symbol, e]));
   const symbols = watchlist.map(e => e.symbol);
 

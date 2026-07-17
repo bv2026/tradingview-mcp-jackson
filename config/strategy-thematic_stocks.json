@@ -2,21 +2,37 @@
   "instrument_type": "thematic_stocks",
   "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\Watchlist_Stocks.csv",
   "watchlist_generated": "2026-06-28",
-  "default_timeframe": "D",
+  "default_timeframe": "W",
   "screener_name": null,
   "max_symbols": 121,
+  "pipeline": "L1: thematic_stocks watchlist (121 stocks across 8 themes) → L2: LuxAlgo 3 screeners on 1W (hard filter: BOS + Bullish/Strong Bullish S&O Rating + ▲/▲+ Signal) → L3: NW Envelope per-symbol check",
   "required_indicators": [
-    "Trendlines with Breaks Oscillator [LuxAlgo]",
     "Nadaraya-Watson Envelope [LuxAlgo]",
     "Volume"
   ],
-  "market_context": {
-    "benchmark": "SPY",
-    "benchmark_ma_type": "SMA",
-    "benchmark_ma_period": 50,
-    "benchmark_filter": "SPY must be above its 50-day SMA for any bullish bias. If below, treat as risk-off — only highest-conviction setups qualify."
+  "nw_position_rules": {
+    "inside": "Room to run — valid entry candidate if R:R ≥ 1.5",
+    "extended": "Price above NW upper band — do not enter, wait for weekly pullback",
+    "below_lower": "Price below NW lower band — avoid"
   },
-  "asset_notes": "Thematic stock watchlist — 8 themes (AI semis, AI power/grid, Healthcare, Financials, Industrials/defense, Energy, Consumer def/discount, Space). Each symbol carries theme and sub_group for grouped analysis. Signal field from watchlist CSV is a starting context only — scan all regardless of signal. Chatter/momentum data not present; rely on TWB+NW+Volume.",
+  "entry_criteria": {
+    "long": [
+      "Symbol passed L2 hard filter (lux_screener_scan output: score ≥ 0)",
+      "NW position = inside (price between lower and upper band)",
+      "R:R ≥ 1.5: reward = NW upper minus price, risk = price minus NW lower"
+    ]
+  },
+  "exit_criteria": {
+    "stop_loss": "Below NW Envelope lower band on the weekly",
+    "take_profit_1": "Scale out 1/3 when price touches NW upper band",
+    "take_profit_2": "Trail remaining via weekly 9 EMA — exit if closes below for 2 consecutive weeks"
+  },
+  "risk_rules": [
+    "Minimum R:R of 1.5",
+    "Do not enter if NW position = extended",
+    "Maximum 3 open positions"
+  ],
+  "asset_notes": "Thematic stock watchlist — 8 themes (AI semis, AI power/grid, Healthcare, Financials, Industrials/defense, Energy, Consumer def/discount, Space). Each symbol carries theme and sub_group for grouped analysis. Signal field from watchlist CSV is starting context only — LuxAlgo 3 screeners (BOS + Bullish + ▲ signal) are the primary filter on 1W. NW Envelope is the extension check. Output grouped by theme to see which themes have broad weekly strength.",
   "watchlist": [
     {
       "symbol": "NVDA",

@@ -27,7 +27,7 @@ session_save brief="<Claude's output>"
 session_get   # retrieve today's or yesterday's saved brief
 ```
 
-**Precomputed fields (as of `src/core/classify.js`):** each symbol in `symbols_scanned` already carries `hist`/`sig` (parsed TWB Histogram/Signal, comma/unicode-minus/bond-tick strings normalized to numbers), `gap` (hist − sig), `bias` (bullish/bearish/neutral from gap sign), and `nw_position` (extended/early/n/a from the most recent NW label — `nw_envelope_signals` is trimmed to 1 label since only the most recent is ever used). `momentum_stocks`/`momentum_etf`/`sp_ndx`/`r2k` also carry `momentum_tag` (bullish-early/bullish-extended/bearish-neutral/neutral); `momentum_ark` carries `ark_status` (BASE_BUILDING/EXTENDED/SKIP — BREAKOUT_READY is never auto-assigned, it still requires the RS-vs-QQQ check by hand) and `cluster`; `futures` carries `regime` (TRENDING_LONG/TRENDING_SHORT/MEAN_REVERTING — a single-bar approximation, override with regime_detection/macro_overlays/cross-report judgment as before). Use these fields directly for the GAP sort and tables below instead of re-parsing the raw `indicators`/`nw_envelope_signals` strings.
+**Precomputed fields (as of `src/core/classify.js`):** each symbol in `symbols_scanned` carries `nw_position` (extended/early/n/a from the most recent NW label — `nw_envelope_signals` is trimmed to 1 label since only the most recent is ever used). **Equity types** (momentum_stocks/etf/ark/sp_ndx/r2k): TWB is NOT on the chart — `hist`/`sig`/`gap`/`bias` are null/n/a; L2 filtering was already done by `lux_screener_scan` (BOS + Bullish S&O + ▲ signal). Use `nw_position` for L3 extension check. `momentum_stocks`/`momentum_etf`/`sp_ndx`/`r2k` carry `momentum_tag` (always 'neutral' without TWB — treat as informational only); `momentum_ark` carries `ark_status` (BASE_BUILDING by default when bias=n/a, EXTENDED when nw_position=extended — BREAKOUT_READY is never auto-assigned, requires manual RS-vs-QQQ check) and `cluster`. **Crypto/futures types**: TWB IS on the chart — `hist`/`sig` (parsed TWB Histogram/Signal, strings normalized to numbers), `gap` (hist − sig), `bias` (bullish/bearish/neutral from gap sign) all populated normally. `futures` carries `regime` (TRENDING_LONG/TRENDING_SHORT/MEAN_REVERTING — single-bar approximation, override with regime_detection/macro_overlays judgment). Use these fields directly instead of re-parsing raw `indicators`/`nw_envelope_signals` strings.
 
 **Brief formatting convention (REQUIRED for `session_save`):**
 The `morning_brief` tool's embedded instruction says to output bare pipe-delimited lines (`SYMBOL | BIAS: ... | SIGNAL: ...`). Do NOT save that raw form — it does not render as a table in markdown. Always reshape the analysis into proper GitHub-flavored markdown before calling `session_save`:
@@ -42,7 +42,7 @@ The `morning_brief` tool's embedded instruction says to output bare pipe-delimit
 - For `lux_screener_scan` briefs (`sp_ndx`, `r2k`): the scan result includes a `chatter_section` field — always include it as `## Chatter Conflicts & Confluences` after the Top 10 table and before Overall Market Read. Also include it in the daily summary's Cross-Market Read and in the weekly review's chatter callout. If `chatter_section` is empty or says "No notable…", omit the section rather than including a blank header.
 - For `lux_screener_scan instrument_type="thematic_stocks"` (full report, saved as `thematic_stocks.md`): output all symbols grouped by theme. Each theme section = `### {Theme} {bias_arrow} ({B}B / {Br}Br / {N} total)` header, then a full markdown table `| SYMBOL | SUB-GROUP | S&O RATING | SIGNAL | PAC STRUCTURE | OSC DIV | HWO | SCORE |` with all symbols sorted score descending. Close with a cross-thematic macro read paragraph.
 - For `thematic_stocks` summary (saved with `is_summary=true` as `thematic_stocks-summary.md`): lead with a theme-level summary table `| Theme | Bias | Bull / Bear / Total | Top Names | Best Score |`, then a "Top Picks by Theme" table of all symbols scoring ≥ 5 `| SYMBOL | THEME | S&O RATING | SIGNAL | PAC | OSC DIV | SCORE |`, then an "Avoid" table of bottom 10, then a 2-bullet macro read.
-- For `thematic_etfs` summary (saved with `is_summary=true` as `thematic_etfs-summary.md`): lead with a combined rotation table `| ETF Theme | Bias | Leading ETFs | Fading ETFs |` covering all 8 themes across both halves, then a "Top ETF Picks" table of bullish ETFs with room to NW band, then an avoid list, then a cross-theme macro read.
+- For `thematic_etfs` summary (saved with `is_summary=true` as `thematic_etfs-summary.md`): lead with a combined rotation table `| ETF Theme | Bias | Leading ETFs | Fading ETFs |` covering all 8 themes, then a "Top ETF Picks" table of bullish ETFs with room to NW band, then an avoid list, then a cross-theme macro read.
 
 The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief body should start at `## {TYPE}`. See `reports/2026-Wk24/2026-Jun-13/` for reference structure.
 
@@ -56,9 +56,9 @@ The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief 
 - `~/.tradingview-mcp/sessions/` — saved daily briefs
 
 **Required indicators on chart** (auto-added if missing):
-- Trendlines with Breaks Oscillator [LuxAlgo]
-- Nadaraya-Watson Envelope [LuxAlgo]
-- Volume
+- Nadaraya-Watson Envelope [LuxAlgo] — all instrument types
+- Trendlines with Breaks Oscillator [LuxAlgo] — crypto, crypto_perps, futures only (equity types use lux_screener_scan as L2 filter instead)
+- Volume — all instrument types
 
 **NW Envelope note**: Does NOT appear in `data_get_study_values` (it's a price overlay, not an oscillator). Use `data_get_pine_labels` with `study_filter: "Nadaraya-Watson"` to get signal markers: ▲ = price crossed above a band, ▼ = price crossed below. The most recent label (first in array) indicates current band position.
 
@@ -70,20 +70,20 @@ The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief 
 
 | | |
 |---|---|
-| **Screener** | `MOMENTUM` (Stock Screener, US equities) |
-| **Timeframe** | Daily |
-| **Benchmark** | SPY / QQQ above 50-day SMA → longs only |
-| **Side** | Long only. No shorts (future work). |
-| **Indicators** | TWB Oscillator + NW Envelope + Volume |
+| **Screener** | `MOMENTUM` (Stock Screener, US equities) — already filters Price > EMA50 1M |
+| **Timeframe** | Weekly (1W) for L2 scan; daily chart context for entry |
+| **Pipeline** | L1: MOMENTUM screener → L2: `lux_screener_scan 1W` (BOS + Bullish S&O + ▲ signal hard filter) → L3: NW Envelope extension check per symbol |
+| **Side** | Long only. |
+| **Indicators** | NW Envelope + Volume (on chart). TWB removed — S&O Signal replaces it at L2. |
 
-**Bias rules:**
-- Bullish: HH/HL pattern + TWB bullish breakout + volume surge + approaching (not outside) upper NW band + catalyst
-- Bearish: LL/LH + TWB breakdown + price back below trendline → exit/avoid longs only
-- Neutral: consolidation, no breakout, below-average volume
+**L3 bias (per-symbol NW check):**
+- `nw_position = inside` → room to run, valid entry candidate
+- `nw_position = extended` (▲) → price above upper NW band, skip
+- `nw_position = early` (▼) → price below lower band, avoid
 
-**Entry:** Flag/pennant near highs + TWB bullish B signal + volume + NW band not extended
-**Exits:** Stop below breakout candle low. TP1: upper NW band (scale 1/2–1/3). TP2: trail 9 EMA.
-**Risk:** 1% max risk/trade, 1:2 min R:R, max 3 positions, no entry if SPY/QQQ below 50d SMA.
+**Entry:** Symbol passed lux_screener_scan + NW inside bands + R:R ≥ 1.5 (NW upper minus price / price minus NW lower)
+**Exits:** Stop below NW lower band (weekly). TP1: scale 1/3 at upper NW band. TP2: trail 9-week EMA.
+**Risk:** 1% max risk/trade, 1:2 min R:R, max 3 positions.
 
 ---
 

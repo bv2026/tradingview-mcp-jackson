@@ -12,11 +12,11 @@ Quick reference for the daily/weekly trading workflow. Prompts are what you type
 | Single core brief | `morning brief momentum_stocks` (or `momentum_etf`, `momentum_ark`, `crypto`, `crypto_perps`, `futures`) |
 | Single momentum brief | `morning brief sp_ndx` (or `r2k`) |
 | Thematic stocks scan (121 symbols) | `lux screener scan thematic_stocks` |
-| Thematic ETF scan | `morning brief thematic_etfs_1` then `morning brief thematic_etfs_2` |
+| Thematic ETF scan | `lux screener scan thematic_etfs` |
 | Read back a saved brief | `get the momentum_stocks brief` (or any type) |
 | Read today's daily summary | `get the daily summary` |
 
-> `all` covers **all 8 standard** instruments (momentum_stocks, momentum_etf, momentum_ark, crypto, crypto_perps, futures, sp_ndx, r2k) **plus thematic reports**: lux_screener_scan thematic_stocks (121 symbols → `thematic_stocks.md` + `thematic_stocks-summary.md`), morning_brief thematic_etfs_1 + thematic_etfs_2 (`thematic_etfs_1.md`, `thematic_etfs_2.md`, `thematic_etfs-summary.md`), and a final `daily-summary.md`.
+> `all` covers **all 8 standard** instruments (momentum_stocks, momentum_etf, momentum_ark, crypto, crypto_perps, futures, sp_ndx, r2k) **plus thematic reports**: lux_screener_scan thematic_stocks (121 symbols → `thematic_stocks.md` + `thematic_stocks-summary.md`), lux_screener_scan thematic_etfs (~90 ETFs → `thematic_etfs.md` + `thematic_etfs-summary.md`), and a final `daily-summary.md`.
 >
 > Large screeners (momentum_stocks/momentum_etf/momentum_ark, ~100 symbols each) can exceed the tool's ~60-70s timeout on a plain call — batch with `offset`/`max_symbols` (e.g. `offset=0 max_symbols=50` then `offset=50 max_symbols=50`) if a call times out. The `all` workflow instruction batches these three automatically.
 
@@ -27,8 +27,8 @@ Quick reference for the daily/weekly trading workflow. Prompts are what you type
 | `{type}.md` | Full brief per instrument |
 | `thematic_stocks.md` | All 121 stocks, grouped by theme, with all LuxAlgo signals |
 | `thematic_stocks-summary.md` | Theme-level table + top picks (score ≥ 5) + avoid list |
-| `thematic_etfs_1.md` / `thematic_etfs_2.md` | Full ETF briefs (49 + 41 ETFs) |
-| `thematic_etfs-summary.md` | Combined ETF rotation summary across all 8 themes |
+| `thematic_etfs.md` | Full ETF scan (~90 ETFs across 8 themes, LuxAlgo S&O+PAC+OSC scores) |
+| `thematic_etfs-summary.md` | ETF rotation summary across all 8 themes |
 | `daily-summary.md` | Quick-reference 4-line block per instrument (all types) |
 
 ---
@@ -83,7 +83,7 @@ Close with:
 |---|---|---|---|
 | Source | Live TradingView MOMENTUM screeners | Weekly CSV exports | Weekly CSV watchlists |
 | Refresh | Live, every run | Weekly (Saturday script) | Weekly (Saturday script) |
-| Types | momentum_stocks, momentum_etf, momentum_ark, crypto, crypto_perps, futures | sp_ndx, r2k | thematic_stocks (lux scan), thematic_etfs_1/_2 |
+| Types | momentum_stocks, momentum_etf, momentum_ark, crypto, crypto_perps, futures | sp_ndx, r2k | thematic_stocks (lux scan), thematic_etfs (lux scan) |
 | In `all` run? | ✅ Yes | ✅ Yes | ✅ Yes |
 | Extra signal | — | Retail sentiment / WTD / watchers / chatter | LuxAlgo S&O+PAC+OSC scores (stocks); TWB+NW+Vol grouped by theme (ETFs) |
 | Summary file? | — | — | ✅ `thematic_stocks-summary.md`, `thematic_etfs-summary.md` |
@@ -91,8 +91,8 @@ Close with:
 ### Watchlist recommended cadence
 
 - **Saturday:** drop 4 dated CSVs into `CSV/`, then `node scripts/build-momentum-watchlists.mjs` — rebuilds sp_ndx + r2k watchlists + chatter annotations.
-- **Saturday (if thematic watchlists changed):** update `CSV/Watchlist_Stocks.csv` and/or `CSV/Watchlist_ETFs.csv`, then `node scripts/build-watchlist-configs.mjs` — regenerates all thematic configs (stocks + etfs_1 + etfs_2).
-- **Daily (Mon–Fri):** `morning brief all` — runs everything: all 8 core/momentum briefs + thematic_stocks LuxAlgo scan (121 symbols) + thematic_etfs_1/_2 + all summary files + daily-summary.
+- **Saturday (if thematic watchlists changed):** update `CSV/Watchlist_Stocks.csv` and/or `CSV/Watchlist_ETFs.csv`, then `node scripts/build-watchlist-configs.mjs` — regenerates thematic configs (`thematic_stocks.json` + `thematic_etfs.json`).
+- **Daily (Mon–Sun):** `morning brief all` — runs everything: all 8 core/momentum briefs + thematic_stocks LuxAlgo scan (121 symbols) + thematic_etfs LuxAlgo scan (~90 ETFs) + all summary files + daily-summary.
 - By Thu/Fri the weekly data is stale vs price — the live `morning brief momentum_stocks` (core) provides fresher mid-week discovery.
 
 ---
@@ -136,21 +136,18 @@ Runs via `lux_screener_scan` (not `morning_brief`). Output: full per-symbol tabl
 **Watchlist source:** `CSV/Watchlist_Stocks.csv` → `config/strategy-thematic_stocks.json`  
 **Rebuild:** `node scripts/build-watchlist-configs.mjs`
 
-### Thematic ETFs — ~90 ETFs, 8 themes (TWB+NW+Vol, weekly TF)
+### Thematic ETFs — ~90 ETFs, 8 themes (LuxAlgo S&O+PAC+OSC, weekly TF)
 
 ```
-morning brief thematic_etfs_1      # AI semis + AI power/grid + Healthcare + Financials (~49 ETFs)
-morning brief thematic_etfs_2      # Crypto + Industrials/defense + Energy + Consumer + Space (~41 ETFs)
+lux screener scan thematic_etfs    # All ~90 ETFs grouped by theme, LuxAlgo scores
 ```
 
-Split into two halves to avoid MCP timeout on weekly scans. Auto-generates three files when run as part of `all`:
-- `thematic_etfs_1.md` + `thematic_etfs_2.md` — full per-ETF analysis by theme
-- `thematic_etfs-summary.md` — combined rotation summary across all 8 ETF themes
+Runs via `lux_screener_scan` (same pipeline as thematic_stocks). Auto-generates two files when run as part of `all`:
+- `thematic_etfs.md` — full per-ETF table grouped by theme with S&O/PAC/OSC signals and scores
+- `thematic_etfs-summary.md` — rotation summary across all 8 ETF themes
 
-**Watchlist source:** `CSV/Watchlist_ETFs.csv` → `config/strategy-thematic_etfs_1.json` + `strategy-thematic_etfs_2.json`  
+**Watchlist source:** `CSV/Watchlist_ETFs.csv` → `config/strategy-thematic_etfs.json`  
 **Rebuild:** `node scripts/build-watchlist-configs.mjs` (when watchlist changes)
-
-> The single `thematic_etfs` type (full 90-ETF list) exists in the enum but will time out — always use `_1`/`_2` split. The summary is saved under `thematic_etfs` type.
 
 ---
 
@@ -181,11 +178,17 @@ If a brief is rejected with an "invalid enum value" error for a new instrument t
 
 ## 🧠 How a brief works (so the output makes sense)
 
-1. **Layer 1 — universe:** live screener (core) or static watchlist (StockTwits) supplies the symbols.
-2. **Layer 2 — scan:** for each symbol the chart loads TWB Oscillator + Nadaraya-Watson Envelope + Volume, behind liveness/echo guards (every symbol gets a `fresh` flag).
-3. **Layer 3 — bias:** Claude applies the strategy rules (benchmark gate → bias → entry/exit) and writes the brief.
+**Equity types** (momentum_stocks, momentum_etf, momentum_ark, sp_ndx, r2k, thematic_stocks, thematic_etfs):
+1. **L1 — universe:** live MOMENTUM screener (core) or static weekly watchlist supplies the symbols.
+2. **L2 — lux_screener_scan:** batches symbols through LuxAlgo S&O + PAC + OSC on the weekly chart. Hard filter: BOS + Bullish/Strong Bullish S&O Rating + ▲/▲+ Signal. Only passing symbols proceed.
+3. **L3 — NW Envelope check:** per-symbol, reads the most recent NW label (▲ = extended above upper band, ▼ = below lower band). Entry only when `nw_position = inside`.
 
-**Key signals:** TWB Histogram **>** Signal = momentum accelerating; NW ▲ = price crossed above a band (extended), ▼ = crossed below. Benchmark gate must pass (SPY/QQQ > 50d for equities; BTC TWB direction for crypto) before any longs.
+**Crypto/futures types** (crypto, crypto_perps, futures):
+1. **L1 — universe:** live screener supplies the symbols.
+2. **L2 — morning_brief scan:** chart loads TWB Oscillator + NW Envelope. TWB Histogram/Signal direction determines bias. For crypto_perps: BTC TWB direction = long or short side.
+3. **L3 — bias:** Claude applies strategy rules (entry/exit/risk) and writes the brief.
+
+**Key signals:** NW ▲ = price crossed above upper band (extended, skip), ▼ = crossed below lower band (avoid). For crypto/futures: TWB Histogram **>** Signal = momentum accelerating (bullish bias); TWB **<** Signal = bearish bias.
 
 ---
 
