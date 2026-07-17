@@ -16,7 +16,7 @@
     "momentum_stocks": "MOMENTUM",
     "momentum_etf":    "MOMENTUM-ETF",
     "futures":       null,
-    "momentum_ark":    "MOMENTUM-ARK",
+    "momentum_ark":    null,
     "indices":       "MOMENTUM-INDICES",
     "crypto":        "MOMENTUM-CRYPTO",
     "crypto_perps":  "MOMENTUM-PERPS",

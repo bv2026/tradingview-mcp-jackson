@@ -4,12 +4,22 @@
 
 ## Morning Workflow (primary daily use)
 
-Three independent briefs — run each in its own TradingView screener window:
+Core briefs (live screeners):
 
 ```
 morning_brief instrument_type="momentum_stocks" # equity momentum
-morning_brief instrument_type="crypto"       # crypto spot (Coinbase)
-morning_brief instrument_type="crypto_perps" # crypto perps (Coinbase CDE)
+morning_brief instrument_type="crypto"          # crypto spot (Coinbase)
+morning_brief instrument_type="crypto_perps"    # crypto perps (Coinbase CDE)
+```
+
+Watchlist briefs (static CSV → lux_screener_scan, no live screener needed):
+
+```
+lux_screener_scan instrument_type="momentum_ark" timeframe="1W"  # ARK holdings (141 symbols)
+lux_screener_scan instrument_type="sp_ndx"       timeframe="1W"  # S&P 500 + Nasdaq 100 momentum
+lux_screener_scan instrument_type="r2k"          timeframe="1W"  # Russell 2000 momentum
+lux_screener_scan instrument_type="thematic_stocks"              # 121 stocks across 8 themes
+lux_screener_scan instrument_type="thematic_etfs"                # ~90 ETFs across 8 themes
 ```
 
 **Step 1 — sync screener** (when TV screener results change during the day):
@@ -32,11 +42,10 @@ session_get   # retrieve today's or yesterday's saved brief
 **Brief formatting convention (REQUIRED for `session_save`):**
 The `morning_brief` tool's embedded instruction says to output bare pipe-delimited lines (`SYMBOL | BIAS: ... | SIGNAL: ...`). Do NOT save that raw form — it does not render as a table in markdown. Always reshape the analysis into proper GitHub-flavored markdown before calling `session_save`:
 - `## {TYPE}` section, then `**Benchmark:**` and `**Theme:**` bullet blocks
-- For `momentum_stocks`, `momentum_etf`, and `momentum_ark` (large symbol lists mixing bullish/bearish/neutral, or BASE_BUILDING/BREAKOUT_READY/EXTENDED/SKIP for ark): insert a `### Top 20 Setups` table here, before the full symbol table. Sorted descending by `GAP` (TWB Histogram − Signal — strongest divergence first). This is a trade-quality ranking, NOT the same as the underlying screener's own live rank (MOMENTUM/MOMENTUM-ETF/MOMENTUM-ARK have their own sort/filters — see `config/screeners/MOMENTUM.md` / `MOMENTUM-ETF.md` / `MOMENTUM-ARK.md`). State this distinction in one line above the table so readers don't confuse the two orderings.
-  - For `momentum_stocks`/`momentum_etf`: columns `| RANK | SYMBOL | TWB HIST | TWB SIG | GAP | CLOSE | NW POSITION |`, filtered to **Bullish-biased symbols only**.
-  - For `momentum_ark`: columns `| RANK | SYMBOL | STATUS | TWB HIST | TWB SIG | GAP | CLOSE | CLUSTER |`, filtered to **BASE_BUILDING/BREAKOUT_READY status only** (EXTENDED and SKIP excluded — not fresh entries). Add a cluster-concentration note below the table if any correlation cluster (ai_semis/fintech_crypto/autonomy_space/ai_software/genomics) appears more than once, naming the single best pick per cluster per the cluster_rule.
-- A per-symbol **markdown table** with a header row and `|---|` separator: `| SYMBOL | BIAS | SIGNAL | WATCH |` (use `| SYMBOL | STATUS | RS | SIGNAL | CLUSTER |` for `momentum_ark`). This table keeps the screener's own live rank order (i.e., do NOT re-sort it to match the Top 20 table above — the Top 20 table is a separate curated view, the full table is the raw scan in screener order). Precede this table with a `### Screener List` header and add a leading `#` column numbering each row 1-N in screener rank order.
-- `### Top 3 Setups` — prose or a table with Entry/Stop/TP1/R:R columns. For `momentum_stocks`/`momentum_etf`/`momentum_ark`, these should be the top 3 from the Top 20 Setups table above (same trade-quality ranking, deepest tier) — not independently re-selected. For `momentum_ark`, note any cluster overlap among the top 3 and swap in the next-ranked name from a different cluster if needed to respect the max-1-per-cluster rule.
+- For `momentum_stocks` and `momentum_etf` (large symbol lists): insert a `### Top 20 Setups` table here, before the full symbol table. Sorted descending by `GAP` (TWB Histogram − Signal — strongest divergence first). This is a trade-quality ranking, NOT the same as the underlying screener's own live rank. State this distinction in one line above the table so readers don't confuse the two orderings. Columns: `| RANK | SYMBOL | TWB HIST | TWB SIG | GAP | CLOSE | NW POSITION |`, filtered to **Bullish-biased symbols only**.
+- For `momentum_ark` (lux_screener_scan output, 141 symbols): insert a `### Top 20 Setups` table sorted descending by lux score. Columns: `| RANK | SYMBOL | S&O RATING | SIGNAL | PAC STRUCTURE | SCORE | CLUSTER |`, filtered to **passing symbols only** (score ≥ 0, i.e. BOS + Bullish + ▲). Add a cluster-concentration note below if any correlation cluster (ai_semis/fintech_crypto/autonomy_space/ai_software/genomics) appears more than once, naming the single best pick per cluster.
+- A per-symbol **markdown table** with a header row and `|---|` separator: `| SYMBOL | BIAS | SIGNAL | WATCH |` (use `| SYMBOL | S&O RATING | SIGNAL | PAC | SCORE | CLUSTER |` for `momentum_ark`). Precede with a `### Screener List` header and a leading `#` column numbering rows 1-N in watchlist weight order.
+- `### Top 3 Setups` — prose or a table with Entry/Stop/TP1/R:R columns. For `momentum_stocks`/`momentum_etf`/`momentum_ark`, top 3 from the Top 20 table above — not independently re-selected. For `momentum_ark`, note any cluster overlap and swap in next-ranked name from a different cluster if needed.
 - `## Overall Market Read` — bullet list
 - For `instrument_type="daily_summary"`: lead with a `## Quick Reference` table (Instrument | Direction | Top 3 | Key Action), one short section per instrument, and close with a `## Cross-Market Read` table.
 - For `lux_screener_scan` briefs (`sp_ndx`, `r2k`): the scan result includes a `chatter_section` field — always include it as `## Chatter Conflicts & Confluences` after the Top 10 table and before Overall Market Read. Also include it in the daily summary's Cross-Market Read and in the weekly review's chatter callout. If `chatter_section` is empty or says "No notable…", omit the section rather than including a blank header.

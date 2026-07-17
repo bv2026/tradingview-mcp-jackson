@@ -326,7 +326,7 @@ async function scanSymbol(symbol, timeframe, scanWaitMs, opts = {}) {
   return reading;
 }
 
-const ALL_INSTRUMENTS = ['momentum_stocks', 'momentum_etf', 'momentum_ark', 'crypto', 'crypto_perps', 'futures', 'sp_ndx', 'r2k'];
+const ALL_INSTRUMENTS = ['momentum_stocks', 'momentum_etf', 'crypto', 'crypto_perps', 'futures', 'sp_ndx', 'r2k'];
 const THEMATIC_INSTRUMENTS = [];
 
 export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, offset, max_symbols } = {}) {
@@ -343,12 +343,15 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
       instruction: [
         `Run morning_brief sequentially for each of these instrument types IN ORDER: ${ALL_INSTRUMENTS.join(', ')}.`,
         `For each instrument_type:`,
-        `1. Call morning_brief with that instrument_type. momentum_stocks, momentum_etf, and momentum_ark each source from a ~100-symbol screener and are capped at max_symbols=50 per call to avoid the tool timeout — for THESE THREE ONLY, call morning_brief twice (offset=0, then offset=50, both with max_symbols=50), and merge both calls' symbols_scanned arrays into one combined list before writing the report. crypto, crypto_perps, futures, sp_ndx, and r2k are small enough to scan in a single call — call with no offset/max_symbols.`,
+        `1. Call morning_brief with that instrument_type. momentum_stocks and momentum_etf each source from a ~100-symbol screener and are capped at max_symbols=50 per call to avoid the tool timeout — for THESE TWO ONLY, call morning_brief twice (offset=0, then offset=50, both with max_symbols=50), and merge both calls' symbols_scanned arrays into one combined list before writing the report. crypto, crypto_perps, futures, sp_ndx, and r2k are small enough to scan in a single call — call with no offset/max_symbols.`,
         `2. Apply the returned bias_criteria and instruction to the (merged, if applicable) symbols_scanned data.`,
         `3. Write the full analysis (symbol table, top 3 setups, overall market read) under a markdown header: ## MOMENTUM STOCKS / ## CRYPTO / ## CRYPTO PERPS / ## FUTURES / etc.`,
         `4. Call session_save once with your full combined analysis text and the matching instrument_type.`,
         `5. Proceed to the next instrument_type.`,
         `After ALL ${ALL_INSTRUMENTS.length} standard briefs are complete, run the thematic reports in order:`,
+        `THEMATIC STEP 0 — ARK Innovation (141 symbols from CSV watchlist):`,
+        `Call lux_screener_scan with instrument_type="momentum_ark" and timeframe="1W". This returns passing symbols (BOS + Bullish S&O + ▲ signal hard filter) with scores sorted descending.`,
+        `Write the ARK brief using the same format as momentum_stocks/momentum_etf: ## MOMENTUM ARK section header, Benchmark/Theme bullets, Top 20 Setups table (BASE_BUILDING/BREAKOUT_READY only, columns RANK/SYMBOL/STATUS/S&O RATING/SIGNAL/PAC STRUCTURE/SCORE/CLUSTER), full Screener List table, Top 3 Setups prose, and Overall Market Read. Note any cluster concentration (max 1 per cluster). Call session_save with instrument_type="momentum_ark".`,
         `THEMATIC STEP 1 — Thematic Stocks (all 121 symbols):`,
         `Call lux_screener_scan with instrument_type="thematic_stocks". This returns a full per-symbol table grouped by theme.`,
         `Write the full grouped report (all 121 symbols, all themes, with S&O/PAC/OSC signals and scores) and call session_save with instrument_type="thematic_stocks".`,

@@ -57,16 +57,41 @@ function writeConfig(relPath, patch) {
   return path;
 }
 
+function parseArkCsv(path) {
+  const lines = readFileSync(path, 'utf8').split('\n').filter(l => l.trim());
+  const headers = lines[0].split(',').map(h => h.trim());
+  const iTICKER  = headers.findIndex(h => h.toUpperCase() === 'TICKER');
+  const iNAME    = headers.findIndex(h => h.toUpperCase() === 'COMPANY');
+  const iSECTOR  = headers.findIndex(h => h.toUpperCase() === 'SECTOR');
+  const iWEIGHT  = headers.findIndex(h => h.toUpperCase().startsWith('COMBINED WEIGHT'));
+
+  const rows = [];
+  for (const line of lines.slice(1)) {
+    const cells = line.split(',').map(c => c.trim());
+    const ticker = cells[iTICKER];
+    if (!ticker) continue;
+    rows.push({
+      symbol:  ticker,
+      name:    cells[iNAME]   || '',
+      sector:  cells[iSECTOR] || '',
+      weight:  cells[iWEIGHT] || '0.00%',
+    });
+  }
+  return rows;
+}
+
 function main() {
   const csvDir = resolve(PROJECT_ROOT, process.argv[2] || 'CSV');
   const stocksCsv = join(csvDir, 'Watchlist_Stocks.csv');
   const etfsCsv   = join(csvDir, 'Watchlist_ETFs.csv');
+  const arkCsv    = join(csvDir, 'Watchlist_ARK.csv');
 
   if (!existsSync(stocksCsv)) throw new Error('Missing: ' + stocksCsv);
   if (!existsSync(etfsCsv))   throw new Error('Missing: ' + etfsCsv);
 
   const stocksRows = parseCsv(stocksCsv);
   const etfsRows   = parseCsv(etfsCsv);
+  const arkRows    = existsSync(arkCsv) ? parseArkCsv(arkCsv) : null;
   const generated  = new Date().toISOString().slice(0, 10);
 
   // Group counts for console summary
@@ -162,6 +187,19 @@ function main() {
   console.log(`\nthematic_etfs:   ${etfsRows.length} symbols → ${etfsOut}`);
   const etfThemes = groupBy(etfsRows, 'theme');
   Object.entries(etfThemes).forEach(([t, n]) => console.log(`  ${n.toString().padStart(3)} — ${t}`));
+
+  if (arkRows) {
+    const arkOut = writeConfig('config/strategy-momentum_ark.json', {
+      watchlist_source:    arkCsv,
+      watchlist_generated: generated,
+      watchlist:           arkRows,
+    });
+    console.log(`\nmomentum_ark:    ${arkRows.length} symbols → ${arkOut}`);
+    const arkSectors = groupBy(arkRows, 'sector');
+    Object.entries(arkSectors).forEach(([t, n]) => console.log(`  ${n.toString().padStart(3)} — ${t}`));
+  } else {
+    console.log('\nmomentum_ark:    (Watchlist_ARK.csv not found — skipped)');
+  }
 
   console.log('\nDone. (No restart needed — only config files changed.)');
 }

@@ -1,55 +1,25 @@
 {
-  "screener_name": "MOMENTUM-ARK",
-  "screener_note": "ARK Innovation watchlist screener in TradingView. Fallback: if screener tab is not open, morning.js falls through to the static watchlist array below. Reorder watchlist to prioritize symbols for the fallback path.",
-  "watchlist": [
-    "NASDAQ:NVDA", "NASDAQ:PLTR", "NASDAQ:MU", "NASDAQ:AVGO", "NASDAQ:AMD",
-    "NASDAQ:TSLA", "NASDAQ:AMZN", "NASDAQ:GOOG", "NASDAQ:META", "NASDAQ:NFLX",
-    "NASDAQ:CRWD", "NASDAQ:DDOG", "NASDAQ:NET", "NASDAQ:SHOP", "NASDAQ:COIN",
-    "NASDAQ:RBLX", "NASDAQ:DASH", "NYSE:HOOD", "NYSE:SOFI", "NYSE:NU",
-    "NASDAQ:ACHR", "NYSE:AUR", "NYSE:RKLB", "NASDAQ:JOBY", "NASDAQ:RXRX",
-    "NASDAQ:CRWV", "NASDAQ:OKLO", "NASDAQ:LUNR", "NYSE:Z", "NYSE:TOST",
-    "NYSE:BABA", "NYSE:TSM", "NASDAQ:TEM", "NASDAQ:KTOS", "NASDAQ:DKNG",
-    "NYSE:VRT", "NASDAQ:GTLB", "NASDAQ:ABNB", "NASDAQ:ISRG", "NASDAQ:SPOT",
-    "NASDAQ:SNPS", "NYSE:CAT", "NYSE:HON", "NYSE:LLY", "NYSE:DE",
-    "NYSE:LMT", "NASDAQ:GRMN", "NYSE:PWR", "NYSE:ICE", "NASDAQ:CRSP",
-    "NASDAQ:BEAM", "NASDAQ:NTLA", "NASDAQ:ILMN", "NASDAQ:NTRA", "NASDAQ:GH",
-    "NYSE:BFLY", "NASDAQ:TER", "NASDAQ:SNDK", "NASDAQ:WDC", "NASDAQ:STX",
-    "NASDAQ:CCJ", "NYSE:BWXT", "NASDAQ:AVAV", "NYSE:LHX", "NYSE:HEI",
-    "NASDAQ:ROKU", "NYSE:MELI", "NASDAQ:FUTU", "NYSE:SE", "NASDAQ:BIDU",
-    "NASDAQ:IRDM", "NYSE:BNTX", "NASDAQ:SYM", "NYSE:KLAR", "NASDAQ:GENI",
-    "NYSE:FIG", "NYSE:BMNR", "NASDAQ:QSI", "NASDAQ:PACB", "NASDAQ:TRMB",
-    "NASDAQ:SDGR", "NASDAQ:ADPT", "NASDAQ:TXG", "NYSE:WGS", "NYSE:TDY",
-    "NASDAQ:CDNA", "NYSE:RBRK", "NYSE:KDK", "NASDAQ:VCYT", "NYSE:ATAI",
-    "NASDAQ:CMPS", "NASDAQ:PONY", "NYSE:XYZ", "NASDAQ:TWST", "NASDAQ:IONS",
-    "NASDAQ:PSNL", "NASDAQ:ABSI", "NASDAQ:NRIX", "NASDAQ:P", "NYSE:ESLT",
-    "NASDAQ:ARCT", "NASDAQ:BLSH", "NYSE:AIR", "NASDAQ:KSPI", "NASDAQ:ETOR",
-    "NASDAQ:CRCL", "NASDAQ:XE", "NYSE:CNTN", "NASDAQ:SRTA", "NYSE:MASS",
-    "NASDAQ:GENB", "NASDAQ:ALMR", "NASDAQ:WRD", "NASDAQ:PAYP", "NASDAQ:PRME",
-    "NASDAQ:CERS", "NASDAQ:SLMT"
-  ],
   "instrument_type": "momentum_ark",
+  "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\Watchlist_ARK.csv",
+  "watchlist_generated": "2026-07-17",
+  "screener_name": null,
   "max_symbols": 50,
   "default_timeframe": "W",
-
-  "pipeline": "L1: MOMENTUM-ARK screener (live) → L2: lux_screener_scan 1W (hard filter: BOS + Bullish/Strong Bullish S&O Rating + ▲/▲+ Signal) → L3: NW Envelope per-symbol check on weekly (price inside bands = base coiling, price above upper = extended/already moved)",
-
+  "pipeline": "L1: static CSV watchlist (Watchlist_ARK.csv, 141 symbols) → L2: lux_screener_scan 1W (hard filter: BOS + Bullish/Strong Bullish S&O Rating + ▲/▲+ Signal) → L3: NW Envelope per-symbol check on weekly (price inside bands = base coiling, price above upper = extended/already moved)",
   "required_indicators": [
     "Nadaraya-Watson Envelope [LuxAlgo]",
     "Volume"
   ],
-
   "strategy_note": "ARK names are narrative and catalyst-driven — they gap 15-30% on news, base for weeks, then break out again. LuxAlgo BOS on the weekly confirms the broader trend is intact. NW Envelope inside on weekly = price coiling with room to run. NW above upper = the move has already played out. Weekly timeframe same as other equity types.",
-
   "nw_position_rules": {
     "inside": "Price inside bands — base coiling, valid entry candidate if R:R ≥ 1:2",
-    "extended": "Price above NW upper band on daily — move already played out, do not enter",
+    "extended": "Price above NW upper band on weekly — move already played out, do not enter",
     "below_lower": "Price below NW lower band — avoid, breakdown in progress"
   },
-
   "entry_criteria": {
     "long": [
-      "Symbol passed L2 hard filter (lux_screener_scan 1D output: score ≥ 0)",
-      "NW position = inside (price between lower and upper band on daily)",
+      "Symbol passed L2 hard filter (lux_screener_scan 1W output: BOS + Bullish S&O + ▲ signal)",
+      "NW position = inside (price between lower and upper band on weekly)",
       "R:R ≥ 1:2: reward = NW upper band minus price, risk = price minus NW lower band",
       "Manual check: RS vs QQQ positive over last 20 days (stock up more or down less than QQQ)",
       "Manual check: no earnings within 5 trading days — ARK names gap violently on reports"
@@ -74,15 +44,898 @@
   ],
   "rs_guidance": "Relative strength vs QQQ is the primary filter but cannot be read directly from TV indicators in this scan. Approximate it from the quote data: if SPY/QQQ is -2% over 20 days and the stock is -0.5%, it has positive RS. If SPY is +3% and the stock is flat, RS is negative — skip it.",
   "asset_notes": {
-    "note": "Reorder the watchlist to put your highest-conviction names first — only max_symbols are scanned per run.",
+    "note": "Watchlist is rebuilt from CSV/Watchlist_ARK.csv via build-watchlist-configs.mjs. Symbols are sorted by ARK combined weight descending — highest conviction names first.",
     "high_beta_warning": "ARK holdings average 2-3x beta vs SPY. A 1% QQQ move = 2-3% move in these names. Size accordingly.",
     "correlation_clusters": {
-      "ai_semis": ["NVDA", "AMD", "MU", "AVGO", "TSM"],
-      "fintech_crypto": ["COIN", "HOOD", "SOFI", "NU", "FUTU"],
-      "autonomy_space": ["TSLA", "ACHR", "JOBY", "AUR", "RKLB", "LUNR"],
-      "ai_software": ["PLTR", "CRWD", "DDOG", "NET", "GTLB", "RBRK"],
-      "genomics": ["CRSP", "BEAM", "NTLA", "ILMN", "NTRA", "RXRX"]
+      "ai_semis": [
+        "NVDA",
+        "AMD",
+        "AVGO",
+        "TSM",
+        "CBRS"
+      ],
+      "fintech_crypto": [
+        "COIN",
+        "HOOD",
+        "SOFI",
+        "NU",
+        "CRCL",
+        "BLSH",
+        "XYZ"
+      ],
+      "autonomy_space": [
+        "TSLA",
+        "ACHR",
+        "JOBY",
+        "SPCX",
+        "XE",
+        "AVAV",
+        "EH"
+      ],
+      "ai_software": [
+        "PLTR",
+        "CRWV",
+        "OPENAI",
+        "PATH",
+        "DDOG",
+        "NET",
+        "SNOW",
+        "MDB"
+      ],
+      "genomics": [
+        "CRSP",
+        "BEAM",
+        "NTLA",
+        "ILMN",
+        "RXRX",
+        "TWST",
+        "TXG",
+        "NTRA",
+        "PACB"
+      ]
     },
     "cluster_rule": "Do not hold more than one name from the same correlation cluster simultaneously."
-  }
+  },
+  "watchlist": [
+    {
+      "symbol": "TSLA",
+      "name": "TESLA INC",
+      "sector": "Consumer Discretionary",
+      "weight": "8.10%"
+    },
+    {
+      "symbol": "COIN",
+      "name": "COINBASE GLOBAL INC -CLASS A",
+      "sector": "Financials",
+      "weight": "4.30%"
+    },
+    {
+      "symbol": "CRSP",
+      "name": "CRISPR THERAPEUTICS AG",
+      "sector": "Health Care",
+      "weight": "4.20%"
+    },
+    {
+      "symbol": "SHOP",
+      "name": "SHOPIFY INC - CLASS A",
+      "sector": "Information Technology",
+      "weight": "3.70%"
+    },
+    {
+      "symbol": "TEM",
+      "name": "TEMPUS AI INC-CL A",
+      "sector": "Health Care",
+      "weight": "3.60%"
+    },
+    {
+      "symbol": "HOOD",
+      "name": "ROBINHOOD MARKETS INC - A",
+      "sector": "Financials",
+      "weight": "3.50%"
+    },
+    {
+      "symbol": "BEAM",
+      "name": "BEAM THERAPEUTICS INC",
+      "sector": "Health Care",
+      "weight": "3.00%"
+    },
+    {
+      "symbol": "SPCX",
+      "name": "SPACE EXPLORATION TECHN-CL A",
+      "sector": "Industrials",
+      "weight": "2.60%"
+    },
+    {
+      "symbol": "AMD",
+      "name": "ADVANCED MICRO DEVICES",
+      "sector": "Information Technology",
+      "weight": "2.60%"
+    },
+    {
+      "symbol": "NTLA",
+      "name": "INTELLIA THERAPEUTICS INC",
+      "sector": "Health Care",
+      "weight": "2.60%"
+    },
+    {
+      "symbol": "RBLX",
+      "name": "ROBLOX CORP -CLASS A",
+      "sector": "Communication Services",
+      "weight": "2.30%"
+    },
+    {
+      "symbol": "PLTR",
+      "name": "PALANTIR TECHNOLOGIES INC-A",
+      "sector": "Information Technology",
+      "weight": "2.30%"
+    },
+    {
+      "symbol": "AMZN",
+      "name": "AMAZON.COM INC",
+      "sector": "Consumer Discretionary",
+      "weight": "2.30%"
+    },
+    {
+      "symbol": "TWST",
+      "name": "TWIST BIOSCIENCE CORP",
+      "sector": "Health Care",
+      "weight": "2.20%"
+    },
+    {
+      "symbol": "TXG",
+      "name": "10X GENOMICS INC-CLASS A",
+      "sector": "Health Care",
+      "weight": "2.20%"
+    },
+    {
+      "symbol": "CRCL",
+      "name": "CIRCLE INTERNET GROUP INC",
+      "sector": "Financials",
+      "weight": "1.90%"
+    },
+    {
+      "symbol": "NVDA",
+      "name": "NVIDIA CORP",
+      "sector": "Information Technology",
+      "weight": "1.60%"
+    },
+    {
+      "symbol": "OPENAI",
+      "name": "OPENAI GROUP PBC SERIES C",
+      "sector": "Information Technology",
+      "weight": "1.60%"
+    },
+    {
+      "symbol": "XYZ",
+      "name": "BLOCK INC",
+      "sector": "Financials",
+      "weight": "1.10%"
+    },
+    {
+      "symbol": "KTOS",
+      "name": "KRATOS DEFENSE & SECURITY",
+      "sector": "Industrials",
+      "weight": "1.40%"
+    },
+    {
+      "symbol": "CRWV",
+      "name": "COREWEAVE INC-CL A",
+      "sector": "Information Technology",
+      "weight": "1.30%"
+    },
+    {
+      "symbol": "META",
+      "name": "META PLATFORMS INC-CLASS A",
+      "sector": "Communication Services",
+      "weight": "1.20%"
+    },
+    {
+      "symbol": "ILMN",
+      "name": "ILLUMINA INC",
+      "sector": "Health Care",
+      "weight": "1.20%"
+    },
+    {
+      "symbol": "GOOG",
+      "name": "ALPHABET INC-CL C",
+      "sector": "Communication Services",
+      "weight": "1.10%"
+    },
+    {
+      "symbol": "DE",
+      "name": "DEERE & CO",
+      "sector": "Industrials",
+      "weight": "1.10%"
+    },
+    {
+      "symbol": "GOOGL",
+      "name": "ALPHABET INC-CL A",
+      "sector": "Communication Services",
+      "weight": "1.10%"
+    },
+    {
+      "symbol": "BLSH",
+      "name": "BULLISH",
+      "sector": "Financials",
+      "weight": "1.00%"
+    },
+    {
+      "symbol": "CBRS",
+      "name": "CEREBRAS SYSTEMS INC - A",
+      "sector": "Information Technology",
+      "weight": "1.00%"
+    },
+    {
+      "symbol": "TRMB",
+      "name": "TRIMBLE INC",
+      "sector": "Information Technology",
+      "weight": "0.80%"
+    },
+    {
+      "symbol": "NTRA",
+      "name": "NATERA INC",
+      "sector": "Health Care",
+      "weight": "0.80%"
+    },
+    {
+      "symbol": "ACHR",
+      "name": "ARCHER AVIATION INC-A",
+      "sector": "Industrials",
+      "weight": "0.80%"
+    },
+    {
+      "symbol": "TDOC",
+      "name": "TELADOC HEALTH INC",
+      "sector": "Health Care",
+      "weight": "0.80%"
+    },
+    {
+      "symbol": "BMNR",
+      "name": "BITMINE IMMERSION TECHNOLOGI",
+      "sector": "Information Technology",
+      "weight": "0.80%"
+    },
+    {
+      "symbol": "RXRX",
+      "name": "RECURSION PHARMACEUTICALS-A",
+      "sector": "Health Care",
+      "weight": "0.70%"
+    },
+    {
+      "symbol": "PACB",
+      "name": "PACIFIC BIOSCIENCES OF CALIF",
+      "sector": "Health Care",
+      "weight": "0.70%"
+    },
+    {
+      "symbol": "AVGO",
+      "name": "BROADCOM INC",
+      "sector": "Information Technology",
+      "weight": "0.70%"
+    },
+    {
+      "symbol": "ROKU",
+      "name": "ROKU INC",
+      "sector": "Communication Services",
+      "weight": "0.70%"
+    },
+    {
+      "symbol": "SNOW",
+      "name": "SNOWFLAKE INC",
+      "sector": "Information Technology",
+      "weight": "0.70%"
+    },
+    {
+      "symbol": "EXAS",
+      "name": "EXACT SCIENCES CORP",
+      "sector": "Health Care",
+      "weight": "0.70%"
+    },
+    {
+      "symbol": "PATH",
+      "name": "UIPATH INC",
+      "sector": "Information Technology",
+      "weight": "0.70%"
+    },
+    {
+      "symbol": "NFLX",
+      "name": "NETFLIX INC",
+      "sector": "Communication Services",
+      "weight": "0.60%"
+    },
+    {
+      "symbol": "MELI",
+      "name": "MERCADOLIBRE INC",
+      "sector": "Consumer Discretionary",
+      "weight": "0.60%"
+    },
+    {
+      "symbol": "SOFI",
+      "name": "SOFI TECHNOLOGIES INC",
+      "sector": "Financials",
+      "weight": "0.60%"
+    },
+    {
+      "symbol": "VCYT",
+      "name": "VERACYTE INC",
+      "sector": "Health Care",
+      "weight": "0.60%"
+    },
+    {
+      "symbol": "WGS",
+      "name": "GENEDX HOLDINGS CORP",
+      "sector": "Health Care",
+      "weight": "0.60%"
+    },
+    {
+      "symbol": "TER",
+      "name": "TERADYNE INC",
+      "sector": "Information Technology",
+      "weight": "0.60%"
+    },
+    {
+      "symbol": "TSM",
+      "name": "TAIWAN SEMICONDUCTOR-SP ADR",
+      "sector": "Information Technology",
+      "weight": "0.60%"
+    },
+    {
+      "symbol": "MSFT",
+      "name": "MICROSOFT CORP",
+      "sector": "Information Technology",
+      "weight": "0.60%"
+    },
+    {
+      "symbol": "SE",
+      "name": "SEA LTD",
+      "sector": "Consumer Discretionary",
+      "weight": "0.50%"
+    },
+    {
+      "symbol": "XE",
+      "name": "X-ENERGY INC",
+      "sector": "Industrials",
+      "weight": "0.50%"
+    },
+    {
+      "symbol": "BWXT",
+      "name": "BWX TECHNOLOGIES INC",
+      "sector": "Industrials",
+      "weight": "0.50%"
+    },
+    {
+      "symbol": "UI",
+      "name": "UBIQUITI INC",
+      "sector": "Information Technology",
+      "weight": "0.40%"
+    },
+    {
+      "symbol": "PYPL",
+      "name": "PAYPAL HOLDINGS INC",
+      "sector": "Financials",
+      "weight": "0.40%"
+    },
+    {
+      "symbol": "EDIT",
+      "name": "EDITAS MEDICINE INC",
+      "sector": "Health Care",
+      "weight": "0.40%"
+    },
+    {
+      "symbol": "BILL",
+      "name": "BILL HOLDINGS INC",
+      "sector": "Information Technology",
+      "weight": "0.40%"
+    },
+    {
+      "symbol": "BYDDY",
+      "name": "BYD CO LTD",
+      "sector": "Consumer Discretionary",
+      "weight": "0.40%"
+    },
+    {
+      "symbol": "AVAV",
+      "name": "AEROVIRONMENT INC",
+      "sector": "Industrials",
+      "weight": "0.30%"
+    },
+    {
+      "symbol": "SANA",
+      "name": "SANA BIOTECHNOLOGY INC",
+      "sector": "Health Care",
+      "weight": "0.30%"
+    },
+    {
+      "symbol": "NU",
+      "name": "NU HOLDINGS LTD/CAYMAN",
+      "sector": "Financials",
+      "weight": "0.30%"
+    },
+    {
+      "symbol": "BA",
+      "name": "BOEING CO/THE",
+      "sector": "Industrials",
+      "weight": "0.30%"
+    },
+    {
+      "symbol": "CAT",
+      "name": "CATERPILLAR INC",
+      "sector": "Industrials",
+      "weight": "0.30%"
+    },
+    {
+      "symbol": "LLY",
+      "name": "ELI LILLY & CO",
+      "sector": "Health Care",
+      "weight": "0.30%"
+    },
+    {
+      "symbol": "FIG",
+      "name": "FIGMA INC-CL A",
+      "sector": "Information Technology",
+      "weight": "0.30%"
+    },
+    {
+      "symbol": "VRTX",
+      "name": "VERTEX PHARMACEUTICALS",
+      "sector": "Health Care",
+      "weight": "0.30%"
+    },
+    {
+      "symbol": "NET",
+      "name": "CLOUDFLARE INC",
+      "sector": "Information Technology",
+      "weight": "0.30%"
+    },
+    {
+      "symbol": "HON",
+      "name": "HONEYWELL INTERNATIONAL INC",
+      "sector": "Industrials",
+      "weight": "0.30%"
+    },
+    {
+      "symbol": "DDOG",
+      "name": "DATADOG INC",
+      "sector": "Information Technology",
+      "weight": "0.30%"
+    },
+    {
+      "symbol": "RTX",
+      "name": "RTX CORP",
+      "sector": "Industrials",
+      "weight": "0.30%"
+    },
+    {
+      "symbol": "TOST",
+      "name": "TOAST INC",
+      "sector": "Information Technology",
+      "weight": "0.30%"
+    },
+    {
+      "symbol": "CERS",
+      "name": "CERUS CORP",
+      "sector": "Health Care",
+      "weight": "0.30%"
+    },
+    {
+      "symbol": "SPR",
+      "name": "SPIRIT AEROSYSTEMS HOLDINGS",
+      "sector": "Industrials",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "OKTA",
+      "name": "OKTA INC",
+      "sector": "Information Technology",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "SPOT",
+      "name": "SPOTIFY TECHNOLOGY SA",
+      "sector": "Communication Services",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "LDOS",
+      "name": "LEIDOS HOLDINGS INC",
+      "sector": "Industrials",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "BAH",
+      "name": "BOOZ ALLEN HAMILTON HOLDING",
+      "sector": "Industrials",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "IONS",
+      "name": "IONIS PHARMACEUTICALS INC",
+      "sector": "Health Care",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "GDDY",
+      "name": "GODADDY INC",
+      "sector": "Information Technology",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "SAIC",
+      "name": "SCIENCE APPLICATIONS INTERNA",
+      "sector": "Industrials",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "GILD",
+      "name": "GILEAD SCIENCES INC",
+      "sector": "Health Care",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "REGN",
+      "name": "REGENERON PHARMACEUTICALS",
+      "sector": "Health Care",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "TWLO",
+      "name": "TWILIO INC",
+      "sector": "Information Technology",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "AMGN",
+      "name": "AMGEN INC",
+      "sector": "Health Care",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "QGEN",
+      "name": "QIAGEN NV",
+      "sector": "Health Care",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "TECH",
+      "name": "BIO-TECHNE CORP",
+      "sector": "Health Care",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "JOBY",
+      "name": "JOBY AVIATION INC",
+      "sector": "Industrials",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "EXEL",
+      "name": "EXELIXIS INC",
+      "sector": "Health Care",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "LMT",
+      "name": "LOCKHEED MARTIN CORP",
+      "sector": "Industrials",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "CRWD",
+      "name": "CROWDSTRIKE HOLDINGS INC",
+      "sector": "Information Technology",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "MDB",
+      "name": "MONGODB INC",
+      "sector": "Information Technology",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "EH",
+      "name": "EHANG HOLDINGS LTD",
+      "sector": "Industrials",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "IRDM",
+      "name": "IRIDIUM COMMUNICATIONS INC",
+      "sector": "Communication Services",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "BGNE",
+      "name": "BEIGENE LTD",
+      "sector": "Health Care",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "DOCU",
+      "name": "DOCUSIGN INC",
+      "sector": "Information Technology",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "PRLB",
+      "name": "PROTO LABS INC",
+      "sector": "Industrials",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "SSYS",
+      "name": "STRATASYS LTD",
+      "sector": "Industrials",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "LHX",
+      "name": "L3HARRIS TECHNOLOGIES INC",
+      "sector": "Industrials",
+      "weight": "0.20%"
+    },
+    {
+      "symbol": "BNGO",
+      "name": "BIONANO GENOMICS INC",
+      "sector": "Health Care",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "TEAM",
+      "name": "ATLASSIAN CORP",
+      "sector": "Information Technology",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "CRBU",
+      "name": "CARIBOU BIOSCIENCES INC",
+      "sector": "Health Care",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "UPST",
+      "name": "UPSTART HOLDINGS INC",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "HEI",
+      "name": "HEICO CORP",
+      "sector": "Industrials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "EVLO",
+      "name": "EVELO BIOSCIENCES INC",
+      "sector": "Health Care",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "KNSL",
+      "name": "KINSALE CAPITAL GROUP INC",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "CDNA",
+      "name": "CAREDX INC",
+      "sector": "Health Care",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "NOC",
+      "name": "NORTHROP GRUMMAN CORP",
+      "sector": "Industrials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "LSPD",
+      "name": "LIGHTSPEED COMMERCE INC",
+      "sector": "Information Technology",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "RARE",
+      "name": "ULTRAGENYX PHARMACEUTICAL",
+      "sector": "Health Care",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "MQ",
+      "name": "MARQETA INC",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "ESTC",
+      "name": "ELASTIC NV",
+      "sector": "Information Technology",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "LC",
+      "name": "LENDINGCLUB CORP",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "SRPT",
+      "name": "SAREPTA THERAPEUTICS INC",
+      "sector": "Health Care",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "DDD",
+      "name": "3D SYSTEMS CORP",
+      "sector": "Industrials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "DFS",
+      "name": "DISCOVER FINANCIAL SERVICES",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "COF",
+      "name": "CAPITAL ONE FINANCIAL CORP",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "MRNA",
+      "name": "MODERNA INC",
+      "sector": "Health Care",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "MA",
+      "name": "MASTERCARD INC",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "V",
+      "name": "VISA INC",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "BNTX",
+      "name": "BIONTECH SE-ADR",
+      "sector": "Health Care",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "SPCE",
+      "name": "VIRGIN GALACTIC HOLDINGS",
+      "sector": "Industrials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "JPM",
+      "name": "JPMORGAN CHASE & CO",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "WIX",
+      "name": "WIX.COM LTD",
+      "sector": "Information Technology",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "PFE",
+      "name": "PFIZER INC",
+      "sector": "Health Care",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "GS",
+      "name": "GOLDMAN SACHS GROUP INC",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "MS",
+      "name": "MORGAN STANLEY",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "AXP",
+      "name": "AMERICAN EXPRESS CO",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "ZS",
+      "name": "ZSCALER INC",
+      "sector": "Information Technology",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "ADYEY",
+      "name": "ADYEN NV-UNSPON ADR",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "PAGS",
+      "name": "PAGSEGURO DIGITAL LTD",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "STNE",
+      "name": "STONECO LTD",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "FSLY",
+      "name": "FASTLY INC",
+      "sector": "Information Technology",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "FOUR",
+      "name": "SHIFT4 PAYMENTS INC",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "HXL",
+      "name": "HEXCEL CORP",
+      "sector": "Industrials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "AFRM",
+      "name": "AFFIRM HOLDINGS INC",
+      "sector": "Financials",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "AVXL",
+      "name": "ANAVEX LIFE SCIENCES CORP",
+      "sector": "Health Care",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "ANSS",
+      "name": "ANSYS INC",
+      "sector": "Information Technology",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "MGA",
+      "name": "MAGNA INTERNATIONAL INC",
+      "sector": "Consumer Discretionary",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "LEA",
+      "name": "LEAR CORP",
+      "sector": "Consumer Discretionary",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "AZN",
+      "name": "ASTRAZENECA PLC",
+      "sector": "Health Care",
+      "weight": "0.10%"
+    },
+    {
+      "symbol": "PTC",
+      "name": "PTC INC",
+      "sector": "Information Technology",
+      "weight": "0.00%"
+    },
+    {
+      "symbol": "GH",
+      "name": "GUARDANT HEALTH INC",
+      "sector": "Health Care",
+      "weight": "0.00%"
+    }
+  ]
 }

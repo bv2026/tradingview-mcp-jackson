@@ -9,22 +9,24 @@ Quick reference for the daily/weekly trading workflow. Prompts are what you type
 | Goal | Prompt |
 |---|---|
 | **Run all briefs + thematic reports + daily summary** | `morning brief all` |
-| Single core brief | `morning brief momentum_stocks` (or `momentum_etf`, `momentum_ark`, `crypto`, `crypto_perps`, `futures`) |
-| Single momentum brief | `morning brief sp_ndx` (or `r2k`) |
+| Single core brief | `morning brief momentum_stocks` (or `momentum_etf`, `crypto`, `crypto_perps`, `futures`) |
+| ARK Innovation scan (141 symbols) | `lux screener scan momentum_ark` |
+| S&P/Nasdaq momentum scan | `lux screener scan sp_ndx` |
+| Russell 2000 momentum scan | `lux screener scan r2k` |
 | Thematic stocks scan (121 symbols) | `lux screener scan thematic_stocks` |
 | Thematic ETF scan | `lux screener scan thematic_etfs` |
 | Read back a saved brief | `get the momentum_stocks brief` (or any type) |
 | Read today's daily summary | `get the daily summary` |
 
-> `all` covers **all 8 standard** instruments (momentum_stocks, momentum_etf, momentum_ark, crypto, crypto_perps, futures, sp_ndx, r2k) **plus thematic reports**: lux_screener_scan thematic_stocks (121 symbols → `thematic_stocks.md` + `thematic_stocks-summary.md`), lux_screener_scan thematic_etfs (~90 ETFs → `thematic_etfs.md` + `thematic_etfs-summary.md`), and a final `daily-summary.md`.
+> `all` covers **7 core** instruments (momentum_stocks, momentum_etf, crypto, crypto_perps, futures, sp_ndx, r2k) **plus watchlist/thematic reports via lux_screener_scan**: momentum_ark (141 ARK holdings → `momentum_ark.md`), thematic_stocks (121 symbols → `thematic_stocks.md` + `thematic_stocks-summary.md`), thematic_etfs (~90 ETFs → `thematic_etfs.md` + `thematic_etfs-summary.md`), and a final `daily-summary.md`.
 >
-> Large screeners (momentum_stocks/momentum_etf/momentum_ark, ~100 symbols each) can exceed the tool's ~60-70s timeout on a plain call — batch with `offset`/`max_symbols` (e.g. `offset=0 max_symbols=50` then `offset=50 max_symbols=50`) if a call times out. The `all` workflow instruction batches these three automatically.
+> Large screeners (momentum_stocks/momentum_etf, ~100 symbols each) can exceed the tool's ~60-70s timeout on a plain call — batch with `offset`/`max_symbols` (e.g. `offset=0 max_symbols=50` then `offset=50 max_symbols=50`) if a call times out. The `all` workflow instruction batches these two automatically.
 
 **Reports land in:** `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/` (daily reports are nested under an ISO 8601 week folder, e.g. `reports/2026-Wk27/2026-Jul-03/`)
 
 | File | Contents |
 |---|---|
-| `{type}.md` | Full brief per instrument |
+| `{type}.md` | Full brief per instrument (core types via morning_brief, watchlist types via lux_screener_scan) |
 | `thematic_stocks.md` | All 121 stocks, grouped by theme, with all LuxAlgo signals |
 | `thematic_stocks-summary.md` | Theme-level table + top picks (score ≥ 5) + avoid list |
 | `thematic_etfs.md` | Full ETF scan (~90 ETFs across 8 themes, LuxAlgo S&O+PAC+OSC scores) |
@@ -79,19 +81,20 @@ Close with:
 
 ## 🧩 The three brief families
 
-| | **Core** (6) | **Momentum** (2) | **Thematic** (3) |
-|---|---|---|---|
-| Source | Live TradingView MOMENTUM screeners | Weekly CSV exports | Weekly CSV watchlists |
-| Refresh | Live, every run | Weekly (Saturday script) | Weekly (Saturday script) |
-| Types | momentum_stocks, momentum_etf, momentum_ark, crypto, crypto_perps, futures | sp_ndx, r2k | thematic_stocks (lux scan), thematic_etfs (lux scan) |
-| In `all` run? | ✅ Yes | ✅ Yes | ✅ Yes |
-| Extra signal | — | Retail sentiment / WTD / watchers / chatter | LuxAlgo S&O+PAC+OSC scores (stocks); TWB+NW+Vol grouped by theme (ETFs) |
-| Summary file? | — | — | ✅ `thematic_stocks-summary.md`, `thematic_etfs-summary.md` |
+| | **Core** (5) | **Watchlist — lux scan** (5) |
+|---|---|---|
+| Source | Live TradingView MOMENTUM screeners | Static CSV watchlists → lux_screener_scan |
+| Refresh | Live, every run | Weekly (Saturday script) |
+| Types | momentum_stocks, momentum_etf, crypto, crypto_perps, futures | momentum_ark, sp_ndx, r2k, thematic_stocks, thematic_etfs |
+| Entry point | `morning_brief` | `lux_screener_scan` |
+| In `all` run? | ✅ Yes | ✅ Yes |
+| Extra signal | — | LuxAlgo S&O+PAC+OSC scores; chatter annotations (sp_ndx/r2k); ARK clusters |
+| Summary file? | — | ✅ `thematic_stocks-summary.md`, `thematic_etfs-summary.md` |
 
 ### Watchlist recommended cadence
 
 - **Saturday:** drop 4 dated CSVs into `CSV/`, then `node scripts/build-momentum-watchlists.mjs` — rebuilds sp_ndx + r2k watchlists + chatter annotations.
-- **Saturday (if thematic watchlists changed):** update `CSV/Watchlist_Stocks.csv` and/or `CSV/Watchlist_ETFs.csv`, then `node scripts/build-watchlist-configs.mjs` — regenerates thematic configs (`thematic_stocks.json` + `thematic_etfs.json`).
+- **Saturday (if watchlists changed):** update `CSV/Watchlist_Stocks.csv`, `CSV/Watchlist_ETFs.csv`, and/or `CSV/Watchlist_ARK.csv`, then `node scripts/build-watchlist-configs.mjs` — regenerates all three configs (`thematic_stocks.json` + `thematic_etfs.json` + `strategy-momentum_ark.json`).
 - **Daily (Mon–Sun):** `morning brief all` — runs everything: all 8 core/momentum briefs + thematic_stocks LuxAlgo scan (121 symbols) + thematic_etfs LuxAlgo scan (~90 ETFs) + all summary files + daily-summary.
 - By Thu/Fri the weekly data is stale vs price — the live `morning brief momentum_stocks` (core) provides fresher mid-week discovery.
 
@@ -178,10 +181,15 @@ If a brief is rejected with an "invalid enum value" error for a new instrument t
 
 ## 🧠 How a brief works (so the output makes sense)
 
-**Equity types** (momentum_stocks, momentum_etf, momentum_ark, sp_ndx, r2k, thematic_stocks, thematic_etfs):
-1. **L1 — universe:** live MOMENTUM screener (core) or static weekly watchlist supplies the symbols.
+**Core equity types** (momentum_stocks, momentum_etf — live screener):
+1. **L1 — universe:** live MOMENTUM screener supplies the symbols.
 2. **L2 — lux_screener_scan:** batches symbols through LuxAlgo S&O + PAC + OSC on the weekly chart. Hard filter: BOS + Bullish/Strong Bullish S&O Rating + ▲/▲+ Signal. Only passing symbols proceed.
-3. **L3 — NW Envelope check:** per-symbol, reads the most recent NW label (▲ = extended above upper band, ▼ = below lower band). Entry only when `nw_position = inside`.
+3. **L3 — NW Envelope check:** per-symbol via `morning_brief`, reads the most recent NW label. Entry only when `nw_position = inside`.
+
+**Watchlist equity types** (momentum_ark, sp_ndx, r2k, thematic_stocks, thematic_etfs — static CSV):
+1. **L1 — universe:** static CSV watchlist (`Watchlist_ARK.csv` / momentum CSVs / `Watchlist_Stocks.csv` / `Watchlist_ETFs.csv`) supplies the symbols. No live screener.
+2. **L2 — lux_screener_scan:** same hard filter as above (BOS + Bullish S&O + ▲ signal). Output is the ranked result — this IS the brief for these types.
+3. **Entry check:** NW Envelope extension verified manually on the chart for final entries.
 
 **Crypto/futures types** (crypto, crypto_perps, futures):
 1. **L1 — universe:** live screener supplies the symbols.
