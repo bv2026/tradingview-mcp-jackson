@@ -81,23 +81,7 @@ If you want TradingView to start automatically whenever the MCP server starts, a
 
 This replaces the need to run `scripts\\launch_tv_debug.bat` manually on Windows. The server checks whether CDP is already live and only launches TradingView if it is missing.
 
-**Manual launch by platform:**
-
-Mac:
-```bash
-/Applications/TradingView.app/Contents/MacOS/TradingView --remote-debugging-port=9222
-```
-
-Windows:
-```bash
-%LOCALAPPDATA%\TradingView\TradingView.exe --remote-debugging-port=9222
-```
-
-Linux:
-```bash
-/opt/TradingView/tradingview --remote-debugging-port=9222
-# or: tradingview --remote-debugging-port=9222
-```
+If you need to launch manually for troubleshooting, use your platform's standard TradingView Desktop app with `--remote-debugging-port=9222`.
 
 ## Step 5: Restart Claude Code
 

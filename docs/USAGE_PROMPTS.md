@@ -56,7 +56,7 @@ Use a specific study filter when you know the indicator name:
 ### Momentum Stocks / ETF / ARK
 - `Run morning_brief instrument_type="momentum_stocks" and give me my session bias.`
 - `Run morning_brief instrument_type="momentum_etf" and show me the top 20 setups by GAP.`
-- `Run morning_brief instrument_type="momentum_ark" — check QQQ benchmark, flag BASE_BUILDING vs BREAKOUT_READY, and watch for cluster overlap.`
+- `Run morning_brief instrument_type="momentum_ark" — check the benchmark, flag BASE_BUILDING vs BREAKOUT_READY, and watch for cluster overlap.`
 - `Run the momentum stocks brief and show me top 3 long candidates.`
 
 ### Crypto Spot
@@ -69,7 +69,7 @@ Use a specific study filter when you know the indicator name:
 - `Run perps brief and separately analyze SILVER using its own TWB signal.`
 
 ### Futures
-- `Run morning_brief instrument_type="futures" — detect TRENDING vs MEAN_REVERTING regime per symbol and note the DXY/bond/VX1! macro overlays.`
+- `Run morning_brief instrument_type="futures" — detect TRENDING vs MEAN_REVERTING regime per symbol and note the macro overlays.`
 
 ### Weekly Momentum (Saturdays)
 - `Run morning_brief instrument_type="sp_ndx" and give me the top setups from this week's S&P 500 + Nasdaq 100 list.`

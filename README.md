@@ -4,6 +4,8 @@ If you found this from the YouTube video — welcome. This is the improved fork.
 
 Built on top of the original [tradingview-mcp](https://github.com/tradesdontlie/tradingview-mcp) by [@tradesdontlie](https://github.com/tradesdontlie). Full credit to them for the foundation. This fork adds a morning brief workflow, a rules config, and fixes the launch bug on TradingView Desktop v2.14+.
 
+All working docs are centralized in [docs/INDEX.md](docs/INDEX.md). The root-level `AGENTS.md` and `CLAUDE.md` files stay in place for agent instructions; everything else lives under `docs/`.
+
 > [!WARNING]
 > **Not affiliated with TradingView Inc. or Anthropic.** This tool connects to your locally running TradingView Desktop app via Chrome DevTools Protocol. Review the [Disclaimer](#disclaimer) before use.
 
@@ -80,19 +82,9 @@ Open `rules.json` and fill in:
 
 TradingView must be running with the debug port enabled.
 
-**Mac:**
-```bash
-./scripts/launch_tv_debug_mac.sh
-```
-
 **Windows:**
 ```bash
 scripts\launch_tv_debug.bat
-```
-
-**Linux:**
-```bash
-./scripts/launch_tv_debug_linux.sh
 ```
 
 Or use the MCP tool after setup: `"Use tv_launch to start TradingView in debug mode"`
