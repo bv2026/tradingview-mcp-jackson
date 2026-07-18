@@ -30,6 +30,14 @@ const ARK_LUX_INVALID_SYMBOLS = new Set([
   'BYDDY',  // OTC pink sheets BYD ADR
   'EVLO',   // OTC distressed/bankrupt
   'SPCE',   // Virgin Galactic rebranded to MNTN (Aug 2023); ticker stale
+  // Recent IPOs / no Lux data — S&O Signal: Unavailable or full blank
+  'BGNE',   // BeiGene — full blank (Chinese biotech, dual-listed)
+  'CERS',   // No S&O data (small cap biotech)
+  'DFS',    // Discover Financial — acquired by COF (May 2025), delisted
+  'FIG',    // Figma IPO 2025; Signal: Unavailable
+  'LC',     // LendingClub — full blank across all indicators
+  'SPR',    // Spirit AeroSystems — full blank
+  'TOST',   // Toast IPO too recent for weekly S&O signal
 ]);
 
 const THEMATIC_ETF_LUX_INVALID_SYMBOLS = new Set([

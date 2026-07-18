@@ -3,9 +3,9 @@
   "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\Watchlist_ARK.csv",
   "watchlist_generated": "2026-07-18",
   "screener_name": null,
-  "max_symbols": 124,
+  "max_symbols": 117,
   "default_timeframe": "W",
-  "pipeline": "L1: static CSV watchlist (Watchlist_ARK.csv, 124 symbols after Lux invalid-symbol exclusions) -> L2: lux_screener_scan 1W (hard filter: BOS + Bullish/Strong Bullish S&O Rating + up/up+ Signal) -> L3: NW Envelope per-symbol check on weekly (price inside bands = base coiling, price above upper = extended/already moved)",
+  "pipeline": "L1: static CSV watchlist (Watchlist_ARK.csv, 117 symbols after Lux invalid-symbol exclusions) -> L2: lux_screener_scan 1W (hard filter: BOS + Bullish/Strong Bullish S&O Rating + up/up+ Signal) -> L3: NW Envelope per-symbol check on weekly (price inside bands = base coiling, price above upper = extended/already moved)",
   "required_indicators": [
     "Nadaraya-Watson Envelope [LuxAlgo]",
     "Volume"
@@ -410,12 +410,6 @@
       "weight": "0.30%"
     },
     {
-      "symbol": "FIG",
-      "name": "FIGMA INC-CL A",
-      "sector": "Information Technology",
-      "weight": "0.30%"
-    },
-    {
       "symbol": "VRTX",
       "name": "VERTEX PHARMACEUTICALS",
       "sector": "Health Care",
@@ -444,24 +438,6 @@
       "name": "RTX CORP",
       "sector": "Industrials",
       "weight": "0.30%"
-    },
-    {
-      "symbol": "TOST",
-      "name": "TOAST INC",
-      "sector": "Information Technology",
-      "weight": "0.30%"
-    },
-    {
-      "symbol": "CERS",
-      "name": "CERUS CORP",
-      "sector": "Health Care",
-      "weight": "0.30%"
-    },
-    {
-      "symbol": "SPR",
-      "name": "SPIRIT AEROSYSTEMS HOLDINGS",
-      "sector": "Industrials",
-      "weight": "0.20%"
     },
     {
       "symbol": "OKTA",
@@ -572,12 +548,6 @@
       "weight": "0.20%"
     },
     {
-      "symbol": "BGNE",
-      "name": "BEIGENE LTD",
-      "sector": "Health Care",
-      "weight": "0.20%"
-    },
-    {
       "symbol": "DOCU",
       "name": "DOCUSIGN INC",
       "sector": "Information Technology",
@@ -674,12 +644,6 @@
       "weight": "0.10%"
     },
     {
-      "symbol": "LC",
-      "name": "LENDINGCLUB CORP",
-      "sector": "Financials",
-      "weight": "0.10%"
-    },
-    {
       "symbol": "SRPT",
       "name": "SAREPTA THERAPEUTICS INC",
       "sector": "Health Care",
@@ -689,12 +653,6 @@
       "symbol": "DDD",
       "name": "3D SYSTEMS CORP",
       "sector": "Industrials",
-      "weight": "0.10%"
-    },
-    {
-      "symbol": "DFS",
-      "name": "DISCOVER FINANCIAL SERVICES",
-      "sector": "Financials",
       "weight": "0.10%"
     },
     {
@@ -839,19 +797,26 @@
   "invalid_symbols_excluded": [
     "ADYEY",
     "ANSS",
+    "BGNE",
     "BLSH",
     "BYDDY",
     "CBRS",
+    "CERS",
     "CRCL",
     "CRWD",
     "CRWV",
+    "DFS",
     "EVLO",
     "EXAS",
+    "FIG",
+    "LC",
     "LMT",
     "OPENAI",
     "PAGS",
     "SPCE",
     "SPCX",
+    "SPR",
+    "TOST",
     "XE"
   ]
 }
