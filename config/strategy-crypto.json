@@ -1,89 +1,49 @@
 {
   "instrument_type": "crypto",
   "screener_name": null,
-  "max_symbols": 9,
   "default_timeframe": "D",
-  "entry_timeframe_note": "Use Daily for bias. Drop to 4H for entry timing — look for the same TWB breakout signal on 4H to confirm before entering.",
+  "entry_timeframe_note": "Use Daily for bias. Drop to 4H for entry timing — confirm TWB signal on 4H before entering.",
   "required_indicators": [
     "Trendlines with Breaks Oscillator [LuxAlgo]",
     "Nadaraya-Watson Envelope [LuxAlgo]",
+    "Support and Resistance Levels with Breaks [LuxAlgo]",
     "Volume"
   ],
-  "market_context": {
-    "benchmark": "COINBASE:BTCUSD",
-    "benchmark_alt": "COINBASE:ETHUSD",
-    "benchmark_ma_type": "SMA",
-    "benchmark_ma_period": 50,
-    "benchmark_filter": "BTC must be above its 50-day SMA for any altcoin bullish bias. If BTC is below its 50-day SMA, default all alts to neutral or bearish — alts rarely sustain moves when BTC is in a downtrend. ETH can act as secondary confirmation for non-BTC majors.",
-    "cycle_note": "Be aware of the broader BTC halving cycle. Post-halving alt seasons (6-18 months after halving) historically produce the strongest momentum signals. In late bear markets, even strong TWB signals are traps — require BTC above 200-day SMA as an additional filter."
-  },
-  "bias_criteria_note": "bearish criteria = exit/avoid signal on longs ONLY. Short-side futures entries require separate confirmation — never short alts unless BTC is also breaking down.",
   "bias_criteria": {
-    "bullish": [
-      "BTC is above its 50-day SMA (benchmark filter passes)",
-      "Coin is printing higher highs and higher lows on the daily",
-      "Trendlines with Breaks Oscillator [LuxAlgo] shows a recent bullish breakout signal",
-      "Breakout candle volume is significantly higher than the prior 5-10 day average (in USD terms)",
-      "Price is approaching or at the upper Nadaraya-Watson Envelope band but NOT extended outside it",
-      "Clear catalyst present: protocol upgrade, ETF news, exchange listing, BTC halving cycle tailwind, or major partnership"
+    "long": [
+      "Symbol TWB Histogram positive and above its signal line",
+      "NW: price inside bands or approaching upper band (not extended outside)",
+      "S/R: price above sr_support; bonus if sr_break > 0 (resistance just broke)"
     ],
-    "bearish": [
-      "BTC is below its 50-day SMA — alt longs are high risk",
-      "Coin is printing lower highs and lower lows on the daily",
-      "Trendlines with Breaks Oscillator [LuxAlgo] shows a bearish breakdown signal",
-      "Price has broken back below a prior breakout trendline on volume",
-      "Price is extended outside the lower Nadaraya-Watson Envelope band",
-      "BTC dominance is rising sharply — capital rotating out of alts into BTC"
-    ],
-    "neutral": [
-      "BTC is consolidating near its 50-day SMA — unclear direction",
-      "Coin is consolidating — no clear higher highs/lows pattern",
-      "No breakout signal from Trendlines with Breaks [LuxAlgo]",
-      "Price is chopping inside the Nadaraya-Watson Envelope bands",
-      "Volume is average or below average — no catalyst driving the move"
+    "skip": [
+      "TWB Histogram negative — no new longs",
+      "NW: price extended above upper band without S/R breakout confirmation",
+      "S/R: price rejected at sr_resistance with negative TWB"
     ]
   },
   "entry_criteria": {
     "spot_long": [
-      "BTC above 50-day SMA confirmed",
-      "Coin consolidating near local highs (flag, pennant, or horizontal resistance)",
-      "Trendlines with Breaks Oscillator [LuxAlgo] prints bullish breakout signal on Daily",
-      "Confirm signal on 4H chart — same TWB breakout visible on lower timeframe",
-      "Breakout candle volume significantly above 5-10 day average (in USD)",
-      "Price approaching upper Nadaraya-Watson Envelope band but NOT fully outside it",
-      "Clear catalyst identifiable — protocol event, listing, or macro tailwind"
-    ],
-    "futures_long": [
-      "All spot_long criteria met PLUS:",
-      "Use maximum 3x leverage — crypto volatility makes higher leverage account-threatening",
-      "Only enter futures longs when Daily AND 4H TWB signals align",
-      "Reduce position size by 50% vs spot equivalent (leverage amplifies crypto's gap risk)"
+      "Symbol TWB Histogram positive AND above signal line",
+      "4H chart confirms same TWB bullish breakout",
+      "NW: price inside bands, or sr_break > 0 overrides NW extension (breakout confirmation)",
+      "Volume above average on breakout candle (USD terms)"
     ]
   },
   "exit_criteria": {
-    "stop_loss": "Below breakout candle low or nearest prior swing low on Daily. For futures, tighten stop to 4H swing low. Exit immediately if BTC breaks its 50-day SMA — do not hold alt longs into a BTC breakdown.",
-    "take_profit_1": "Scale out 1/3 of position when price touches or pierces upper Nadaraya-Watson Envelope band — crypto moves fast and bands get tagged quickly.",
-    "take_profit_2": "Scale out another 1/3 at 2R (double the initial risk). Trail remainder with 4H 9 EMA as dynamic stop.",
-    "take_profit_3": "Exit final portion if price closes below the 4H 9 EMA for two consecutive 4H candles — momentum shift signal.",
-    "emergency_exit": "Exit entire position immediately if BTC drops more than 8% intraday — systemic sell-off, no alt is safe."
+    "stop_loss": "Below breakout candle low or nearest prior swing low on Daily.",
+    "take_profit_1": "Scale out 1/3 when price touches upper NW Envelope band.",
+    "take_profit_2": "Scale out 1/3 at 2R. Trail remainder with 4H 9 EMA.",
+    "take_profit_3": "Exit final 1/3 if price closes below 4H 9 EMA for two consecutive candles.",
+    "emergency_exit": "Exit ALL positions immediately if BTC drops 8%+ intraday."
   },
   "risk_rules": [
-    "Maximum 2% account risk per crypto trade (higher volatility than stocks)",
-    "Maximum 3 open crypto positions at once — correlation is high, they move together",
-    "No altcoin longs if BTC is below its 50-day SMA",
-    "Futures maximum 3x leverage — never higher for crypto",
-    "Reduce position size 50% on futures vs equivalent spot trade",
-    "No crypto trading during major macro events (FOMC, CPI) — crypto amplifies macro moves",
-    "Never average down on a losing crypto trade — crypto can drop 30-50% and not recover for months",
-    "If BTC drops 8%+ intraday, exit ALL crypto positions regardless of individual chart",
-    "Do not trade meme coins or coins below $2B market cap — too manipulable",
-    "Coinbase listing = valid catalyst, but enter AFTER the initial listing pump fades (not on the spike)"
+    "Maximum 2% account risk per crypto trade",
+    "Maximum 3 open crypto positions at once",
+    "Never average down on a losing crypto trade",
+    "No crypto trading during major macro events (FOMC, CPI)",
+    "If BTC drops 8%+ intraday, exit ALL crypto positions"
   ],
-  "tradeable_exchanges": [
-    "Coinbase"
-  ],
-  "tradeable_note": "User trades on Coinbase only. For each symbol in the scan, flag whether it is available on Coinbase (most large caps are: BTC, ETH, SOL, XRP, ADA, DOGE, LINK, XLM, LTC, BCH, etc.). If a coin is NOT on Coinbase, mark it SKIP — do not generate an entry plan for it. BNB is NOT on Coinbase. USDT pairs are not applicable — use USD pairs only (e.g. COINBASE:ETHUSD not BINANCE:ETHUSDT).",
-  "asset_notes": "Large-cap crypto screened by market cap and USD volume. TradingView's crypto screener has no exchange filter — Coinbase availability must be checked per coin (see tradeable_note). Crypto moves faster and further than stocks — a 10-15% daily move is normal, not a signal to exit. The NW Envelope bands will be tagged and exceeded more frequently than in stocks; use the ▲/▼ signals directionally, not as hard exits. BTC correlation is the most important filter — when BTC leads, alts follow with a 1-3 day lag. Volume in USD (not coin count) is the key confirmation — a breakout on low USD volume is almost always a manipulation spike. The 4H entry confirmation prevents chasing gaps that open on low liquidity.",
+  "asset_notes": "Coinbase spot — USD pairs only (COINBASE:BTCUSD, not BINANCE:BTCUSDT). Each symbol evaluated on its own TWB + NW + S/R reading. BTC is first in the watchlist — read its reading first to set session tone before evaluating alts.",
   "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\CRYPTO.csv",
   "watchlist_generated": "2026-07-18",
   "watchlist": [
