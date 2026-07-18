@@ -27,6 +27,7 @@
     "CME:HE1!",
     "CME:GF1!",
     "CBOE:VX1!",
+    "ICEUS:CC1!",
     "ICEUS:KC1!",
     "ICEUS:SB1!"
   ],
@@ -193,6 +194,7 @@
       "CBOE:VX1!"
     ],
     "softs": [
+      "ICEUS:CC1!",
       "ICEUS:KC1!",
       "ICEUS:SB1!"
     ]
