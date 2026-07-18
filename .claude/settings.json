@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "mcp__tradingview__session_save",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python C:/work/tradingview-mcp-jackson/scripts/futures_decision_hook.py"
+          }
+        ]
+      }
+    ]
+  }
+}
