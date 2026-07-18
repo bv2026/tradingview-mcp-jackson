@@ -70,8 +70,8 @@ Key details:
 
 | Task ID | Schedule | Status |
 |---|---|---|
-| `futures-morning-routine` | Weekdays 10:37 AM | **Active** — runs crypto + perps + futures briefs + 3 decision emails |
-| `morning-brief-all` | Weekdays 10:35 AM | Active — full brief suite (equity/crypto/perps/futures) |
+| `futures-morning-routine` | Weekdays 10:37 AM | **Active** — data collection only: 3 briefs → ct_tv_data.json → triggers decision-email-routine |
+| `decision-email-routine` | One-time, triggered by Routine 1 (+3 min) | **Active** — reads saved files → Claude reasons → 3 decision HTML files → 3 Gmail drafts. Aborts if any of the 4 required files are missing (crypto.md, crypto_perps.md, futures.md, ct_tv_data.json) |
 | `cannonedge-daily-pipeline` | Daily 5:40 PM | Active — CT scrape + ingest |
 | `broker-daily-refresh` | Daily 7:40 AM | Active |
 | `tv-mcp-archive-old-reports` | Sundays 3 AM | Active |
@@ -117,7 +117,8 @@ WATCHLIST SCANS (lux_screener_scan tool):
 | Classify (precomputed fields) | `src/core/classify.js` |
 | Build watchlists script | `scripts/build-watchlist-configs.mjs` |
 | Reports | `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/` |
-| Scheduled task skill | `C:\Users\vsbra\.claude\scheduled-tasks\futures-morning-routine\SKILL.md` |
+| Routine 1 skill | `C:\Users\vsbra\.claude\scheduled-tasks\futures-morning-routine\SKILL.md` |
+| Routine 2 skill | `C:\Users\vsbra\.claude\scheduled-tasks\decision-email-routine\SKILL.md` |
 
 ---
 
