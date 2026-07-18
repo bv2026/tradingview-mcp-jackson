@@ -156,11 +156,12 @@
   - Hard-filter passes: 12.
   - Top candidates included: `PAVE`, `SMH`, `SOXQ`, `IBB`, `XRT`, `RTH`, `SOXX`, `PSI`, `XBI`, `IHE`.
 
-### Planned next step
+### Planned next step — COMPLETED (2026-07-18)
 
-- Run `thematic_stocks` and `momentum_ark` using the same batch-isolation mode before trusting any full-list result.
-- Use preflight and post-scan PAC/S&O/OSC health checks for every batch.
-- If a batch breaks any Lux indicator, reset/re-add the affected indicators before continuing.
+- `thematic_stocks` full scan (117 symbols, 2 halves) — verified clean. PAC/S&O/OSC all restored healthy after both halves.
+- `thematic_etfs` full scan (77 symbols, 2 halves) — verified clean. PAC/S&O/OSC all restored healthy after both halves.
+- OSC RE10041 error confirmed resolved — was caused by the excluded symbols (SPCX/CBRS/CRCL/CRWV). Will not reappear as long as build script exclusion filters stay in place.
+- All three watchlist scans (thematic_stocks, thematic_etfs, momentum_ark) are healthy and trusted for daily use.
 
 ### Other code changes from troubleshooting
 
@@ -313,8 +314,11 @@ Validated:
 - `momentum_ark` direct MCP scan works cleanly at 134 symbols.
 - `session_save` for `momentum_ark` wrote `reports/2026-Wk29/2026-Jul-17/momentum_ark.md`.
 
-Blocked / needs care:
+All previously blocked items resolved (2026-07-18):
 
-- Thematic scans returned MCP `success: true`, but the TradingView UI showed OSC `Runtime error: RE10041`.
-- Reset/re-add OSC before further full thematic scans.
-- Use small 10-symbol thematic batches to isolate any OSC-triggering symbol instead of immediately running the full lists.
+- thematic_stocks: 117 symbols, verified clean end-to-end.
+- thematic_etfs: 77 symbols, verified clean end-to-end.
+- momentum_ark: 128 symbols, verified clean (last session).
+- OSC RE10041 error: resolved — caused by excluded symbols, not a code bug.
+
+No remaining blockers. All watchlist scans ready for daily use.
