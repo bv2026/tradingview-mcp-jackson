@@ -63,6 +63,29 @@ const THEMATIC_STOCK_LUX_INVALID_SYMBOLS = new Set([
   'SPCX',
 ]);
 
+// Mirrors screener.js CRYPTO_BLOCKLIST — applied to the Instrument column (bare base ticker)
+const CRYPTO_SPOT_BLOCKLIST = new Set([
+  'BNB',   // Binance-only
+  'XMR',   // delisted from Coinbase Jan 2021
+  'TRX',   // TRON — not on Coinbase
+  'HYPE',  // low quality
+  // stablecoins
+  'USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'FRAX',
+  // wrapped tokens
+  'WBTC', 'WETH', 'CBBTC', 'WSOL',
+  // tokenized gold
+  'XAUT', 'PAXG',
+]);
+
+// Mirrors screener.js PERPS_BASE_BLOCKLIST — applied to base ticker extracted from Symbol column
+const PERPS_BLOCKLIST = new Set([
+  'META', 'TSLA', 'GOOGL', 'INTC', 'AMZN', 'SPY', 'NVDA', 'AAPL', 'MSFT',
+  'MU', 'AMD', 'ARM', 'QQQ', 'ROBO', 'NBIS', 'NFLX', 'COIN', 'MSTR',
+  'EURC', 'USDT', 'USDC', 'DAI',
+  'PUMP', 'BILL', '1000SHIB', '1000PEPE', 'MEME', 'SNDK', 'CBRS', 'MERL', 'W',
+  'HYPE', 'CRV', 'BE',
+]);
+
 function parseCsv(path) {
   const lines = readFileSync(path, 'utf8').split('\n').filter(l => l.trim());
   const headers = lines[0].split(',').map(h => h.trim());
@@ -121,6 +144,50 @@ function parseArkCsv(path) {
     });
   }
   return rows;
+}
+
+/**
+ * Parse CSV/CRYPTO.csv (TradingView Crypto Coins Screener export).
+ * Instrument column = bare base ticker (BTC, ETH, …).
+ * Returns array of COINBASE:{BASE}USD symbol strings, blocklist applied.
+ */
+function parseCryptoCsv(path) {
+  const lines = readFileSync(path, 'utf8').split('\n').filter(l => l.trim());
+  const headers = lines[0].split(',').map(h => h.trim());
+  const iINSTRUMENT = headers.findIndex(h => h.toUpperCase() === 'INSTRUMENT');
+  if (iINSTRUMENT < 0) throw new Error(`CRYPTO.csv missing "Instrument" column`);
+
+  const symbols = [];
+  for (const line of lines.slice(1)) {
+    const base = line.split(',')[iINSTRUMENT]?.trim();
+    if (!base) continue;
+    if (CRYPTO_SPOT_BLOCKLIST.has(base)) continue;
+    symbols.push(`COINBASE:${base}USD`);
+  }
+  return symbols;
+}
+
+/**
+ * Parse CSV/PERPS.csv (TradingView CEX Screener export).
+ * Symbol column = raw perp ticker (BTCUSDC.P, ETHUSDC.P, …).
+ * Returns array of COINBASE:{SYMBOL} strings, blocklist applied to base ticker.
+ */
+function parsePerpsCsv(path) {
+  const lines = readFileSync(path, 'utf8').split('\n').filter(l => l.trim());
+  const headers = lines[0].split(',').map(h => h.trim());
+  const iSYMBOL = headers.findIndex(h => h.toUpperCase() === 'SYMBOL');
+  if (iSYMBOL < 0) throw new Error(`PERPS.csv missing "Symbol" column`);
+
+  const symbols = [];
+  for (const line of lines.slice(1)) {
+    const symbol = line.split(',')[iSYMBOL]?.trim();
+    if (!symbol) continue;
+    // Extract base ticker: strip .P/.PERP suffix, then strip quote currency
+    const base = symbol.replace(/\.(P|PERP)$/i, '').replace(/(USDC|USDT|USD|EUR)$/, '');
+    if (PERPS_BLOCKLIST.has(base)) continue;
+    symbols.push(`COINBASE:${symbol}`);
+  }
+  return symbols;
 }
 
 function main() {
@@ -247,6 +314,38 @@ function main() {
     Object.entries(arkSectors).forEach(([t, n]) => console.log(`  ${n.toString().padStart(3)} — ${t}`));
   } else {
     console.log('\nmomentum_ark:    (Watchlist_ARK.csv not found — skipped)');
+  }
+
+  // --- Crypto spot ---
+  const cryptoCsv = join(csvDir, 'CRYPTO.csv');
+  if (existsSync(cryptoCsv)) {
+    const cryptoSymbols = parseCryptoCsv(cryptoCsv);
+    const cryptoOut = writeConfig('config/strategy-crypto.json', {
+      watchlist_source:    cryptoCsv,
+      watchlist_generated: generated,
+      screener_name:       null,
+      watchlist:           cryptoSymbols,
+    });
+    console.log(`\ncrypto:          ${cryptoSymbols.length} symbols → ${cryptoOut}`);
+    cryptoSymbols.forEach(s => console.log(`  ${s}`));
+  } else {
+    console.log('\ncrypto:          (CRYPTO.csv not found — skipped)');
+  }
+
+  // --- Crypto perps ---
+  const perpsCsv = join(csvDir, 'PERPS.csv');
+  if (existsSync(perpsCsv)) {
+    const perpsSymbols = parsePerpsCsv(perpsCsv);
+    const perpsOut = writeConfig('config/strategy-crypto_perps.json', {
+      watchlist_source:    perpsCsv,
+      watchlist_generated: generated,
+      screener_name:       null,
+      watchlist:           perpsSymbols,
+    });
+    console.log(`\ncrypto_perps:    ${perpsSymbols.length} symbols → ${perpsOut}`);
+    perpsSymbols.forEach(s => console.log(`  ${s}`));
+  } else {
+    console.log('\ncrypto_perps:    (PERPS.csv not found — skipped)');
   }
 
   console.log('\nDone. (No restart needed — only config files changed.)');

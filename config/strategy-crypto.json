@@ -1,16 +1,14 @@
 {
   "instrument_type": "crypto",
-  "screener_name": "MOMENTUM-CRYPTO",
+  "screener_name": null,
   "max_symbols": 9,
   "default_timeframe": "D",
   "entry_timeframe_note": "Use Daily for bias. Drop to 4H for entry timing — look for the same TWB breakout signal on 4H to confirm before entering.",
-
   "required_indicators": [
     "Trendlines with Breaks Oscillator [LuxAlgo]",
     "Nadaraya-Watson Envelope [LuxAlgo]",
     "Volume"
   ],
-
   "market_context": {
     "benchmark": "COINBASE:BTCUSD",
     "benchmark_alt": "COINBASE:ETHUSD",
@@ -19,7 +17,6 @@
     "benchmark_filter": "BTC must be above its 50-day SMA for any altcoin bullish bias. If BTC is below its 50-day SMA, default all alts to neutral or bearish — alts rarely sustain moves when BTC is in a downtrend. ETH can act as secondary confirmation for non-BTC majors.",
     "cycle_note": "Be aware of the broader BTC halving cycle. Post-halving alt seasons (6-18 months after halving) historically produce the strongest momentum signals. In late bear markets, even strong TWB signals are traps — require BTC above 200-day SMA as an additional filter."
   },
-
   "bias_criteria_note": "bearish criteria = exit/avoid signal on longs ONLY. Short-side futures entries require separate confirmation — never short alts unless BTC is also breaking down.",
   "bias_criteria": {
     "bullish": [
@@ -46,7 +43,6 @@
       "Volume is average or below average — no catalyst driving the move"
     ]
   },
-
   "entry_criteria": {
     "spot_long": [
       "BTC above 50-day SMA confirmed",
@@ -64,7 +60,6 @@
       "Reduce position size by 50% vs spot equivalent (leverage amplifies crypto's gap risk)"
     ]
   },
-
   "exit_criteria": {
     "stop_loss": "Below breakout candle low or nearest prior swing low on Daily. For futures, tighten stop to 4H swing low. Exit immediately if BTC breaks its 50-day SMA — do not hold alt longs into a BTC breakdown.",
     "take_profit_1": "Scale out 1/3 of position when price touches or pierces upper Nadaraya-Watson Envelope band — crypto moves fast and bands get tagged quickly.",
@@ -72,7 +67,6 @@
     "take_profit_3": "Exit final portion if price closes below the 4H 9 EMA for two consecutive 4H candles — momentum shift signal.",
     "emergency_exit": "Exit entire position immediately if BTC drops more than 8% intraday — systemic sell-off, no alt is safe."
   },
-
   "risk_rules": [
     "Maximum 2% account risk per crypto trade (higher volatility than stocks)",
     "Maximum 3 open crypto positions at once — correlation is high, they move together",
@@ -85,9 +79,22 @@
     "Do not trade meme coins or coins below $2B market cap — too manipulable",
     "Coinbase listing = valid catalyst, but enter AFTER the initial listing pump fades (not on the spike)"
   ],
-
-  "tradeable_exchanges": ["Coinbase"],
+  "tradeable_exchanges": [
+    "Coinbase"
+  ],
   "tradeable_note": "User trades on Coinbase only. For each symbol in the scan, flag whether it is available on Coinbase (most large caps are: BTC, ETH, SOL, XRP, ADA, DOGE, LINK, XLM, LTC, BCH, etc.). If a coin is NOT on Coinbase, mark it SKIP — do not generate an entry plan for it. BNB is NOT on Coinbase. USDT pairs are not applicable — use USD pairs only (e.g. COINBASE:ETHUSD not BINANCE:ETHUSDT).",
-
-  "asset_notes": "Large-cap crypto screened by market cap and USD volume. TradingView's crypto screener has no exchange filter — Coinbase availability must be checked per coin (see tradeable_note). Crypto moves faster and further than stocks — a 10-15% daily move is normal, not a signal to exit. The NW Envelope bands will be tagged and exceeded more frequently than in stocks; use the ▲/▼ signals directionally, not as hard exits. BTC correlation is the most important filter — when BTC leads, alts follow with a 1-3 day lag. Volume in USD (not coin count) is the key confirmation — a breakout on low USD volume is almost always a manipulation spike. The 4H entry confirmation prevents chasing gaps that open on low liquidity."
+  "asset_notes": "Large-cap crypto screened by market cap and USD volume. TradingView's crypto screener has no exchange filter — Coinbase availability must be checked per coin (see tradeable_note). Crypto moves faster and further than stocks — a 10-15% daily move is normal, not a signal to exit. The NW Envelope bands will be tagged and exceeded more frequently than in stocks; use the ▲/▼ signals directionally, not as hard exits. BTC correlation is the most important filter — when BTC leads, alts follow with a 1-3 day lag. Volume in USD (not coin count) is the key confirmation — a breakout on low USD volume is almost always a manipulation spike. The 4H entry confirmation prevents chasing gaps that open on low liquidity.",
+  "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\CRYPTO.csv",
+  "watchlist_generated": "2026-07-18",
+  "watchlist": [
+    "COINBASE:LINKUSD",
+    "COINBASE:ZECUSD",
+    "COINBASE:ETHUSD",
+    "COINBASE:ADAUSD",
+    "COINBASE:BTCUSD",
+    "COINBASE:XRPUSD",
+    "COINBASE:DOGEUSD",
+    "COINBASE:XLMUSD",
+    "COINBASE:SOLUSD"
+  ]
 }

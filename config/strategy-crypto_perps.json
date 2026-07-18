@@ -1,16 +1,14 @@
 {
   "instrument_type": "crypto_perps",
-  "screener_name": "MOMENTUM-PERPS",
+  "screener_name": null,
   "max_symbols": 12,
   "default_timeframe": "D",
   "entry_timeframe_note": "Use Daily for bias. Drop to 4H for entry timing — confirm TWB signal on 4H before entering.",
-
   "required_indicators": [
     "Trendlines with Breaks Oscillator [LuxAlgo]",
     "Nadaraya-Watson Envelope [LuxAlgo]",
     "Volume"
   ],
-
   "market_context": {
     "benchmark": "COINBASE:BTCUSDC.P",
     "benchmark_signal": "BTC perp TWB Histogram direction is the market signal — it determines whether to scan for longs or shorts across all alts. No SMA check needed.",
@@ -23,9 +21,7 @@
     "funding_note": "Funding rate is NOT available in TradingView — it is not in the brief payload. Check it manually on Coinbase (or the exchange) immediately before entry. Guidance: for longs, neutral or negative funding preferred; for shorts, positive funding preferred (shorts get paid). Extreme positive funding (>0.05%/hr) = crowded long → short opportunity; extreme negative funding = crowded short → long opportunity. Treat funding as a final manual confirmation step, not an automated signal.",
     "oi_note": "Open interest is NOT in the brief payload either — check it manually on Coinbase before entry if available. Guidance: rising OI with rising price = healthy uptrend (confirms long); rising OI with falling price = short pressure building (confirms short); falling OI = trend exhaustion on either side — reduce size."
   },
-
   "bias_note": "BTC TWB Histogram is the benchmark signal — readable from chart via data_get_study_values. NW Envelope position is the extension check. Funding rate and OI are NOT available in TradingView — check manually on Coinbase before entry. Commodity perps (SILVER, GOLD) exempt from BTC benchmark.",
-
   "bias_criteria": {
     "long": [
       "BTC perp TWB Histogram > 0 (market uptrend — scan alts for longs)",
@@ -42,7 +38,6 @@
       "Symbol TWB flat with histogram and signal lines converging"
     ]
   },
-
   "entry_criteria": {
     "perp_long": [
       "BTC TWB Histogram positive",
@@ -59,7 +54,6 @@
       "Manual check: funding rate neutral or positive at entry (check Coinbase)"
     ]
   },
-
   "exit_criteria": {
     "long_stop": "Below breakout candle low or nearest 4H swing low.",
     "long_tp1": "Scale out 1/3 when price touches upper NW Envelope band.",
@@ -72,7 +66,6 @@
     "funding_exit": "Exit long if funding rate spikes above 0.1%/hr. Exit short if funding rate drops below -0.05%/hr.",
     "emergency_exit": "Exit ALL perp positions immediately if BTC moves 8%+ intraday in either direction."
   },
-
   "risk_rules": [
     "Maximum 2% account risk per perp trade (long or short)",
     "Maximum 3 open perp positions at once",
@@ -85,11 +78,20 @@
     "For shorts: wait for dead-cat bounce to lower NW band — do NOT chase the initial drop",
     "Commodity perps (SILVER, GOLD) use their own TWB signal — BTC benchmark does not apply to them"
   ],
-
   "commodity_perps_note": "SILVER and GOLD perps follow macro/USD drivers, not crypto momentum. Use the same TWB + NW framework on their own charts. Positive TWB + DXY weakening = long bias. Negative TWB + DXY strengthening = short bias. No BTC benchmark check for these.",
-
-  "tradeable_exchanges": ["Coinbase"],
+  "tradeable_exchanges": [
+    "Coinbase"
+  ],
   "tradeable_note": "All perps in MOMENTUM-PERPS are Coinbase CDE USDC-settled contracts. No exchange check needed.",
-
-  "asset_notes": "Coinbase perp universe is USDC-settled and regulated. Perps allow both sides — the TWB signal on BTC tells you which side the market favors today. For shorts, the ideal entry is a retrace back up into the lower NW band after an initial breakdown — not chasing the drop. Funding rate and open interest are NOT available in TradingView — check them manually on Coinbase before entry. Prefer entries during US session (9:30am-4pm ET) or Asia open (8pm-midnight ET) — avoid low-liquidity gaps in between."
+  "asset_notes": "Coinbase perp universe is USDC-settled and regulated. Perps allow both sides — the TWB signal on BTC tells you which side the market favors today. For shorts, the ideal entry is a retrace back up into the lower NW band after an initial breakdown — not chasing the drop. Funding rate and open interest are NOT available in TradingView — check them manually on Coinbase before entry. Prefer entries during US session (9:30am-4pm ET) or Asia open (8pm-midnight ET) — avoid low-liquidity gaps in between.",
+  "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\PERPS.csv",
+  "watchlist_generated": "2026-07-18",
+  "watchlist": [
+    "COINBASE:BTCUSDC.P",
+    "COINBASE:ETHUSDC.P",
+    "COINBASE:SOLUSDC.P",
+    "COINBASE:XRPUSDC.P",
+    "COINBASE:DOGEUSDC.P",
+    "COINBASE:ZECUSDC.P"
+  ]
 }
