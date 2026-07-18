@@ -1,7 +1,6 @@
 {
   "instrument_type": "futures",
   "screener_name": null,
-  "screener_note": "No TradingView futures screener exists. Symbol list is static — defined in watchlist below.",
   "watchlist": [
     "CME_MINI:ES1!",
     "CME_MINI:NQ1!",
@@ -32,10 +31,12 @@
     "ICEUS:SB1!"
   ],
   "default_timeframe": "D",
+  "entry_timeframe_note": "Daily is the primary timeframe for bias, regime detection, and S/R levels. CannonTrading daily levels and commentary are also Daily-based — all three data sources (TWB, NW, S/R, CannonEdge) align on Daily. Drop to 4H for entry timing on liquid instruments (equity index, energy, metals, FX). For grains, livestock, and softs, Daily entry is acceptable — 4H liquidity is thin outside US session.",
   "required_indicators": [
     "Trendlines with Breaks Oscillator [LuxAlgo]",
     "Nadaraya-Watson Envelope [LuxAlgo]",
-    "Volume"
+    "Volume",
+    "Support and Resistance Levels with Breaks [LuxAlgo]"
   ],
   "market_context": {
     "note": "Futures are multi-sector — no single benchmark. Evaluate each symbol independently on its own trend and mean-reversion signals.",
@@ -47,7 +48,7 @@
   },
   "regime_detection": {
     "trending": "TWB Histogram clearly positive or negative for 3+ bars. Price making HH/HL (uptrend) or LL/LH (downtrend). NW Envelope angled, price riding outside or near outer band.",
-    "mean_reverting": "TWB Histogram near zero or reversing. RSI > 70 or < 30. Price extended beyond NW Envelope outer band (▲ or ▼ label present). No clear HH/HL or LL/LH structure."
+    "mean_reverting": "TWB Histogram near zero or reversing. Price extended beyond NW Envelope outer band (triangle label present). No clear HH/HL or LL/LH structure."
   },
   "bias_criteria": {
     "trend_long": [
@@ -66,16 +67,16 @@
     ],
     "mean_rev_long": [
       "TWB Histogram reversing from deeply negative (histogram turning up from lows)",
-      "NW Envelope: recent ▼ label (price dropped through lower band) — potential snap-back zone",
-      "RSI below 30 on daily",
+      "NW Envelope: recent down-triangle label (price dropped through lower band) — potential snap-back zone",
       "Price at or below lower NW band — stretched, look for reversal candle",
+      "S/R: price at or below sr_support level — stronger snap-back probability",
       "Volume drying up on the sell-off (exhaustion)"
     ],
     "mean_rev_short": [
       "TWB Histogram reversing from deeply positive (histogram turning down from highs)",
-      "NW Envelope: recent ▲ label (price broke above upper band) — potential snap-back zone",
-      "RSI above 70 on daily",
+      "NW Envelope: recent up-triangle label (price broke above upper band) — potential snap-back zone",
       "Price at or above upper NW band — stretched, look for rejection candle",
+      "S/R: price at or above sr_resistance level — stronger rejection probability",
       "Volume drying up on the rally (exhaustion)"
     ],
     "neutral": [
@@ -86,15 +87,17 @@
   },
   "entry_criteria": {
     "trend_long_entry": [
-      "Pullback to 20 EMA or recent breakout level on daily",
+      "Pullback to recent breakout level or sr_support on daily",
       "TWB Histogram remains positive during pullback (dip, not reversal)",
       "NW Envelope: price approaching but not through upper band",
+      "S/R: sr_break > 0 adds conviction (resistance just broke and became support)",
       "Entry on first bullish close after pullback"
     ],
     "trend_short_entry": [
-      "Dead-cat bounce to 20 EMA or recent breakdown level",
+      "Dead-cat bounce to recent breakdown level or sr_resistance on daily",
       "TWB Histogram remains negative during bounce",
       "NW Envelope: price approaching but not through lower band from below",
+      "S/R: sr_break < 0 adds conviction (support just broke and became resistance)",
       "Entry on first bearish close after bounce"
     ],
     "mean_rev_long_entry": [
@@ -114,13 +117,13 @@
     "trend_long": {
       "stop": "Below the most recent swing low or breakout candle low",
       "tp1": "Upper NW band — scale out 1/3",
-      "tp2": "Trail 20 EMA — exit on close below",
+      "tp2": "Trail with 4H swing lows — exit on close below most recent 4H higher low",
       "tp3": "TWB Histogram crosses below zero — full exit"
     },
     "trend_short": {
       "stop": "Above the most recent swing high or breakdown candle high",
       "tp1": "Lower NW band — scale out 1/3",
-      "tp2": "Trail 20 EMA from below — exit on close above",
+      "tp2": "Trail with 4H swing highs — exit on close above most recent 4H lower high",
       "tp3": "TWB Histogram crosses above zero — full exit"
     },
     "mean_rev_long": {
