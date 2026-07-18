@@ -35,14 +35,31 @@ Quick reference for the daily/weekly trading workflow. Prompts are what you type
 
 ---
 
-## 📅 Weekly routine (Saturdays)
+## 📅 Weekly cadence
 
-Run these terminal commands, then ask Claude to narrate:
+| Day | What runs | Instruments |
+|-----|-----------|-------------|
+| **Saturday** | Rebuild watchlists (scripts below) | sp_ndx, r2k, ARK lists refreshed |
+| **Sunday 8:00 AM ET** | **Sunday brief** — LuxAlgo 1W scan on all weekly equity/ETF types | momentum_stocks, momentum_etf, momentum_ark, sp_ndx, r2k, thematic_stocks, thematic_etfs |
+| **Mon–Fri** | **Daily brief** — short-term trading instruments only | crypto, crypto_perps, futures |
+
+**Sunday brief prompts** (run in order on Sunday morning):
+```
+lux screener scan momentum_stocks timeframe=1W
+lux screener scan momentum_etf timeframe=1W
+lux screener scan momentum_ark timeframe=1W
+lux screener scan sp_ndx timeframe=1W
+lux screener scan r2k timeframe=1W
+lux screener scan thematic_stocks timeframe=1W
+lux screener scan thematic_etfs timeframe=1W
+```
+
+**Saturday scripts** — run these terminal commands, then ask Claude to narrate:
 
 ```bash
 node scripts/build-weekly-review.mjs       # consolidate Mon–Fri across all instruments
 node scripts/build-momentum-watchlists.mjs # rebuild sp_ndx + r2k from the week's CSVs
-node scripts/build-watchlist-configs.mjs   # rebuild thematic_stocks + thematic_etfs_1/_2 (if CSVs changed)
+node scripts/build-watchlist-configs.mjs   # rebuild thematic_stocks + thematic_etfs + momentum_ark (if CSVs changed)
 ```
 
 | Goal | Prompt |
@@ -95,8 +112,8 @@ Close with:
 
 - **Saturday:** drop 4 dated CSVs into `CSV/`, then `node scripts/build-momentum-watchlists.mjs` — rebuilds sp_ndx + r2k watchlists + chatter annotations.
 - **Saturday (if watchlists changed):** update `CSV/Watchlist_Stocks.csv`, `CSV/Watchlist_ETFs.csv`, and/or `CSV/Watchlist_ARK.csv`, then `node scripts/build-watchlist-configs.mjs` — regenerates all three configs (`thematic_stocks.json` + `thematic_etfs.json` + `strategy-momentum_ark.json`).
-- **Daily (Mon–Sun):** `morning brief all` — runs everything: all 8 core/momentum briefs + thematic_stocks LuxAlgo scan (121 symbols) + thematic_etfs LuxAlgo scan (~90 ETFs) + all summary files + daily-summary.
-- By Thu/Fri the weekly data is stale vs price — the live `morning brief momentum_stocks` (core) provides fresher mid-week discovery.
+- **Sunday:** run the 7-instrument LuxAlgo 1W scan batch (see Sunday brief table above) — this is the weekly action plan.
+- **Mon–Fri:** `morning brief crypto` / `morning brief crypto_perps` / `morning brief futures` — short-term trading only. Add `morning brief momentum_stocks` or `momentum_etf` mid-week if you want a fresher equity read.
 
 ---
 
@@ -110,8 +127,7 @@ lux screener scan r2k              # Russell 2000 momentum (25 names, current we
 lux screener scan thematic_stocks  # Full thematic watchlist (121 stocks, 8 themes, grouped output)
 ```
 
-**Score = S&O rating (+3/+2/0/−2) + Signal (+2/+1/−1) + OSC Div (+2/−2) + HWO (+1/−1) + PAC Structure (+1/−2)**
-Top 10 = highest score. Bottom 10 = lowest score. For `thematic_stocks`, output is grouped by theme with per-theme bullish/bearish count. Saves to `reports/{date}/{type}.md`.
+**Hard filter (all 3 required to pass):** S&O Rating = Bullish or Strong Bullish · PAC Structure = BOS (any count) · Signal = ▲ or ▲+. Symbols failing any filter get score −99. **Sort score for passing symbols:** ▲+ signal (+1) + BOS count (BOS(3) = 3 pts) + Bullish OSC divergence (+1 tiebreaker). Top 10 = highest score. For `thematic_stocks`, output is grouped by theme. Saves to `reports/{date}/{type}.md`.
 
 **Watchlist sources:**
 | Type | Source |
