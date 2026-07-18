@@ -615,10 +615,10 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
         (async () => {
           await findMainChartTab();
           await chart.setTimeframe({ timeframe: chartTf });
-          await new Promise(r => setTimeout(r, 1000));
+          await new Promise(r => setTimeout(r, 500));
           for (const row of passingSymbols) {
             await chart.setSymbol({ symbol: row.symbol });
-            await new Promise(r => setTimeout(r, 1500));
+            await new Promise(r => setTimeout(r, 800));
             const nw = await readNwEnvelope();
             row.nw_position = nw.nw_position;
             row.nw_upper    = nw.nw_upper;
