@@ -23,6 +23,7 @@
     "crypto_perps":  "MOMENTUM-PERPS",
     "sp_ndx":        null,
     "r2k":           null,
+    "thematic_stocks": null,
     "thematic_etfs":   null
   },
 
