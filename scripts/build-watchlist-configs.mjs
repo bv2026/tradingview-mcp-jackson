@@ -63,28 +63,6 @@ const THEMATIC_STOCK_LUX_INVALID_SYMBOLS = new Set([
   'SPCX',
 ]);
 
-// Mirrors screener.js CRYPTO_BLOCKLIST — applied to the Instrument column (bare base ticker)
-const CRYPTO_SPOT_BLOCKLIST = new Set([
-  'BNB',   // Binance-only
-  'XMR',   // delisted from Coinbase Jan 2021
-  'TRX',   // TRON — not on Coinbase
-  'HYPE',  // low quality
-  // stablecoins
-  'USDT', 'USDC', 'DAI', 'BUSD', 'TUSD', 'FRAX',
-  // wrapped tokens
-  'WBTC', 'WETH', 'CBBTC', 'WSOL',
-  // tokenized gold
-  'XAUT', 'PAXG',
-]);
-
-// Mirrors screener.js PERPS_BASE_BLOCKLIST — applied to base ticker extracted from Symbol column
-const PERPS_BLOCKLIST = new Set([
-  'META', 'TSLA', 'GOOGL', 'INTC', 'AMZN', 'SPY', 'NVDA', 'AAPL', 'MSFT',
-  'MU', 'AMD', 'ARM', 'QQQ', 'ROBO', 'NBIS', 'NFLX', 'COIN', 'MSTR',
-  'EURC', 'USDT', 'USDC', 'DAI',
-  'PUMP', 'BILL', '1000SHIB', '1000PEPE', 'MEME', 'SNDK', 'CBRS', 'MERL', 'W',
-  'HYPE', 'CRV', 'BE',
-]);
 
 function parseCsv(path) {
   const lines = readFileSync(path, 'utf8').split('\n').filter(l => l.trim());
@@ -161,7 +139,6 @@ function parseCryptoCsv(path) {
   for (const line of lines.slice(1)) {
     const base = line.split(',')[iINSTRUMENT]?.trim();
     if (!base) continue;
-    if (CRYPTO_SPOT_BLOCKLIST.has(base)) continue;
     symbols.push(`COINBASE:${base}USD`);
   }
   return symbols;
@@ -184,7 +161,6 @@ function parsePerpsCsv(path) {
     if (!symbol) continue;
     // Extract base ticker: strip .P/.PERP suffix, then strip quote currency
     const base = symbol.replace(/\.(P|PERP)$/i, '').replace(/(USDC|USDT|USD|EUR)$/, '');
-    if (PERPS_BLOCKLIST.has(base)) continue;
     symbols.push(`COINBASE:${symbol}`);
   }
   return symbols;
