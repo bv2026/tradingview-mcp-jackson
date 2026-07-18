@@ -494,7 +494,7 @@ async function readNwEnvelope() {
   }
 }
 
-export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' } = {}) {
+export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D', offset = 0, max_symbols = 0 } = {}) {
   // Map user-facing TF labels to Pine-valid resolution strings
   const TF_MAP = { '1D': 'D', '1W': 'W', '4H': '240' };
   const chartTf = TF_MAP[timeframe] || 'D';
@@ -526,6 +526,11 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
     watchlist = screenerResult.symbols.map(s => ({ symbol: bareSymbol(s), full_symbol: s }));
   }
   watchlist = watchlist.map(resolveWatchlistEntry);
+  // Apply offset/max_symbols slice for large watchlists
+  const totalSymbols = watchlist.length;
+  const sliceStart = Math.min(offset, totalSymbols);
+  const sliceEnd   = max_symbols > 0 ? Math.min(sliceStart + max_symbols, totalSymbols) : totalSymbols;
+  watchlist = watchlist.slice(sliceStart, sliceEnd);
   const metaMap = Object.fromEntries(watchlist.map(e => [e.symbol, e]));
   const symbols = watchlist.map(e => e.symbol);
 
@@ -664,6 +669,7 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
     success: true,
     instrument_type,
     timeframe,
+    slice_range: `${sliceStart + 1}–${sliceEnd} of ${totalSymbols}`,
     symbol_count: sorted.length,
     batch_count: batches.length,
     restore_debug: restoreResult,

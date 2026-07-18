@@ -15,10 +15,22 @@ export function registerLuxScreenerTools(server) {
         .enum(['1D', '1W', '4H'])
         .default('1W')
         .describe('Timeframe to run the screeners on. 1W (weekly) for position/swing — default for all equity types including momentum_ark. 1D for entry timing. 4H for short-term.'),
+      offset: z
+        .number()
+        .int()
+        .min(0)
+        .default(0)
+        .describe('0-based index into the watchlist to start from. Use with max_symbols to batch large lists across multiple calls (e.g. offset=0 max_symbols=60, then offset=60 max_symbols=60). Default 0 = start from beginning.'),
+      max_symbols: z
+        .number()
+        .int()
+        .min(0)
+        .default(0)
+        .describe('Maximum number of watchlist symbols to scan in this call. 0 = scan all (from offset to end). Use with offset to split large lists — momentum_ark (117), thematic_stocks (121), thematic_etfs (~90) all benefit from two calls of ~60 each to stay under the MCP timeout.'),
     },
-    async ({ instrument_type, timeframe } = {}) => {
+    async ({ instrument_type, timeframe, offset, max_symbols } = {}) => {
       try {
-        return jsonResult(await core.runScan({ instrument_type, timeframe }));
+        return jsonResult(await core.runScan({ instrument_type, timeframe, offset, max_symbols }));
       } catch (err) {
         return jsonResult({ success: false, error: err.message }, true);
       }
