@@ -65,11 +65,14 @@ export async function setInputsFromInfo({ entity_id, overrides }) {
         return { skipped: true, reason: 'indicator is in error state — delete and re-add it in TradingView' };
       }
 
-      // Build input array from getInputsInfo() defaults — safe for protected indicators
+      // Build input array from getInputsInfo() defaults — safe for protected indicators.
+      // Skip system fields that must never be overwritten (breaks encrypted Lux screeners).
+      var systemIds = ['text', 'pineId', 'pineVersion', 'pineFeatures'];
       var info = study.getInputsInfo();
       var safeInputs = [];
       for (var i = 0; i < info.length; i++) {
         var entry = info[i];
+        if (systemIds.indexOf(entry.id) >= 0) continue;
         if (entry.defval === undefined) continue;
         safeInputs.push({ id: entry.id, value: entry.defval });
       }
