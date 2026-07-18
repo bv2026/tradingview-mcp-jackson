@@ -30,14 +30,14 @@ lux_screener_scan instrument_type="thematic_etfs"   timeframe="1W" offset=50    
 
 **Combining two-call results:** after both calls return, merge their `top_section` bullet lists, re-sort all passing symbols by score descending across both halves, and produce a single unified Top 20 table. Each call already ran NW on its own top-20 passers, so NW data is available for all passers from both halves.
 
-**Step 1 — sync screener** (when TV screener results change during the day):
+**Step 1 — sync screener** (momentum_stocks only — crypto/perps use static CSV watchlists, no screener needed):
 ```
 screener_get screener_name="MOMENTUM" max_symbols=10
-screener_get screener_name="MOMENTUM-CRYPTO" max_symbols=9
-screener_get screener_name="MOMENTUM-PERPS" max_symbols=12
 ```
 
-**Step 2 — run brief** — pulls live symbols, scans each symbol, returns structured data for Claude to apply strategy rules.
+**Step 2 — run brief** — pulls live symbols (or static watchlist), scans each symbol, returns structured data for Claude to apply strategy rules.
+
+**Chart sharing note:** `crypto` and `crypto_perps` both use the MY-PERPS chart tab (`6y8jPo4Y`). Do NOT run both briefs simultaneously — run one, wait for it to finish, then run the other.
 
 **Step 3 — save brief** (optional):
 ```
@@ -45,7 +45,7 @@ session_save brief="<Claude's output>"
 session_get   # retrieve today's or yesterday's saved brief
 ```
 
-**Precomputed fields (as of `src/core/classify.js`):** each symbol in `symbols_scanned` carries `nw_position` (extended/early/n/a from the most recent NW label — `nw_envelope_signals` is trimmed to 1 label since only the most recent is ever used). **Equity types** (momentum_stocks/etf/ark/sp_ndx/r2k): TWB is NOT on the chart — `hist`/`sig`/`gap`/`bias` are null/n/a; L2 filtering was already done by `lux_screener_scan` (BOS + Bullish S&O + ▲ signal). Use `nw_position` for L3 extension check. `momentum_stocks`/`momentum_etf`/`sp_ndx`/`r2k` carry `momentum_tag` (always 'neutral' without TWB — treat as informational only); `momentum_ark` carries `ark_status` (BASE_BUILDING by default when bias=n/a, EXTENDED when nw_position=extended — BREAKOUT_READY is never auto-assigned, requires manual RS-vs-QQQ check) and `cluster`. **Crypto/futures types**: TWB IS on the chart — `hist`/`sig` (parsed TWB Histogram/Signal, strings normalized to numbers), `gap` (hist − sig), `bias` (bullish/bearish/neutral from gap sign) all populated normally. `futures` carries `regime` (TRENDING_LONG/TRENDING_SHORT/MEAN_REVERTING — single-bar approximation, override with regime_detection/macro_overlays judgment). Use these fields directly instead of re-parsing raw `indicators`/`nw_envelope_signals` strings.
+**Precomputed fields (as of `src/core/classify.js`):** each symbol in `symbols_scanned` carries `nw_position` (extended/early/n/a from the most recent NW label — `nw_envelope_signals` is trimmed to 1 label since only the most recent is ever used). **Equity types** (momentum_stocks/etf/ark/sp_ndx/r2k): TWB is NOT on the chart — `hist`/`sig`/`gap`/`bias` are null/n/a; L2 filtering was already done by `lux_screener_scan` (BOS + Bullish S&O + ▲ signal). Use `nw_position` for L3 extension check. `momentum_stocks`/`momentum_etf`/`sp_ndx`/`r2k` carry `momentum_tag` (always 'neutral' without TWB — treat as informational only); `momentum_ark` carries `ark_status` (BASE_BUILDING by default when bias=n/a, EXTENDED when nw_position=extended — BREAKOUT_READY is never auto-assigned, requires manual RS-vs-QQQ check) and `cluster`. **Crypto/perps/futures types**: TWB IS on the chart — `hist`/`sig` (parsed TWB Histogram/Signal, strings normalized to numbers), `gap` (hist − sig), `bias` (bullish/bearish/neutral from gap sign) all populated normally. **crypto and crypto_perps** also carry `sr_resistance`, `sr_support`, `sr_break` from the Support and Resistance Levels with Breaks [LuxAlgo] indicator (null if indicator absent or insufficient data). Use `sr_break > 0` as breakout confirmation overriding NW extension for longs; `sr_resistance` is the dead-cat ceiling for shorts. `futures` carries `regime` (TRENDING_LONG/TRENDING_SHORT/MEAN_REVERTING — single-bar approximation, override with regime_detection/macro_overlays judgment). Use these fields directly instead of re-parsing raw `indicators`/`nw_envelope_signals` strings.
 
 **Brief formatting convention (REQUIRED for `session_save`):**
 The `morning_brief` tool's embedded instruction says to output bare pipe-delimited lines (`SYMBOL | BIAS: ... | SIGNAL: ...`). Do NOT save that raw form — it does not render as a table in markdown. Always reshape the analysis into proper GitHub-flavored markdown before calling `session_save`:
