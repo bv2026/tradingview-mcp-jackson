@@ -27,72 +27,17 @@ const POLL_MAX_ATTEMPTS = 8; // up to 12 seconds total
 const CHART_API = 'window.TradingViewApi._activeChartWidgetWV.value()';
 const DEFAULTS_PATH = join(PROJECT_ROOT, 'config', 'lux-screener-defaults.json');
 
-const US_EXCHANGE_PRIORITY = ['NASDAQ', 'NYSE', 'AMEX', 'OTC', 'BATS', 'NYSE ARCA'];
-
 function bareSymbol(symbol) {
   return String(symbol || '').includes(':') ? String(symbol).split(':').pop() : String(symbol || '');
 }
 
-function scanSymbolFor(entry) {
-  if (entry?.full_symbol) return entry.full_symbol;
-  if (entry?.symbol && String(entry.symbol).includes(':')) return entry.symbol;
-  if (entry?.exchange) return `${entry.exchange}:${entry.symbol}`;
-  return `BATS:${entry.symbol}`;
-}
-
-async function resolveTradingViewSymbol(symbol) {
-  const params = new URLSearchParams({
-    text: symbol,
-    hl: '1',
-    exchange: '',
-    lang: 'en',
-    search_type: 'stock',
-    domain: 'production',
-  });
-
-  const resp = await fetch(`https://symbol-search.tradingview.com/symbol_search/v3/?${params}`, {
-    headers: { Origin: 'https://www.tradingview.com', Referer: 'https://www.tradingview.com/' },
-  });
-  if (!resp.ok) return null;
-
-  const strip = s => String(s || '').replace(/<\/?em>/g, '');
-  const data = await resp.json();
-  const exact = (data.symbols || data || [])
-    .map(r => ({
-      symbol: strip(r.symbol),
-      exchange: r.exchange || r.prefix || '',
-      type: r.type || '',
-    }))
-    .filter(r => r.symbol === symbol && ['stock', 'dr', 'fund'].includes(r.type));
-
-  exact.sort((a, b) => {
-    const ai = US_EXCHANGE_PRIORITY.indexOf(a.exchange);
-    const bi = US_EXCHANGE_PRIORITY.indexOf(b.exchange);
-    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-  });
-
-  return exact[0]?.exchange ? `${exact[0].exchange}:${exact[0].symbol}` : null;
-}
-
-async function resolveWatchlistForScan(watchlist, instrumentType) {
-  if (instrumentType !== 'momentum_ark') {
-    return watchlist.map(e => ({
-      ...e,
-      symbol: bareSymbol(e.symbol),
-      full_symbol: scanSymbolFor(e),
-    }));
-  }
-
-  const resolved = await Promise.all(watchlist.map(async e => {
-    const symbol = bareSymbol(e.symbol);
-    const full_symbol = scanSymbolFor({ ...e, symbol });
-    if (e.full_symbol || e.exchange || String(e.symbol || '').includes(':')) {
-      return { ...e, symbol, full_symbol };
-    }
-    return { ...e, symbol, full_symbol: await resolveTradingViewSymbol(symbol) || full_symbol };
-  }));
-
-  return resolved;
+// Normalize a watchlist entry to { symbol: bare, full_symbol: EXCHANGE:BARE }.
+// Screener results already carry the correct exchange prefix; static watchlist
+// entries get BATS: which TradingView resolves to the primary listing.
+function resolveWatchlistEntry(e) {
+  const symbol = bareSymbol(e.symbol);
+  const full_symbol = e.full_symbol || (e.exchange ? `${e.exchange}:${symbol}` : `BATS:${symbol}`);
+  return { ...e, symbol, full_symbol };
 }
 
 /**
@@ -455,7 +400,7 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
     // keep bare symbols as output keys.
     watchlist = screenerResult.symbols.map(s => ({ symbol: bareSymbol(s), full_symbol: s }));
   }
-  watchlist = await resolveWatchlistForScan(watchlist, instrument_type);
+  watchlist = watchlist.map(resolveWatchlistEntry);
   const metaMap = Object.fromEntries(watchlist.map(e => [e.symbol, e]));
   const symbols = watchlist.map(e => e.symbol);
 
@@ -474,7 +419,7 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
     const inputs = {};
     TICKER_INPUT_IDS.forEach((id, i) => {
       const sym = batch[i] || lastSym;
-      inputs[id] = scanSymbolFor(metaMap[sym]);
+      inputs[id] = metaMap[sym]?.full_symbol || `BATS:${sym}`;
     });
     const inputsStr = JSON.stringify(inputs);
 
