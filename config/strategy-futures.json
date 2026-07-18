@@ -3,18 +3,34 @@
   "screener_name": null,
   "screener_note": "No TradingView futures screener exists. Symbol list is static — defined in watchlist below.",
   "watchlist": [
-    "CME_MINI:ES1!", "CME_MINI:NQ1!", "CBOT_MINI:YM1!", "CME_MINI:RTY1!",
-    "NYMEX:CL1!", "NYMEX:NG1!", "NYMEX:BZ1!",
-    "COMEX:GC1!", "COMEX:SI1!", "COMEX:HG1!",
-    "CME:6E1!", "CME:6B1!", "CME:6J1!", "ICEUS:DX1!",
-    "CBOT:ZB1!", "CBOT:ZN1!",
-    "CME:BTC1!", "CME:ETH1!",
-    "CBOT:ZC1!", "CBOT:ZW1!", "CBOT:ZS1!",
-    "CME:LE1!", "CME:HE1!", "CME:GF1!",
+    "CME_MINI:ES1!",
+    "CME_MINI:NQ1!",
+    "CBOT_MINI:YM1!",
+    "CME_MINI:RTY1!",
+    "NYMEX:CL1!",
+    "NYMEX:NG1!",
+    "NYMEX:BZ1!",
+    "COMEX:GC1!",
+    "COMEX:SI1!",
+    "COMEX:HG1!",
+    "CME:6E1!",
+    "CME:6B1!",
+    "CME:6J1!",
+    "ICEUS:DX1!",
+    "CBOT:ZB1!",
+    "CBOT:ZN1!",
+    "CME:BTC1!",
+    "CME:ETH1!",
+    "CBOT:ZC1!",
+    "CBOT:ZW1!",
+    "CBOT:ZS1!",
+    "CME:LE1!",
+    "CME:HE1!",
+    "CME:GF1!",
     "CBOE:VX1!",
-    "ICEUS:KC1!", "ICEUS:SB1!"
+    "ICEUS:KC1!",
+    "ICEUS:SB1!"
   ],
-  "max_symbols": 27,
   "default_timeframe": "D",
   "required_indicators": [
     "Trendlines with Breaks Oscillator [LuxAlgo]",
@@ -130,16 +146,53 @@
     "Min R:R 1:1.5 for mean reversion, 1:2 for trend following"
   ],
   "sector_map": {
-    "equity_index": ["CME_MINI:ES1!", "CME_MINI:NQ1!", "CBOT_MINI:YM1!", "CME_MINI:RTY1!"],
-    "energy": ["NYMEX:CL1!", "NYMEX:NG1!", "NYMEX:BZ1!"],
-    "metals": ["COMEX:GC1!", "COMEX:SI1!", "COMEX:HG1!"],
-    "fx": ["CME:6E1!", "CME:6B1!", "CME:6J1!", "ICEUS:DX1!"],
-    "bonds": ["CBOT:ZB1!", "CBOT:ZN1!"],
-    "crypto_cme": ["CME:BTC1!", "CME:ETH1!"],
-    "grains": ["CBOT:ZC1!", "CBOT:ZW1!", "CBOT:ZS1!"],
-    "livestock": ["CME:LE1!", "CME:HE1!", "CME:GF1!"],
-    "volatility": ["CBOE:VX1!"],
-    "softs": ["ICEUS:KC1!", "ICEUS:SB1!"]
+    "equity_index": [
+      "CME_MINI:ES1!",
+      "CME_MINI:NQ1!",
+      "CBOT_MINI:YM1!",
+      "CME_MINI:RTY1!"
+    ],
+    "energy": [
+      "NYMEX:CL1!",
+      "NYMEX:NG1!",
+      "NYMEX:BZ1!"
+    ],
+    "metals": [
+      "COMEX:GC1!",
+      "COMEX:SI1!",
+      "COMEX:HG1!"
+    ],
+    "fx": [
+      "CME:6E1!",
+      "CME:6B1!",
+      "CME:6J1!",
+      "ICEUS:DX1!"
+    ],
+    "bonds": [
+      "CBOT:ZB1!",
+      "CBOT:ZN1!"
+    ],
+    "crypto_cme": [
+      "CME:BTC1!",
+      "CME:ETH1!"
+    ],
+    "grains": [
+      "CBOT:ZC1!",
+      "CBOT:ZW1!",
+      "CBOT:ZS1!"
+    ],
+    "livestock": [
+      "CME:LE1!",
+      "CME:HE1!",
+      "CME:GF1!"
+    ],
+    "volatility": [
+      "CBOE:VX1!"
+    ],
+    "softs": [
+      "ICEUS:KC1!",
+      "ICEUS:SB1!"
+    ]
   },
   "asset_notes": {
     "VX1!": "Volatility futures — use as market context signal, not a directional trade. High VX = reduce risk across all positions.",
@@ -148,5 +201,7 @@
     "NG1!": "Natural gas is highly seasonal and mean-reverts aggressively. Prefer mean-reversion regime for NG.",
     "livestock": "LE, HE, GF are seasonal and report-driven (USDA). Trend regime works; size smaller due to low liquidity.",
     "softs": "KC (Coffee), SB (Sugar) added 2026-07-03 — weather/supply-driven cycles, comparable liquidity to livestock. Size smaller like livestock until a track record builds."
-  }
+  },
+  "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\FUTURES.csv",
+  "watchlist_generated": "2026-07-18"
 }

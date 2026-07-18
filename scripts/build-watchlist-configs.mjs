@@ -149,6 +149,32 @@ function parseCryptoCsv(path) {
  * Symbol column = raw perp ticker (BTCUSDC.P, ETHUSDC.P, …).
  * Returns array of COINBASE:{SYMBOL} strings, blocklist applied to base ticker.
  */
+/**
+ * Parse CSV/FUTURES.csv. Symbol column already has full exchange prefix (e.g. CME_MINI:ES1!).
+ * Returns array of { symbol, sector, description }.
+ */
+function parseFuturesCsv(path) {
+  const lines = readFileSync(path, 'utf8').split('\n').filter(l => l.trim());
+  const headers = lines[0].split(',').map(h => h.trim().toUpperCase());
+  const iSYMBOL = headers.findIndex(h => h === 'SYMBOL');
+  const iSECTOR = headers.findIndex(h => h === 'SECTOR');
+  const iDESC   = headers.findIndex(h => h === 'DESCRIPTION');
+  if (iSYMBOL < 0) throw new Error(`FUTURES.csv missing "Symbol" column`);
+
+  const rows = [];
+  for (const line of lines.slice(1)) {
+    const cells = line.split(',').map(c => c.trim());
+    const symbol = cells[iSYMBOL];
+    if (!symbol) continue;
+    rows.push({
+      symbol,
+      sector:      iSECTOR >= 0 ? cells[iSECTOR] || '' : '',
+      description: iDESC   >= 0 ? cells[iDESC]   || '' : '',
+    });
+  }
+  return rows;
+}
+
 function parsePerpsCsv(path) {
   const lines = readFileSync(path, 'utf8').split('\n').filter(l => l.trim());
   const headers = lines[0].split(',').map(h => h.trim());
@@ -321,6 +347,35 @@ function main() {
     perpsSymbols.forEach(s => console.log(`  ${s}`));
   } else {
     console.log('\ncrypto_perps:    (PERPS.csv not found — skipped)');
+  }
+
+  // --- Futures ---
+  const futuresCsv = join(csvDir, 'FUTURES.csv');
+  if (existsSync(futuresCsv)) {
+    const futuresRows = parseFuturesCsv(futuresCsv);
+    const watchlist = futuresRows.map(r => r.symbol);
+    // Rebuild sector_map from CSV
+    const sectorMap = {};
+    for (const r of futuresRows) {
+      if (!r.sector) continue;
+      if (!sectorMap[r.sector]) sectorMap[r.sector] = [];
+      sectorMap[r.sector].push(r.symbol);
+    }
+    const futuresOut = writeConfig('config/strategy-futures.json', {
+      watchlist_source:    futuresCsv,
+      watchlist_generated: generated,
+      screener_name:       null,
+      watchlist,
+      sector_map:          sectorMap,
+    });
+    // Remove stale max_symbols if present
+    const cfg = JSON.parse(readFileSync(futuresOut, 'utf8'));
+    delete cfg.max_symbols;
+    writeFileSync(futuresOut, JSON.stringify(cfg, null, 2) + '\n', 'utf8');
+    console.log(`\nfutures:         ${watchlist.length} symbols → ${futuresOut}`);
+    watchlist.forEach(s => console.log(`  ${s}`));
+  } else {
+    console.log('\nfutures:         (FUTURES.csv not found — skipped)');
   }
 
   console.log('\nDone. (No restart needed — only config files changed.)');
