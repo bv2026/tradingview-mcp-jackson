@@ -14,8 +14,6 @@ import * as chart from './chart.js';
 import * as data from './data.js';
 import * as screener from './screener.js';
 import { classifyResults } from './classify.js';
-
-}
 import { switchTab } from './tab.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
