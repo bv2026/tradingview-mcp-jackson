@@ -1,12 +1,12 @@
 {
   "instrument_type": "crypto_perps",
   "screener_name": null,
-  "max_symbols": 12,
   "default_timeframe": "D",
   "entry_timeframe_note": "Use Daily for bias. Drop to 4H for entry timing — confirm TWB signal on 4H before entering.",
   "required_indicators": [
     "Trendlines with Breaks Oscillator [LuxAlgo]",
     "Nadaraya-Watson Envelope [LuxAlgo]",
+    "Support and Resistance Levels with Breaks [LuxAlgo]",
     "Volume"
   ],
   "market_context": {

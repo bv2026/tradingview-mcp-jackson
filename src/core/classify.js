@@ -37,6 +37,10 @@ function findTwbStudy(indicators) {
   return (indicators?.studies || []).find(s => /trendlines with breaks/i.test(s.name || ''));
 }
 
+function findSrStudy(indicators) {
+  return (indicators?.studies || []).find(s => /support and resistance levels/i.test(s.name || ''));
+}
+
 // Most-recent NW Envelope label ("▲" = price crossed above a band, "▼" = below).
 // Callers should request max_labels: 1 from getPineLabels since only labels[0] is ever used.
 function nwPositionFrom(nwSignals) {
@@ -55,7 +59,12 @@ export function computeSymbolFields(reading) {
   const bias = gap == null ? 'n/a' : gap > 0 ? 'bullish' : gap < 0 ? 'bearish' : 'neutral';
   const nw_position = nwPositionFrom(reading.nw_envelope_signals);
 
-  return { hist, sig, gap, bias, nw_position };
+  const sr = findSrStudy(reading.indicators);
+  const sr_resistance = sr?.values?.Resistance != null ? Number(sr.values.Resistance) || null : null;
+  const sr_support    = sr?.values?.Support    != null ? Number(sr.values.Support)    || null : null;
+  const sr_break      = sr?.values?.Break      != null ? Number(sr.values.Break)      || null : null;
+
+  return { hist, sig, gap, bias, nw_position, sr_resistance, sr_support, sr_break };
 }
 
 // bullish-early / bullish-extended / bearish-neutral / neutral — used by momentum_stocks,
