@@ -159,9 +159,8 @@ function parsePerpsCsv(path) {
   for (const line of lines.slice(1)) {
     const symbol = line.split(',')[iSYMBOL]?.trim();
     if (!symbol) continue;
-    // Extract base ticker: strip .P/.PERP suffix, then strip quote currency
-    const base = symbol.replace(/\.(P|PERP)$/i, '').replace(/(USDC|USDT|USD|EUR)$/, '');
-    symbols.push(`COINBASE:${symbol}`);
+    // If already has exchange prefix (e.g. Binance:SUIUSDC.P), use as-is
+    symbols.push(symbol.includes(':') ? symbol : `COINBASE:${symbol}`);
   }
   return symbols;
 }
