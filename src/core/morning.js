@@ -9,32 +9,12 @@ import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from 
 import { homedir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { spawn } from 'node:child_process';
 import { evaluate, KNOWN_PATHS } from '../connection.js';
 import * as chart from './chart.js';
 import * as data from './data.js';
 import * as screener from './screener.js';
 import { classifyResults } from './classify.js';
 
-// CannonEdge project ingests this project's futures brief into its own DB —
-// see cannonedge/tv_brief.py. Fire-and-forget: ingestion failing here should
-// never block saving the brief itself. Hardcoded paths since these are two
-// separate local projects on the same machine, not a package dependency.
-const CANNONEDGE_PYTHON = 'C:\\Users\\vsbra\\AppData\\Local\\Programs\\Python\\Python314\\python.exe';
-const CANNONEDGE_PROJECT_DIR = 'C:\\work\\canontrading-scrape';
-
-function triggerCannonedgeIngest(filePath) {
-  try {
-    const child = spawn(CANNONEDGE_PYTHON, ['-m', 'cannonedge.tv_brief', filePath], {
-      cwd: CANNONEDGE_PROJECT_DIR,
-      detached: true,
-      stdio: 'ignore',
-    });
-    child.unref();
-  } catch {
-    // Non-fatal — CannonEdge may not be present on this machine, or the
-    // pinned Python path may not exist here. Saving the brief still succeeds.
-  }
 }
 import { switchTab } from './tab.js';
 
@@ -645,10 +625,6 @@ export function saveSession({ brief, instrument_type = 'momentum_stocks', is_sum
   ].join('\n');
 
   writeFileSync(filePath, content, 'utf8');
-
-  if (instrument_type === 'futures' && !is_summary && !isDailySum) {
-    triggerCannonedgeIngest(filePath);
-  }
 
   return { success: true, path: filePath, folder: `${week}/${folder}` };
 }
