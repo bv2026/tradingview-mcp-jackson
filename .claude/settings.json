@@ -1,4 +1,10 @@
 {
+  "permissions": {
+    "allow": [
+      "mcp__scheduled-tasks__create_scheduled_task",
+      "mcp__scheduled-tasks__delete_scheduled_task"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
