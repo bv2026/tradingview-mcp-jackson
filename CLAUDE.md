@@ -15,12 +15,20 @@ morning_brief instrument_type="crypto_perps"    # crypto perps (Coinbase CDE)
 Watchlist briefs (static CSV → lux_screener_scan, no live screener needed):
 
 ```
-lux_screener_scan instrument_type="momentum_ark" timeframe="1W"  # ARK holdings (141 symbols)
-lux_screener_scan instrument_type="sp_ndx"       timeframe="1W"  # S&P 500 + Nasdaq 100 momentum
-lux_screener_scan instrument_type="r2k"          timeframe="1W"  # Russell 2000 momentum
-lux_screener_scan instrument_type="thematic_stocks"              # 121 stocks across 8 themes
-lux_screener_scan instrument_type="thematic_etfs"                # ~90 ETFs across 8 themes
+# Small lists — single call
+lux_screener_scan instrument_type="sp_ndx"  timeframe="1W"  # S&P 500 + Nasdaq 100 (~40 symbols)
+lux_screener_scan instrument_type="r2k"     timeframe="1W"  # Russell 2000 (~25 symbols)
+
+# Large lists — split into two calls (~60 each), then combine results
+lux_screener_scan instrument_type="momentum_ark"    timeframe="1W" offset=0  max_symbols=60  # ARK half 1 (117 total)
+lux_screener_scan instrument_type="momentum_ark"    timeframe="1W" offset=60                 # ARK half 2
+lux_screener_scan instrument_type="thematic_stocks" timeframe="1W" offset=0  max_symbols=60  # thematic half 1 (121 total)
+lux_screener_scan instrument_type="thematic_stocks" timeframe="1W" offset=60                 # thematic half 2
+lux_screener_scan instrument_type="thematic_etfs"   timeframe="1W" offset=0  max_symbols=50  # ETFs half 1 (~90 total)
+lux_screener_scan instrument_type="thematic_etfs"   timeframe="1W" offset=50                 # ETFs half 2
 ```
+
+**Combining two-call results:** after both calls return, merge their `top_section` bullet lists, re-sort all passing symbols by score descending across both halves, and produce a single unified Top 20 table. Each call already ran NW on its own top-20 passers, so NW data is available for all passers from both halves.
 
 **Step 1 — sync screener** (when TV screener results change during the day):
 ```
