@@ -232,6 +232,23 @@ function chunk(arr, size) {
   return out;
 }
 
+/**
+ * When the S&O pine table omits the TRACER cell for a symbol, every column
+ * from TRACER onward shifts left by one position in the raw pipe-delimited row.
+ * TREND STRENGTH always renders as an emoji + percentage (e.g. "❄️  47.86%"),
+ * so if that pattern lands in the TRACER slot we know the shift occurred.
+ */
+function fixSoColumnShift(so) {
+  const tracer = so['TRACER'] || '';
+  if (tracer.includes('%')) {
+    so['SQUEEZE']        = so['LUX VOLATILITY'] || '';
+    so['LUX VOLATILITY'] = so['TREND STRENGTH'] || '';
+    so['TREND STRENGTH'] = tracer;
+    so['TRACER']         = '';
+  }
+  return so;
+}
+
 function parseTableRows(rows) {
   if (!rows || rows.length < 2) return {};
   const headers = rows[0].split('|').map(h => h.trim());
@@ -304,23 +321,23 @@ function fmtPrice(p) {
 
 function buildMarkdownTable(rows) {
   const hasNw = rows.some(r => r.nw_position != null);
-  if (hasNw) {
-    const header = '| SYMBOL | WTD | S&O RATING | SIGNAL | SQUEEZE | PAC STRUCTURE | OSC DIV | HWO | SCORE | NW | STOP | TP1 | R:R | CHATTER |';
-    const sep    = '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|';
-    const lines = rows.map(r => {
-      const nwPos  = r.nw_position || '—';
-      const stop   = r.nw_lower != null ? fmtPrice(r.nw_lower) : '—';
-      const tp1    = r.nw_upper != null ? fmtPrice(r.nw_upper) : '—';
-      const rr     = r.rr     != null ? r.rr.toFixed(1) : '—';
-      return `| ${r.symbol} | ${r.wtd != null ? r.wtd + '%' : '—'} | ${r.so['RATING'] || '—'} | ${r.so['SIGNAL'] || '—'} | ${r.so['SQUEEZE'] || '—'} | ${r.pac['STRUCTURE'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} | ${r.osc['HWO SIGNAL'] || '—'} | ${r.score} | ${nwPos} | ${stop} | ${tp1} | ${rr} | ${r.chatter || '—'} |`;
-    });
-    return [header, sep, ...lines].join('\n');
-  }
-  const header = '| SYMBOL | WTD | S&O RATING | SIGNAL | SQUEEZE | PAC STRUCTURE | OSC DIV | HWO | SCORE | CHATTER |';
-  const sep    = '|---|---|---|---|---|---|---|---|---|---|';
-  const lines = rows.map(r =>
-    `| ${r.symbol} | ${r.wtd != null ? r.wtd + '%' : '—'} | ${r.so['RATING'] || '—'} | ${r.so['SIGNAL'] || '—'} | ${r.so['SQUEEZE'] || '—'} | ${r.pac['STRUCTURE'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} | ${r.osc['HWO SIGNAL'] || '—'} | ${r.score} | ${r.chatter || '—'} |`
-  );
+  const baseHeader = '| SYMBOL | WTD | S&O RATING | SIGNAL | EXITS | SMART TRAIL | CATCHER | TRACER | TREND STRENGTH | LUX VOLATILITY | SQUEEZE | PAC RATING | STRUCTURE | ORDER BLOCK | FVG | P&D ZONES | LIQUIDITY GRABS | EQHL | OSC RATING | HWO | MONEY FLOW | OVERFLOW | HYPERWAVE | REVERSALS | DIVERGENCES | CONFLUENCE | SCORE | CHATTER |';
+  const baseSep    = '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|';
+  const nwHeader   = '| SYMBOL | WTD | S&O RATING | SIGNAL | EXITS | SMART TRAIL | CATCHER | TRACER | TREND STRENGTH | LUX VOLATILITY | SQUEEZE | PAC RATING | STRUCTURE | ORDER BLOCK | FVG | P&D ZONES | LIQUIDITY GRABS | EQHL | OSC RATING | HWO | MONEY FLOW | OVERFLOW | HYPERWAVE | REVERSALS | DIVERGENCES | CONFLUENCE | SCORE | NW | STOP | TP1 | R:R | CHATTER |';
+  const nwSep      = '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|';
+
+  const header = hasNw ? nwHeader : baseHeader;
+  const sep    = hasNw ? nwSep    : baseSep;
+
+  const lines = rows.map(r => {
+    const base = `| ${r.symbol} | ${r.wtd != null ? r.wtd + '%' : '—'} | ${r.so['RATING'] || '—'} | ${r.so['SIGNAL'] || '—'} | ${r.so['EXITS'] || '—'} | ${r.so['SMART TRAIL'] || '—'} | ${r.so['CATCHER'] || '—'} | ${r.so['TRACER'] || '—'} | ${r.so['TREND STRENGTH'] || '—'} | ${r.so['LUX VOLATILITY'] || '—'} | ${r.so['SQUEEZE'] || '—'} | ${r.pac['RATING'] || '—'} | ${r.pac['STRUCTURE'] || '—'} | ${r.pac['ORDER BLOCK'] || '—'} | ${r.pac['FVG'] || '—'} | ${r.pac['P&D ZONES'] || '—'} | ${r.pac['LIQUIDITY GRABS'] || '—'} | ${r.pac['EQHL'] || '—'} | ${r.osc['RATING'] || '—'} | ${r.osc['HWO SIGNAL'] || '—'} | ${r.osc['MONEY FLOW'] || '—'} | ${r.osc['OVERFLOW'] || '—'} | ${r.osc['HYPERWAVE'] || '—'} | ${r.osc['REVERSALS'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} | ${r.osc['CONFLUENCE'] || '—'} | ${r.score} | ${r.chatter || '—'} |`;
+    if (!hasNw) return base;
+    const nwPos = r.nw_position || '—';
+    const stop  = r.nw_lower != null ? fmtPrice(r.nw_lower) : '—';
+    const tp1   = r.nw_upper != null ? fmtPrice(r.nw_upper) : '—';
+    const rr    = r.rr != null ? r.rr.toFixed(1) : '—';
+    return `| ${r.symbol} | ${r.wtd != null ? r.wtd + '%' : '—'} | ${r.so['RATING'] || '—'} | ${r.so['SIGNAL'] || '—'} | ${r.so['EXITS'] || '—'} | ${r.so['SMART TRAIL'] || '—'} | ${r.so['CATCHER'] || '—'} | ${r.so['TRACER'] || '—'} | ${r.so['TREND STRENGTH'] || '—'} | ${r.so['LUX VOLATILITY'] || '—'} | ${r.so['SQUEEZE'] || '—'} | ${r.pac['RATING'] || '—'} | ${r.pac['STRUCTURE'] || '—'} | ${r.pac['ORDER BLOCK'] || '—'} | ${r.pac['FVG'] || '—'} | ${r.pac['P&D ZONES'] || '—'} | ${r.pac['LIQUIDITY GRABS'] || '—'} | ${r.pac['EQHL'] || '—'} | ${r.osc['RATING'] || '—'} | ${r.osc['HWO SIGNAL'] || '—'} | ${r.osc['MONEY FLOW'] || '—'} | ${r.osc['OVERFLOW'] || '—'} | ${r.osc['HYPERWAVE'] || '—'} | ${r.osc['REVERSALS'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} | ${r.osc['CONFLUENCE'] || '—'} | ${r.score} | ${nwPos} | ${stop} | ${tp1} | ${rr} | ${r.chatter || '—'} |`;
+  });
   return [header, sep, ...lines].join('\n');
 }
 
@@ -583,7 +600,7 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D',
     }
 
     for (const sym of batch) {
-      const so  = soMap[sym]  || {};
+      const so  = fixSoColumnShift({ ...(soMap[sym]  || {}) });
       const pac = pacMap[sym] || {};
       const osc = oscMap[sym] || {};
       allRows[sym] = {
@@ -612,7 +629,7 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D',
   const passingSymbols = Object.values(allRows)
     .filter(r => r.score > -99)
     .sort((a, b) => b.score - a.score)
-    .slice(0, 20);
+    .slice(0, 30);
   let nwPassError = null;
   if (passingSymbols.length > 0) {
     try {
@@ -681,5 +698,6 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D',
     avoid_list: avoidList.map(r => r.symbol),
     avoid_section: avoidSection,
     chatter_section: chatterSection,
+    symbols_raw: Object.values(allRows),
   };
 }
