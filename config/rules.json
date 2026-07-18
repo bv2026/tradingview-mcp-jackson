@@ -9,7 +9,8 @@
     "momentum_etf":    { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
     "sp_ndx":       { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
     "r2k":          { "chart_id": "8UitTI02", "layout_name": "MY-STKS" },
-    "thematic_etfs":   { "chart_id": "8UitTI02", "layout_name": "MY-STKS" }
+    "thematic_stocks": { "chart_id": "8DqlkdU0", "layout_name": "LUXALGO-SCREENERS" },
+    "thematic_etfs":   { "chart_id": "8DqlkdU0", "layout_name": "LUXALGO-SCREENERS" }
   },
 
   "screener_sources": {
