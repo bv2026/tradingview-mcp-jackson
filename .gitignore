@@ -7,3 +7,5 @@ discovery-log.json
 reports/
 CSV/
 desktop.ini
+__pycache__/
+*.pyc
