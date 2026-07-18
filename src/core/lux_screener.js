@@ -420,7 +420,7 @@ async function findMainChartTab() {
   for (const target of chartTargets) {
     await fetch(`http://${CDP_HOST}:${CDP_PORT}/json/activate/${target.id}`);
     await switchTarget(target.id);
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise(r => setTimeout(r, 150));
     try {
       const state = await chart.getState();
       const names = (state.studies || []).map(s => s.name);
@@ -444,12 +444,23 @@ async function findMainChartTab() {
  *   'inside'   — no recent label (price inside the envelope bands)
  *   'unknown'  — NW indicator not readable
  */
+function timeoutReject(ms) {
+  return new Promise((_, reject) => setTimeout(() => reject(new Error(`timeout after ${ms}ms`)), ms));
+}
+
+function timeoutResolve(ms, value = null) {
+  return new Promise(resolve => setTimeout(() => resolve(value), ms));
+}
+
 async function readNwEnvelope() {
   try {
-    const [labelsResult, linesResult, quoteResult] = await Promise.all([
-      data.getPineLabels({ study_filter: 'Nadaraya-Watson', max_labels: 3 }),
-      data.getPineLines({ study_filter: 'Nadaraya-Watson' }),
-      data.getQuote({}),
+    const [labelsResult, linesResult, quoteResult] = await Promise.race([
+      Promise.all([
+        data.getPineLabels({ study_filter: 'Nadaraya-Watson', max_labels: 3 }),
+        data.getPineLines({ study_filter: 'Nadaraya-Watson' }),
+        data.getQuote({}),
+      ]),
+      timeoutResolve(4000, [null, null, null]),
     ]);
 
     // Determine position from most-recent label
@@ -600,19 +611,24 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
   let nwPassError = null;
   if (passingSymbols.length > 0) {
     try {
-      await findMainChartTab(); // activates and switches connection target to main chart
-      await chart.setTimeframe({ timeframe: chartTf });
-      await new Promise(r => setTimeout(r, 1000));
-      for (const row of passingSymbols) {
-        await chart.setSymbol({ symbol: row.symbol });
-        await new Promise(r => setTimeout(r, 2500));
-        const nw = await readNwEnvelope();
-        row.nw_position = nw.nw_position;
-        row.nw_upper    = nw.nw_upper;
-        row.nw_lower    = nw.nw_lower;
-        row.price       = nw.price;
-        row.rr          = nw.rr;
-      }
+      await Promise.race([
+        (async () => {
+          await findMainChartTab();
+          await chart.setTimeframe({ timeframe: chartTf });
+          await new Promise(r => setTimeout(r, 1000));
+          for (const row of passingSymbols) {
+            await chart.setSymbol({ symbol: row.symbol });
+            await new Promise(r => setTimeout(r, 1500));
+            const nw = await readNwEnvelope();
+            row.nw_position = nw.nw_position;
+            row.nw_upper    = nw.nw_upper;
+            row.nw_lower    = nw.nw_lower;
+            row.price       = nw.price;
+            row.rr          = nw.rr;
+          }
+        })(),
+        timeoutReject(50000),
+      ]);
     } catch (e) {
       nwPassError = e.message;
     }
