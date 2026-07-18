@@ -90,23 +90,27 @@ def parse_tv_brief(path: Path) -> tuple[dict, str, str]:
     symbols: dict[str, dict] = {}
     in_table = False
     col_offset = 0  # 1 if table has a leading # column
+    col_idx: dict[str, int] = {}
     for line in text.splitlines():
         if "| SYMBOL |" in line:
             in_table = True
-            # Detect leading # column: "| # | SYMBOL |..."
             header_parts = [p.strip() for p in line.split("|")[1:-1]]
-            col_offset = 1 if header_parts and header_parts[0] == "#" else 0
+            col_idx = {name: i for i, name in enumerate(header_parts)}
             continue
         if in_table and line.startswith("|---"):
             continue
         if in_table and line.startswith("|"):
             parts = [p.strip() for p in line.split("|")[1:-1]]
-            if len(parts) < 4 + col_offset:
+            si = col_idx.get("SYMBOL", col_idx.get("#", -1))
+            # If header had #, SYMBOL is next column
+            if "SYMBOL" not in col_idx and "#" in col_idx:
+                si = col_idx["#"] + 1
+            if si < 0 or si >= len(parts):
                 continue
-            sym   = parts[col_offset]
-            bias  = parts[col_offset + 1]
-            signal = parts[col_offset + 2]
-            watch  = parts[col_offset + 3]
+            sym    = parts[si]
+            bias   = parts[col_idx["BIAS"]]   if "BIAS"   in col_idx and col_idx["BIAS"]   < len(parts) else ""
+            signal = parts[col_idx["SIGNAL"]] if "SIGNAL" in col_idx and col_idx["SIGNAL"] < len(parts) else ""
+            watch  = parts[col_idx["WATCH"]]  if "WATCH"  in col_idx and col_idx["WATCH"]  < len(parts) else ""
             if not sym or sym == "SYMBOL" or sym == "#":
                 continue
             # Try explicit "gap X" first, then compute from TWB hist/sig
