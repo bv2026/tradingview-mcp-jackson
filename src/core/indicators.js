@@ -41,14 +41,11 @@ export async function setInputs({ entity_id, inputs: inputsRaw }) {
   return { success: true, entity_id, updated_inputs: result.updated_inputs };
 }
 
-// System-level hidden fields that must never be overwritten via setInputValues.
-// Wiping these breaks protected/encrypted LuxAlgo screeners permanently.
-const SYSTEM_INPUT_IDS = new Set(['text', 'pineId', 'pineVersion', 'pineFeatures']);
-
 /**
  * Set inputs on a protected LuxAlgo screener (one where getInputValues() returns []).
- * Builds a safe input array from getInputsInfo() defvals, skipping system fields,
- * then applies overrides for the ticker slots.
+ * Builds a full input array from getInputsInfo() defvals, then applies overrides
+ * for the ticker slots. Protected Lux screeners need their hidden/encrypted
+ * fields preserved on each setInputValues call.
  *
  * overrides: { in_4: "BATS:X", in_8: "BATS:Y", ... }
  */
@@ -58,8 +55,6 @@ export async function setInputsFromInfo({ entity_id, overrides }) {
 
   const escapedId = entity_id.replace(/'/g, "\\'");
   const overridesJson = JSON.stringify(overrides);
-  const systemIds = JSON.stringify([...SYSTEM_INPUT_IDS]);
-
   const result = await evaluate(`
     (function() {
       var chart = ${CHART_API};
@@ -71,12 +66,10 @@ export async function setInputsFromInfo({ entity_id, overrides }) {
       }
 
       // Build input array from getInputsInfo() defaults — safe for protected indicators
-      var systemIds = ${systemIds};
       var info = study.getInputsInfo();
       var safeInputs = [];
       for (var i = 0; i < info.length; i++) {
         var entry = info[i];
-        if (systemIds.indexOf(entry.id) >= 0) continue; // skip system fields
         if (entry.defval === undefined) continue;
         safeInputs.push({ id: entry.id, value: entry.defval });
       }

@@ -21,6 +21,44 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '..');
 
+const ARK_LUX_INVALID_SYMBOLS = new Set([
+  'BLSH',
+  'CBRS',
+  'CRCL',
+  'CRWV',
+  'CRWD',
+  'ANSS',
+  'EXAS',
+  'OPENAI',
+  'LMT',
+  'PAGS',
+  'XE',
+  'SPCX',
+]);
+
+const THEMATIC_ETF_LUX_INVALID_SYMBOLS = new Set([
+  'AIPO',
+  'BILT',
+  'BSOL',
+  'DRAM',
+  'FSOL',
+  'IDEF',
+  'IVEP',
+  'MARS',
+  'RAM',
+  'SPCI',
+  'SSK',
+  'UFOD',
+  'UPTI',
+]);
+
+const THEMATIC_STOCK_LUX_INVALID_SYMBOLS = new Set([
+  'CBRS',
+  'CRCL',
+  'CRWV',
+  'SPCX',
+]);
+
 function parseCsv(path) {
   const lines = readFileSync(path, 'utf8').split('\n').filter(l => l.trim());
   const headers = lines[0].split(',').map(h => h.trim());
@@ -70,6 +108,7 @@ function parseArkCsv(path) {
     const cells = line.split(',').map(c => c.trim());
     const ticker = cells[iTICKER];
     if (!ticker) continue;
+    if (ARK_LUX_INVALID_SYMBOLS.has(ticker)) continue;
     rows.push({
       symbol:  ticker,
       name:    cells[iNAME]   || '',
@@ -89,8 +128,8 @@ function main() {
   if (!existsSync(stocksCsv)) throw new Error('Missing: ' + stocksCsv);
   if (!existsSync(etfsCsv))   throw new Error('Missing: ' + etfsCsv);
 
-  const stocksRows = parseCsv(stocksCsv);
-  const etfsRows   = parseCsv(etfsCsv);
+  const stocksRows = parseCsv(stocksCsv).filter(r => !THEMATIC_STOCK_LUX_INVALID_SYMBOLS.has(r.symbol));
+  const etfsRows   = parseCsv(etfsCsv).filter(r => !THEMATIC_ETF_LUX_INVALID_SYMBOLS.has(r.symbol));
   const arkRows    = existsSync(arkCsv) ? parseArkCsv(arkCsv) : null;
   const generated  = new Date().toISOString().slice(0, 10);
 
@@ -104,6 +143,7 @@ function main() {
     instrument_type:    'thematic_stocks',
     watchlist_source:   stocksCsv,
     watchlist_generated: generated,
+    invalid_symbols_excluded: [...THEMATIC_STOCK_LUX_INVALID_SYMBOLS].sort(),
     default_timeframe:  'D',
     screener_name:      null,
     max_symbols:        stocksRows.length,
@@ -126,6 +166,7 @@ function main() {
   const etfStrategyFields = {
     watchlist_source:   etfsCsv,
     watchlist_generated: generated,
+    invalid_symbols_excluded: [...THEMATIC_ETF_LUX_INVALID_SYMBOLS].sort(),
     default_timeframe:  'W',
     screener_name:      null,
     required_indicators: [
@@ -192,6 +233,9 @@ function main() {
     const arkOut = writeConfig('config/strategy-momentum_ark.json', {
       watchlist_source:    arkCsv,
       watchlist_generated: generated,
+      max_symbols:         arkRows.length,
+      invalid_symbols_excluded: [...ARK_LUX_INVALID_SYMBOLS].sort(),
+      pipeline:            `L1: static CSV watchlist (Watchlist_ARK.csv, ${arkRows.length} symbols after Lux invalid-symbol exclusions) -> L2: lux_screener_scan 1W (hard filter: BOS + Bullish/Strong Bullish S&O Rating + up/up+ Signal) -> L3: NW Envelope per-symbol check on weekly (price inside bands = base coiling, price above upper = extended/already moved)`,
       watchlist:           arkRows,
     });
     console.log(`\nmomentum_ark:    ${arkRows.length} symbols → ${arkOut}`);

@@ -1,12 +1,13 @@
 {
   "instrument_type": "thematic_stocks",
   "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\Watchlist_Stocks.csv",
-  "watchlist_generated": "2026-06-28",
-  "default_timeframe": "W",
+  "watchlist_generated": "2026-07-18",
+  "default_timeframe": "D",
   "screener_name": null,
-  "max_symbols": 121,
+  "max_symbols": 117,
   "pipeline": "L1: thematic_stocks watchlist (121 stocks across 8 themes) → L2: LuxAlgo 3 screeners on 1W (hard filter: BOS + Bullish/Strong Bullish S&O Rating + ▲/▲+ Signal) → L3: NW Envelope per-symbol check",
   "required_indicators": [
+    "Trendlines with Breaks Oscillator [LuxAlgo]",
     "Nadaraya-Watson Envelope [LuxAlgo]",
     "Volume"
   ],
@@ -32,854 +33,838 @@
     "Do not enter if NW position = extended",
     "Maximum 3 open positions"
   ],
-  "asset_notes": "Thematic stock watchlist — 8 themes (AI semis, AI power/grid, Healthcare, Financials, Industrials/defense, Energy, Consumer def/discount, Space). Each symbol carries theme and sub_group for grouped analysis. Signal field from watchlist CSV is starting context only — LuxAlgo 3 screeners (BOS + Bullish + ▲ signal) are the primary filter on 1W. NW Envelope is the extension check. Output grouped by theme to see which themes have broad weekly strength.",
+  "asset_notes": "Thematic stock watchlist — 8 themes (AI semis, AI power/grid, Healthcare, Financials, Industrials/defense, Energy, Consumer def/discount, Space). Each symbol carries theme and sub_group for grouped analysis. Signal field from watchlist CSV is a starting context only — scan all regardless of signal. Chatter/momentum data not present; rely on TWB+NW+Volume.",
   "watchlist": [
     {
       "symbol": "NVDA",
       "name": "NVIDIA",
       "theme": "AI semis — compute/logic",
       "sub_group": "Chips",
-      "signal": "Skip"
+      "signal": ""
     },
     {
       "symbol": "AVGO",
       "name": "Broadcom",
       "theme": "AI semis — compute/logic",
       "sub_group": "Chips",
-      "signal": "Buy"
-    },
-    {
-      "symbol": "AMD",
-      "name": "Advanced Micro Devices",
-      "theme": "AI semis — compute/logic",
-      "sub_group": "Chips",
-      "signal": "Buy"
-    },
-    {
-      "symbol": "TSM",
-      "name": "Taiwan Semiconductor ADR",
-      "theme": "AI semis — compute/logic",
-      "sub_group": "Chips",
-      "signal": "Extended"
-    },
-    {
-      "symbol": "ASML",
-      "name": "ASML Holding",
-      "theme": "AI semis — compute/logic",
-      "sub_group": "Chips",
-      "signal": "Extended"
+      "signal": ""
     },
     {
       "symbol": "QCOM",
       "name": "Qualcomm",
       "theme": "AI semis — compute/logic",
       "sub_group": "Chips",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "MRVL",
-      "name": "Marvell",
-      "theme": "AI semis — compute/logic",
-      "sub_group": "Chips",
-      "signal": "Extended"
-    },
-    {
-      "symbol": "LRCX",
-      "name": "Lam Research",
-      "theme": "AI semis — compute/logic",
-      "sub_group": "Equipment",
-      "signal": "Extended"
-    },
-    {
-      "symbol": "AMAT",
-      "name": "Applied Materials",
-      "theme": "AI semis — compute/logic",
-      "sub_group": "Equipment",
-      "signal": "Extended"
-    },
-    {
-      "symbol": "KLAC",
-      "name": "KLA Corp",
-      "theme": "AI semis — compute/logic",
-      "sub_group": "Equipment",
-      "signal": "Extended"
-    },
-    {
-      "symbol": "ARM",
-      "name": "Arm Holdings",
-      "theme": "AI semis — compute/logic",
-      "sub_group": "Chips",
-      "signal": "Extended"
+      "signal": ""
     },
     {
       "symbol": "ANET",
       "name": "Arista Networks",
       "theme": "AI semis — compute/logic",
       "sub_group": "Networking",
-      "signal": "Buy"
-    },
-    {
-      "symbol": "ALAB",
-      "name": "Astera Labs",
-      "theme": "AI semis — compute/logic",
-      "sub_group": "Networking",
-      "signal": "Extended"
-    },
-    {
-      "symbol": "CRDO",
-      "name": "Credo Technology",
-      "theme": "AI semis — compute/logic",
-      "sub_group": "Networking",
-      "signal": "Extended"
-    },
-    {
-      "symbol": "CRWV",
-      "name": "CoreWeave",
-      "theme": "AI semis — compute/logic",
-      "sub_group": "Neocloud/new-chip",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "NBIS",
-      "name": "Nebius Group",
-      "theme": "AI semis — compute/logic",
-      "sub_group": "Neocloud/new-chip",
-      "signal": "Extended"
-    },
-    {
-      "symbol": "CBRS",
-      "name": "Cerebras Systems",
-      "theme": "AI semis — compute/logic",
-      "sub_group": "Neocloud/new-chip",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "EQIX",
-      "name": "Equinix",
-      "theme": "AI semis — compute/logic",
-      "sub_group": "DC-REIT",
-      "signal": "Buy"
+      "signal": ""
     },
     {
       "symbol": "DLR",
       "name": "Digital Realty",
       "theme": "AI semis — compute/logic",
       "sub_group": "DC-REIT",
-      "signal": "Buy"
+      "signal": ""
+    },
+    {
+      "symbol": "TSM",
+      "name": "Taiwan Semiconductor ADR",
+      "theme": "AI semis — compute/logic",
+      "sub_group": "Chips",
+      "signal": ""
+    },
+    {
+      "symbol": "EQIX",
+      "name": "Equinix",
+      "theme": "AI semis — compute/logic",
+      "sub_group": "DC-REIT",
+      "signal": ""
+    },
+    {
+      "symbol": "ASML",
+      "name": "ASML Holding",
+      "theme": "AI semis — compute/logic",
+      "sub_group": "Chips",
+      "signal": ""
     },
     {
       "symbol": "IRM",
       "name": "Iron Mountain",
       "theme": "AI semis — compute/logic",
       "sub_group": "DC-REIT",
-      "signal": "Extended"
+      "signal": ""
+    },
+    {
+      "symbol": "CRDO",
+      "name": "Credo Technology",
+      "theme": "AI semis — compute/logic",
+      "sub_group": "Networking",
+      "signal": ""
+    },
+    {
+      "symbol": "KLAC",
+      "name": "KLA Corp",
+      "theme": "AI semis — compute/logic",
+      "sub_group": "Equipment",
+      "signal": ""
+    },
+    {
+      "symbol": "LRCX",
+      "name": "Lam Research",
+      "theme": "AI semis — compute/logic",
+      "sub_group": "Equipment",
+      "signal": ""
+    },
+    {
+      "symbol": "ALAB",
+      "name": "Astera Labs",
+      "theme": "AI semis — compute/logic",
+      "sub_group": "Networking",
+      "signal": ""
+    },
+    {
+      "symbol": "AMAT",
+      "name": "Applied Materials",
+      "theme": "AI semis — compute/logic",
+      "sub_group": "Equipment",
+      "signal": ""
+    },
+    {
+      "symbol": "AMD",
+      "name": "Advanced Micro Devices",
+      "theme": "AI semis — compute/logic",
+      "sub_group": "Chips",
+      "signal": ""
+    },
+    {
+      "symbol": "NBIS",
+      "name": "Nebius Group",
+      "theme": "AI semis — compute/logic",
+      "sub_group": "Neocloud/new-chip",
+      "signal": ""
+    },
+    {
+      "symbol": "ARM",
+      "name": "Arm Holdings",
+      "theme": "AI semis — compute/logic",
+      "sub_group": "Chips",
+      "signal": ""
+    },
+    {
+      "symbol": "MRVL",
+      "name": "Marvell",
+      "theme": "AI semis — compute/logic",
+      "sub_group": "Chips",
+      "signal": ""
     },
     {
       "symbol": "MU",
       "name": "Micron Technology",
       "theme": "AI semis — memory/HBM",
       "sub_group": "Memory",
-      "signal": "Extended"
-    },
-    {
-      "symbol": "VST",
-      "name": "Vistra",
-      "theme": "AI power/grid [BRIDGE]",
-      "sub_group": "IPP",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "CEG",
-      "name": "Constellation Energy",
-      "theme": "AI power/grid [BRIDGE]",
-      "sub_group": "IPP",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "TLN",
-      "name": "Talen Energy",
-      "theme": "AI power/grid [BRIDGE]",
-      "sub_group": "IPP",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "NRG",
-      "name": "NRG Energy",
-      "theme": "AI power/grid [BRIDGE]",
-      "sub_group": "IPP",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "NEE",
-      "name": "NextEra Energy",
-      "theme": "AI power/grid [BRIDGE]",
-      "sub_group": "Regulated util",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "SO",
-      "name": "Southern Company",
-      "theme": "AI power/grid [BRIDGE]",
-      "sub_group": "Regulated util",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "DUK",
-      "name": "Duke Energy",
-      "theme": "AI power/grid [BRIDGE]",
-      "sub_group": "Regulated util",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "D",
-      "name": "Dominion Energy",
-      "theme": "AI power/grid [BRIDGE]",
-      "sub_group": "Regulated util",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "AEP",
-      "name": "American Electric Power",
-      "theme": "AI power/grid [BRIDGE]",
-      "sub_group": "Regulated util",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "GEV",
-      "name": "GE Vernova",
-      "theme": "AI power/grid [BRIDGE]",
-      "sub_group": "Equipment",
-      "signal": "Extended"
-    },
-    {
-      "symbol": "OKLO",
-      "name": "Oklo",
-      "theme": "AI power/grid [BRIDGE]",
-      "sub_group": "Nuclear/SMR",
-      "signal": "Skip"
+      "signal": ""
     },
     {
       "symbol": "SMR",
       "name": "NuScale Power",
       "theme": "AI power/grid [BRIDGE]",
       "sub_group": "Nuclear/SMR",
-      "signal": "Skip"
+      "signal": ""
     },
     {
-      "symbol": "LLY",
-      "name": "Eli Lilly",
-      "theme": "Healthcare",
-      "sub_group": "Pharma",
-      "signal": "Buy"
+      "symbol": "OKLO",
+      "name": "Oklo",
+      "theme": "AI power/grid [BRIDGE]",
+      "sub_group": "Nuclear/SMR",
+      "signal": ""
     },
     {
-      "symbol": "JNJ",
-      "name": "Johnson & Johnson",
-      "theme": "Healthcare",
-      "sub_group": "Pharma",
-      "signal": "Buy"
+      "symbol": "CEG",
+      "name": "Constellation Energy",
+      "theme": "AI power/grid [BRIDGE]",
+      "sub_group": "IPP",
+      "signal": ""
     },
     {
-      "symbol": "ABBV",
-      "name": "AbbVie",
-      "theme": "Healthcare",
-      "sub_group": "Pharma",
-      "signal": "Skip"
+      "symbol": "NRG",
+      "name": "NRG Energy",
+      "theme": "AI power/grid [BRIDGE]",
+      "sub_group": "IPP",
+      "signal": ""
     },
     {
-      "symbol": "UNH",
-      "name": "UnitedHealth Group",
-      "theme": "Healthcare",
-      "sub_group": "Managed care",
-      "signal": "Buy"
+      "symbol": "VST",
+      "name": "Vistra",
+      "theme": "AI power/grid [BRIDGE]",
+      "sub_group": "IPP",
+      "signal": ""
     },
     {
-      "symbol": "MRK",
-      "name": "Merck",
-      "theme": "Healthcare",
-      "sub_group": "Pharma",
-      "signal": "Buy"
+      "symbol": "TLN",
+      "name": "Talen Energy",
+      "theme": "AI power/grid [BRIDGE]",
+      "sub_group": "IPP",
+      "signal": ""
     },
     {
-      "symbol": "NVS",
-      "name": "Novartis",
-      "theme": "Healthcare",
-      "sub_group": "Pharma",
-      "signal": "Skip"
+      "symbol": "DUK",
+      "name": "Duke Energy",
+      "theme": "AI power/grid [BRIDGE]",
+      "sub_group": "Regulated util",
+      "signal": ""
     },
     {
-      "symbol": "AMGN",
-      "name": "Amgen",
-      "theme": "Healthcare",
-      "sub_group": "Biotech",
-      "signal": "Skip"
+      "symbol": "NEE",
+      "name": "NextEra Energy",
+      "theme": "AI power/grid [BRIDGE]",
+      "sub_group": "Regulated util",
+      "signal": ""
     },
     {
-      "symbol": "AZN",
-      "name": "AstraZeneca",
-      "theme": "Healthcare",
-      "sub_group": "Pharma",
-      "signal": "Skip"
+      "symbol": "SO",
+      "name": "Southern Company",
+      "theme": "AI power/grid [BRIDGE]",
+      "sub_group": "Regulated util",
+      "signal": ""
     },
     {
-      "symbol": "NVO",
-      "name": "Novo Nordisk",
-      "theme": "Healthcare",
-      "sub_group": "Pharma",
-      "signal": "Skip"
+      "symbol": "D",
+      "name": "Dominion Energy",
+      "theme": "AI power/grid [BRIDGE]",
+      "sub_group": "Regulated util",
+      "signal": ""
     },
     {
-      "symbol": "CVS",
-      "name": "CVS Health",
-      "theme": "Healthcare",
-      "sub_group": "Managed care",
-      "signal": "Buy"
+      "symbol": "AEP",
+      "name": "American Electric Power",
+      "theme": "AI power/grid [BRIDGE]",
+      "sub_group": "Regulated util",
+      "signal": ""
     },
     {
-      "symbol": "ELV",
-      "name": "Elevance Health",
-      "theme": "Healthcare",
-      "sub_group": "Managed care",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "CI",
-      "name": "Cigna",
-      "theme": "Healthcare",
-      "sub_group": "Managed care",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "CNC",
-      "name": "Centene",
-      "theme": "Healthcare",
-      "sub_group": "Managed care",
-      "signal": "Extended"
-    },
-    {
-      "symbol": "VRTX",
-      "name": "Vertex Pharmaceuticals",
-      "theme": "Healthcare",
-      "sub_group": "Biotech",
-      "signal": "Skip"
+      "symbol": "GEV",
+      "name": "GE Vernova",
+      "theme": "AI power/grid [BRIDGE]",
+      "sub_group": "Equipment",
+      "signal": ""
     },
     {
       "symbol": "ISRG",
       "name": "Intuitive Surgical",
       "theme": "Healthcare",
       "sub_group": "Devices",
-      "signal": "Skip"
+      "signal": ""
     },
     {
       "symbol": "HCA",
       "name": "HCA Healthcare",
       "theme": "Healthcare",
       "sub_group": "Providers",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "MCK",
-      "name": "McKesson",
-      "theme": "Healthcare",
-      "sub_group": "Distributors",
-      "signal": "Skip"
+      "signal": ""
     },
     {
       "symbol": "COR",
       "name": "Cencora",
       "theme": "Healthcare",
       "sub_group": "Distributors",
-      "signal": "Skip"
+      "signal": ""
     },
     {
-      "symbol": "CAH",
-      "name": "Cardinal Health",
+      "symbol": "NVO",
+      "name": "Novo Nordisk",
+      "theme": "Healthcare",
+      "sub_group": "Pharma",
+      "signal": ""
+    },
+    {
+      "symbol": "MCK",
+      "name": "McKesson",
       "theme": "Healthcare",
       "sub_group": "Distributors",
-      "signal": "Buy"
+      "signal": ""
     },
     {
       "symbol": "ACAD",
       "name": "Acadia Pharmaceuticals",
       "theme": "Healthcare",
       "sub_group": "Biotech",
-      "signal": "Skip"
+      "signal": ""
     },
     {
-      "symbol": "BRK.B",
-      "name": "Berkshire Hathaway B",
-      "theme": "Financials",
-      "sub_group": "Diversified",
-      "signal": "Skip"
+      "symbol": "CI",
+      "name": "Cigna",
+      "theme": "Healthcare",
+      "sub_group": "Managed care",
+      "signal": ""
     },
     {
-      "symbol": "JPM",
-      "name": "JPMorgan Chase",
-      "theme": "Financials",
-      "sub_group": "Bank",
-      "signal": "Skip"
+      "symbol": "AZN",
+      "name": "AstraZeneca",
+      "theme": "Healthcare",
+      "sub_group": "Pharma",
+      "signal": ""
     },
     {
-      "symbol": "V",
-      "name": "Visa",
-      "theme": "Financials",
-      "sub_group": "Payments",
-      "signal": "Buy"
+      "symbol": "VRTX",
+      "name": "Vertex Pharmaceuticals",
+      "theme": "Healthcare",
+      "sub_group": "Biotech",
+      "signal": ""
     },
     {
-      "symbol": "MA",
-      "name": "Mastercard",
-      "theme": "Financials",
-      "sub_group": "Payments",
-      "signal": "Skip"
+      "symbol": "AMGN",
+      "name": "Amgen",
+      "theme": "Healthcare",
+      "sub_group": "Biotech",
+      "signal": ""
     },
     {
-      "symbol": "BAC",
-      "name": "Bank of America",
-      "theme": "Financials",
-      "sub_group": "Bank",
-      "signal": "Skip"
+      "symbol": "ABBV",
+      "name": "AbbVie",
+      "theme": "Healthcare",
+      "sub_group": "Pharma",
+      "signal": ""
     },
     {
-      "symbol": "GS",
-      "name": "Goldman Sachs",
-      "theme": "Financials",
-      "sub_group": "I-bank",
-      "signal": "Buy"
+      "symbol": "ELV",
+      "name": "Elevance Health",
+      "theme": "Healthcare",
+      "sub_group": "Managed care",
+      "signal": ""
+    },
+    {
+      "symbol": "LLY",
+      "name": "Eli Lilly",
+      "theme": "Healthcare",
+      "sub_group": "Pharma",
+      "signal": ""
+    },
+    {
+      "symbol": "NVS",
+      "name": "Novartis",
+      "theme": "Healthcare",
+      "sub_group": "Pharma",
+      "signal": ""
+    },
+    {
+      "symbol": "CAH",
+      "name": "Cardinal Health",
+      "theme": "Healthcare",
+      "sub_group": "Distributors",
+      "signal": ""
+    },
+    {
+      "symbol": "MRK",
+      "name": "Merck",
+      "theme": "Healthcare",
+      "sub_group": "Pharma",
+      "signal": ""
+    },
+    {
+      "symbol": "JNJ",
+      "name": "Johnson & Johnson",
+      "theme": "Healthcare",
+      "sub_group": "Pharma",
+      "signal": ""
+    },
+    {
+      "symbol": "UNH",
+      "name": "UnitedHealth Group",
+      "theme": "Healthcare",
+      "sub_group": "Managed care",
+      "signal": ""
+    },
+    {
+      "symbol": "CVS",
+      "name": "CVS Health",
+      "theme": "Healthcare",
+      "sub_group": "Managed care",
+      "signal": ""
+    },
+    {
+      "symbol": "CNC",
+      "name": "Centene",
+      "theme": "Healthcare",
+      "sub_group": "Managed care",
+      "signal": ""
     },
     {
       "symbol": "BX",
       "name": "Blackstone",
       "theme": "Financials",
       "sub_group": "Alt-asset mgr",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "WFC",
-      "name": "Wells Fargo",
-      "theme": "Financials",
-      "sub_group": "Bank",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "COF",
-      "name": "Capital One",
-      "theme": "Financials",
-      "sub_group": "Consumer fin",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "IBKR",
-      "name": "Interactive Brokers",
-      "theme": "Financials",
-      "sub_group": "Broker",
-      "signal": "Buy"
-    },
-    {
-      "symbol": "SCHW",
-      "name": "Charles Schwab",
-      "theme": "Financials",
-      "sub_group": "Broker",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "ICE",
-      "name": "Intercontinental Exchange",
-      "theme": "Financials",
-      "sub_group": "Exchange",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "PGR",
-      "name": "Progressive",
-      "theme": "Financials",
-      "sub_group": "Insurance",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "AXP",
-      "name": "American Express",
-      "theme": "Financials",
-      "sub_group": "Payments",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "MS",
-      "name": "Morgan Stanley",
-      "theme": "Financials",
-      "sub_group": "I-bank",
-      "signal": "Buy"
+      "signal": ""
     },
     {
       "symbol": "PYPL",
       "name": "PayPal",
       "theme": "Financials",
       "sub_group": "Fintech",
-      "signal": "Skip"
+      "signal": ""
     },
     {
-      "symbol": "HOOD",
-      "name": "Robinhood",
-      "theme": "Crypto (under financials)",
-      "sub_group": "Broker proxy",
-      "signal": "Skip"
+      "symbol": "ICE",
+      "name": "Intercontinental Exchange",
+      "theme": "Financials",
+      "sub_group": "Exchange",
+      "signal": ""
     },
     {
-      "symbol": "COIN",
-      "name": "Coinbase",
-      "theme": "Crypto (under financials)",
-      "sub_group": "Exchange proxy",
-      "signal": "Skip"
+      "symbol": "COF",
+      "name": "Capital One",
+      "theme": "Financials",
+      "sub_group": "Consumer fin",
+      "signal": ""
     },
     {
-      "symbol": "CRCL",
-      "name": "Circle Internet",
-      "theme": "Crypto (under financials)",
-      "sub_group": "Stablecoin issuer",
-      "signal": "Skip"
+      "symbol": "WFC",
+      "name": "Wells Fargo",
+      "theme": "Financials",
+      "sub_group": "Bank",
+      "signal": ""
+    },
+    {
+      "symbol": "MA",
+      "name": "Mastercard",
+      "theme": "Financials",
+      "sub_group": "Payments",
+      "signal": ""
+    },
+    {
+      "symbol": "SCHW",
+      "name": "Charles Schwab",
+      "theme": "Financials",
+      "sub_group": "Broker",
+      "signal": ""
+    },
+    {
+      "symbol": "AXP",
+      "name": "American Express",
+      "theme": "Financials",
+      "sub_group": "Payments",
+      "signal": ""
+    },
+    {
+      "symbol": "V",
+      "name": "Visa",
+      "theme": "Financials",
+      "sub_group": "Payments",
+      "signal": ""
+    },
+    {
+      "symbol": "BRK.B",
+      "name": "Berkshire Hathaway B",
+      "theme": "Financials",
+      "sub_group": "Diversified",
+      "signal": ""
+    },
+    {
+      "symbol": "JPM",
+      "name": "JPMorgan Chase",
+      "theme": "Financials",
+      "sub_group": "Bank",
+      "signal": ""
+    },
+    {
+      "symbol": "BAC",
+      "name": "Bank of America",
+      "theme": "Financials",
+      "sub_group": "Bank",
+      "signal": ""
+    },
+    {
+      "symbol": "PGR",
+      "name": "Progressive",
+      "theme": "Financials",
+      "sub_group": "Insurance",
+      "signal": ""
+    },
+    {
+      "symbol": "GS",
+      "name": "Goldman Sachs",
+      "theme": "Financials",
+      "sub_group": "I-bank",
+      "signal": ""
+    },
+    {
+      "symbol": "MS",
+      "name": "Morgan Stanley",
+      "theme": "Financials",
+      "sub_group": "I-bank",
+      "signal": ""
+    },
+    {
+      "symbol": "IBKR",
+      "name": "Interactive Brokers",
+      "theme": "Financials",
+      "sub_group": "Broker",
+      "signal": ""
     },
     {
       "symbol": "MSTR",
       "name": "MicroStrategy",
       "theme": "Crypto (under financials)",
       "sub_group": "Treasury proxy",
-      "signal": "Skip"
+      "signal": ""
+    },
+    {
+      "symbol": "COIN",
+      "name": "Coinbase",
+      "theme": "Crypto (under financials)",
+      "sub_group": "Exchange proxy",
+      "signal": ""
+    },
+    {
+      "symbol": "HOOD",
+      "name": "Robinhood",
+      "theme": "Crypto (under financials)",
+      "sub_group": "Broker proxy",
+      "signal": ""
     },
     {
       "symbol": "MARA",
       "name": "MARA Holdings",
       "theme": "Crypto (under financials)",
       "sub_group": "Miner",
-      "signal": "Extended"
-    },
-    {
-      "symbol": "RTX",
-      "name": "RTX Corp",
-      "theme": "Industrials/defense",
-      "sub_group": "Prime",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "BA",
-      "name": "Boeing",
-      "theme": "Industrials/defense",
-      "sub_group": "Aerospace",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "LMT",
-      "name": "Lockheed Martin",
-      "theme": "Industrials/defense",
-      "sub_group": "Prime",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "GD",
-      "name": "General Dynamics",
-      "theme": "Industrials/defense",
-      "sub_group": "Prime",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "NOC",
-      "name": "Northrop Grumman",
-      "theme": "Industrials/defense",
-      "sub_group": "Prime",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "TDG",
-      "name": "TransDigm",
-      "theme": "Industrials/defense",
-      "sub_group": "Components",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "LHX",
-      "name": "L3Harris",
-      "theme": "Industrials/defense",
-      "sub_group": "Electronics",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "HEI",
-      "name": "Heico",
-      "theme": "Industrials/defense",
-      "sub_group": "Components",
-      "signal": "Skip"
+      "signal": ""
     },
     {
       "symbol": "AVAV",
       "name": "AeroVironment",
       "theme": "Industrials/defense",
       "sub_group": "Drones",
-      "signal": "Skip"
+      "signal": ""
     },
     {
-      "symbol": "GE",
-      "name": "GE Aerospace",
+      "symbol": "NOC",
+      "name": "Northrop Grumman",
       "theme": "Industrials/defense",
-      "sub_group": "Aero/power",
-      "signal": "Buy"
+      "sub_group": "Prime",
+      "signal": ""
     },
     {
-      "symbol": "DE",
-      "name": "Deere",
+      "symbol": "BA",
+      "name": "Boeing",
       "theme": "Industrials/defense",
-      "sub_group": "Machinery",
-      "signal": "Buy"
+      "sub_group": "Aerospace",
+      "signal": ""
     },
     {
-      "symbol": "UNP",
-      "name": "Union Pacific",
+      "symbol": "LHX",
+      "name": "L3Harris",
       "theme": "Industrials/defense",
-      "sub_group": "Rail",
-      "signal": "Skip"
+      "sub_group": "Electronics",
+      "signal": ""
     },
     {
-      "symbol": "HWM",
-      "name": "Howmet Aerospace",
+      "symbol": "TDG",
+      "name": "TransDigm",
       "theme": "Industrials/defense",
       "sub_group": "Components",
-      "signal": "Buy"
+      "signal": ""
+    },
+    {
+      "symbol": "RTX",
+      "name": "RTX Corp",
+      "theme": "Industrials/defense",
+      "sub_group": "Prime",
+      "signal": ""
+    },
+    {
+      "symbol": "GD",
+      "name": "General Dynamics",
+      "theme": "Industrials/defense",
+      "sub_group": "Prime",
+      "signal": ""
+    },
+    {
+      "symbol": "LMT",
+      "name": "Lockheed Martin",
+      "theme": "Industrials/defense",
+      "sub_group": "Prime",
+      "signal": ""
+    },
+    {
+      "symbol": "HEI",
+      "name": "Heico",
+      "theme": "Industrials/defense",
+      "sub_group": "Components",
+      "signal": ""
     },
     {
       "symbol": "JCI",
       "name": "Johnson Controls",
       "theme": "Industrials/defense",
       "sub_group": "Electrical",
-      "signal": "Buy"
+      "signal": ""
     },
     {
-      "symbol": "WWD",
-      "name": "Woodward",
+      "symbol": "GE",
+      "name": "GE Aerospace",
       "theme": "Industrials/defense",
-      "sub_group": "Components",
-      "signal": "Skip"
+      "sub_group": "Aero/power",
+      "signal": ""
+    },
+    {
+      "symbol": "UNP",
+      "name": "Union Pacific",
+      "theme": "Industrials/defense",
+      "sub_group": "Rail",
+      "signal": ""
     },
     {
       "symbol": "LIN",
       "name": "Linde",
       "theme": "Industrials/defense",
       "sub_group": "Industrial gas",
-      "signal": "Buy"
+      "signal": ""
+    },
+    {
+      "symbol": "HWM",
+      "name": "Howmet Aerospace",
+      "theme": "Industrials/defense",
+      "sub_group": "Components",
+      "signal": ""
+    },
+    {
+      "symbol": "DE",
+      "name": "Deere",
+      "theme": "Industrials/defense",
+      "sub_group": "Machinery",
+      "signal": ""
+    },
+    {
+      "symbol": "WWD",
+      "name": "Woodward",
+      "theme": "Industrials/defense",
+      "sub_group": "Components",
+      "signal": ""
     },
     {
       "symbol": "CAT",
       "name": "Caterpillar",
       "theme": "Industrials/defense",
       "sub_group": "Machinery",
-      "signal": "Extended"
-    },
-    {
-      "symbol": "XOM",
-      "name": "ExxonMobil",
-      "theme": "Energy",
-      "sub_group": "Major",
-      "signal": "Buy"
-    },
-    {
-      "symbol": "CVX",
-      "name": "Chevron",
-      "theme": "Energy",
-      "sub_group": "Major",
-      "signal": "Buy"
-    },
-    {
-      "symbol": "COP",
-      "name": "ConocoPhillips",
-      "theme": "Energy",
-      "sub_group": "Major",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "SLB",
-      "name": "SLB",
-      "theme": "Energy",
-      "sub_group": "Services",
-      "signal": "Buy"
-    },
-    {
-      "symbol": "LNG",
-      "name": "Cheniere Energy",
-      "theme": "Energy",
-      "sub_group": "LNG",
-      "signal": "Buy"
-    },
-    {
-      "symbol": "DVN",
-      "name": "Devon Energy",
-      "theme": "Energy",
-      "sub_group": "E&P",
-      "signal": "Buy"
-    },
-    {
-      "symbol": "EOG",
-      "name": "EOG Resources",
-      "theme": "Energy",
-      "sub_group": "E&P",
-      "signal": "Buy"
+      "signal": ""
     },
     {
       "symbol": "EQT",
       "name": "EQT Corp",
       "theme": "Energy",
       "sub_group": "E&P gas",
-      "signal": "Skip"
+      "signal": ""
     },
     {
-      "symbol": "BKR",
-      "name": "Baker Hughes",
+      "symbol": "COP",
+      "name": "ConocoPhillips",
       "theme": "Energy",
-      "sub_group": "Services",
-      "signal": "Buy"
+      "sub_group": "Major",
+      "signal": ""
     },
     {
-      "symbol": "ENB",
-      "name": "Enbridge",
+      "symbol": "CVX",
+      "name": "Chevron",
       "theme": "Energy",
-      "sub_group": "Midstream",
-      "signal": "Skip"
+      "sub_group": "Major",
+      "signal": ""
+    },
+    {
+      "symbol": "XOM",
+      "name": "ExxonMobil",
+      "theme": "Energy",
+      "sub_group": "Major",
+      "signal": ""
+    },
+    {
+      "symbol": "DVN",
+      "name": "Devon Energy",
+      "theme": "Energy",
+      "sub_group": "E&P",
+      "signal": ""
     },
     {
       "symbol": "ET",
       "name": "Energy Transfer",
       "theme": "Energy",
       "sub_group": "Midstream",
-      "signal": "Buy"
+      "signal": ""
     },
     {
-      "symbol": "MPC",
-      "name": "Marathon Petroleum",
+      "symbol": "ENB",
+      "name": "Enbridge",
       "theme": "Energy",
-      "sub_group": "Refiner",
-      "signal": "Extended"
+      "sub_group": "Midstream",
+      "signal": ""
     },
     {
-      "symbol": "VLO",
-      "name": "Valero Energy",
+      "symbol": "SLB",
+      "name": "SLB",
       "theme": "Energy",
-      "sub_group": "Refiner",
-      "signal": "Extended"
+      "sub_group": "Services",
+      "signal": ""
+    },
+    {
+      "symbol": "BKR",
+      "name": "Baker Hughes",
+      "theme": "Energy",
+      "sub_group": "Services",
+      "signal": ""
+    },
+    {
+      "symbol": "LNG",
+      "name": "Cheniere Energy",
+      "theme": "Energy",
+      "sub_group": "LNG",
+      "signal": ""
+    },
+    {
+      "symbol": "EOG",
+      "name": "EOG Resources",
+      "theme": "Energy",
+      "sub_group": "E&P",
+      "signal": ""
     },
     {
       "symbol": "PSX",
       "name": "Phillips 66",
       "theme": "Energy",
       "sub_group": "Refiner",
-      "signal": "Skip"
+      "signal": ""
     },
     {
-      "symbol": "WMT",
-      "name": "Walmart",
-      "theme": "Consumer def/discount",
-      "sub_group": "Staples",
-      "signal": "Buy"
+      "symbol": "MPC",
+      "name": "Marathon Petroleum",
+      "theme": "Energy",
+      "sub_group": "Refiner",
+      "signal": ""
     },
     {
-      "symbol": "COST",
-      "name": "Costco",
-      "theme": "Consumer def/discount",
-      "sub_group": "Staples",
-      "signal": "Buy"
-    },
-    {
-      "symbol": "KO",
-      "name": "Coca-Cola",
-      "theme": "Consumer def/discount",
-      "sub_group": "Beverages",
-      "signal": "Buy"
-    },
-    {
-      "symbol": "PEP",
-      "name": "PepsiCo",
-      "theme": "Consumer def/discount",
-      "sub_group": "Bev/snacks",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "MDLZ",
-      "name": "Mondelez",
-      "theme": "Consumer def/discount",
-      "sub_group": "Packaged food",
-      "signal": "Buy"
-    },
-    {
-      "symbol": "STZ",
-      "name": "Constellation Brands",
-      "theme": "Consumer def/discount",
-      "sub_group": "Beverages",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "TJX",
-      "name": "TJX Companies",
-      "theme": "Consumer def/discount",
-      "sub_group": "Off-price",
-      "signal": "Skip"
-    },
-    {
-      "symbol": "ROST",
-      "name": "Ross Stores",
-      "theme": "Consumer def/discount",
-      "sub_group": "Off-price",
-      "signal": "Buy"
-    },
-    {
-      "symbol": "BURL",
-      "name": "Burlington Stores",
-      "theme": "Consumer def/discount",
-      "sub_group": "Off-price",
-      "signal": "Skip"
+      "symbol": "VLO",
+      "name": "Valero Energy",
+      "theme": "Energy",
+      "sub_group": "Refiner",
+      "signal": ""
     },
     {
       "symbol": "OLLI",
       "name": "Ollie's Bargain Outlet",
       "theme": "Consumer def/discount",
       "sub_group": "Closeout",
-      "signal": "Skip"
+      "signal": ""
     },
     {
       "symbol": "DG",
       "name": "Dollar General",
       "theme": "Consumer def/discount",
       "sub_group": "Dollar",
-      "signal": "Skip"
+      "signal": ""
     },
     {
       "symbol": "DLTR",
       "name": "Dollar Tree",
       "theme": "Consumer def/discount",
       "sub_group": "Dollar",
-      "signal": "Skip"
+      "signal": ""
     },
     {
       "symbol": "FIVE",
       "name": "Five Below",
       "theme": "Consumer def/discount",
       "sub_group": "Value retail",
-      "signal": "Skip"
+      "signal": ""
     },
     {
-      "symbol": "SPCX",
-      "name": "SpaceX",
-      "theme": "Space",
-      "sub_group": "Launch/multi",
-      "signal": "Skip"
+      "symbol": "PEP",
+      "name": "PepsiCo",
+      "theme": "Consumer def/discount",
+      "sub_group": "Bev/snacks",
+      "signal": ""
+    },
+    {
+      "symbol": "TJX",
+      "name": "TJX Companies",
+      "theme": "Consumer def/discount",
+      "sub_group": "Off-price",
+      "signal": ""
+    },
+    {
+      "symbol": "WMT",
+      "name": "Walmart",
+      "theme": "Consumer def/discount",
+      "sub_group": "Staples",
+      "signal": ""
+    },
+    {
+      "symbol": "STZ",
+      "name": "Constellation Brands",
+      "theme": "Consumer def/discount",
+      "sub_group": "Beverages",
+      "signal": ""
+    },
+    {
+      "symbol": "BURL",
+      "name": "Burlington Stores",
+      "theme": "Consumer def/discount",
+      "sub_group": "Off-price",
+      "signal": ""
+    },
+    {
+      "symbol": "COST",
+      "name": "Costco",
+      "theme": "Consumer def/discount",
+      "sub_group": "Staples",
+      "signal": ""
+    },
+    {
+      "symbol": "MDLZ",
+      "name": "Mondelez",
+      "theme": "Consumer def/discount",
+      "sub_group": "Packaged food",
+      "signal": ""
+    },
+    {
+      "symbol": "ROST",
+      "name": "Ross Stores",
+      "theme": "Consumer def/discount",
+      "sub_group": "Off-price",
+      "signal": ""
+    },
+    {
+      "symbol": "KO",
+      "name": "Coca-Cola",
+      "theme": "Consumer def/discount",
+      "sub_group": "Beverages",
+      "signal": ""
     },
     {
       "symbol": "ASTS",
       "name": "AST SpaceMobile",
       "theme": "Space",
       "sub_group": "Sat broadband",
-      "signal": "Skip"
+      "signal": ""
     },
     {
       "symbol": "RKLB",
       "name": "Rocket Lab",
       "theme": "Space",
       "sub_group": "Launch",
-      "signal": "Skip"
+      "signal": ""
     }
+  ],
+  "market_context": {
+    "benchmark": "SPY",
+    "benchmark_ma_type": "SMA",
+    "benchmark_ma_period": 50,
+    "benchmark_filter": "SPY must be above its 50-day SMA for any bullish bias. If below, treat as risk-off — only highest-conviction setups qualify."
+  },
+  "invalid_symbols_excluded": [
+    "CBRS",
+    "CRCL",
+    "CRWV",
+    "SPCX"
   ]
 }

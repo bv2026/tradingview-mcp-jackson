@@ -91,6 +91,13 @@ registerScreenerTools(server);
 registerMorningTools(server);
 registerLuxScreenerTools(server);
 
+// Codex Desktop currently filters tools that advertise taskSupport="forbidden".
+// These tools are normal immediate MCP calls, so omit the optional execution
+// metadata instead of publishing a value that makes the client hide them.
+for (const tool of Object.values(server._registeredTools || {})) {
+  delete tool.execution;
+}
+
 process.stderr.write(
   '⚠  tradingview-mcp  |  Unofficial tool. Not affiliated with TradingView Inc. or Anthropic.\n'
 );
