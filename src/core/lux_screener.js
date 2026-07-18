@@ -593,7 +593,10 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
 
   // 6. NW Envelope L3 check — passing symbols only (score > -99)
   // Switches to main chart tab, sets to 1W, reads NW for each passer.
-  const passingSymbols = Object.values(allRows).filter(r => r.score > -99);
+  const passingSymbols = Object.values(allRows)
+    .filter(r => r.score > -99)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 20);
   let nwPassError = null;
   if (passingSymbols.length > 0) {
     try {
