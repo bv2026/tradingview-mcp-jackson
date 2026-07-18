@@ -297,7 +297,25 @@ function scoreSymbol(so, pac, osc) {
   return score;
 }
 
+function fmtPrice(p) {
+  if (p == null) return '—';
+  return p >= 1000 ? p.toFixed(0) : p >= 100 ? p.toFixed(1) : p.toFixed(2);
+}
+
 function buildMarkdownTable(rows) {
+  const hasNw = rows.some(r => r.nw_position != null);
+  if (hasNw) {
+    const header = '| SYMBOL | WTD | S&O RATING | SIGNAL | SQUEEZE | PAC STRUCTURE | OSC DIV | HWO | SCORE | NW | STOP | TP1 | R:R | CHATTER |';
+    const sep    = '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|';
+    const lines = rows.map(r => {
+      const nwPos  = r.nw_position || '—';
+      const stop   = r.nw_lower != null ? fmtPrice(r.nw_lower) : '—';
+      const tp1    = r.nw_upper != null ? fmtPrice(r.nw_upper) : '—';
+      const rr     = r.rr     != null ? r.rr.toFixed(1) : '—';
+      return `| ${r.symbol} | ${r.wtd != null ? r.wtd + '%' : '—'} | ${r.so['RATING'] || '—'} | ${r.so['SIGNAL'] || '—'} | ${r.so['SQUEEZE'] || '—'} | ${r.pac['STRUCTURE'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} | ${r.osc['HWO SIGNAL'] || '—'} | ${r.score} | ${nwPos} | ${stop} | ${tp1} | ${rr} | ${r.chatter || '—'} |`;
+    });
+    return [header, sep, ...lines].join('\n');
+  }
   const header = '| SYMBOL | WTD | S&O RATING | SIGNAL | SQUEEZE | PAC STRUCTURE | OSC DIV | HWO | SCORE | CHATTER |';
   const sep    = '|---|---|---|---|---|---|---|---|---|---|';
   const lines = rows.map(r =>
@@ -319,8 +337,15 @@ function buildThematicTable(rows) {
     byTheme[theme].sort((a, b) => b.score - a.score);
   }
 
-  const header = '| SYMBOL | SUB-GROUP | S&O RATING | SIGNAL | PAC STRUCTURE | OSC DIV | HWO | SCORE |';
-  const sep    = '|---|---|---|---|---|---|---|---|';
+  const allThemeRows = themeOrder.flatMap(t => byTheme[t]);
+  const hasNw = allThemeRows.some(r => r.nw_position != null);
+
+  const header = hasNw
+    ? '| SYMBOL | SUB-GROUP | S&O RATING | SIGNAL | PAC STRUCTURE | OSC DIV | HWO | SCORE | NW | STOP | TP1 | R:R |'
+    : '| SYMBOL | SUB-GROUP | S&O RATING | SIGNAL | PAC STRUCTURE | OSC DIV | HWO | SCORE |';
+  const sep = hasNw
+    ? '|---|---|---|---|---|---|---|---|---|---|---|---|'
+    : '|---|---|---|---|---|---|---|---|';
 
   const sections = [];
   for (const theme of themeOrder) {
@@ -332,7 +357,15 @@ function buildThematicTable(rows) {
     sections.push(header);
     sections.push(sep);
     for (const r of themeRows) {
-      sections.push(`| ${r.symbol} | ${r.sub_group || '—'} | ${r.so['RATING'] || '—'} | ${r.so['SIGNAL'] || '—'} | ${r.pac['STRUCTURE'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} | ${r.osc['HWO SIGNAL'] || '—'} | ${r.score} |`);
+      if (hasNw) {
+        const nwPos = r.nw_position || '—';
+        const stop  = r.nw_lower != null ? fmtPrice(r.nw_lower) : '—';
+        const tp1   = r.nw_upper != null ? fmtPrice(r.nw_upper) : '—';
+        const rr    = r.rr != null ? r.rr.toFixed(1) : '—';
+        sections.push(`| ${r.symbol} | ${r.sub_group || '—'} | ${r.so['RATING'] || '—'} | ${r.so['SIGNAL'] || '—'} | ${r.pac['STRUCTURE'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} | ${r.osc['HWO SIGNAL'] || '—'} | ${r.score} | ${nwPos} | ${stop} | ${tp1} | ${rr} |`);
+      } else {
+        sections.push(`| ${r.symbol} | ${r.sub_group || '—'} | ${r.so['RATING'] || '—'} | ${r.so['SIGNAL'] || '—'} | ${r.pac['STRUCTURE'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} | ${r.osc['HWO SIGNAL'] || '—'} | ${r.score} |`);
+      }
     }
     sections.push('');
   }
@@ -367,6 +400,87 @@ function buildChatterSection(sorted) {
   }
 
   return lines.length ? lines.join('\n') : '— No notable chatter conflicts or confluences this week.';
+}
+
+/**
+ * Find the main chart tab (not the LUXALGO_SCREENERS tab).
+ * Returns the first page target that has the NW Envelope loaded.
+ * Falls back to the first non-screener chart tab if NW isn't found.
+ */
+async function findMainChartTab() {
+  const { switchTarget } = await import('../connection.js');
+  const CDP_HOST = 'localhost';
+  const CDP_PORT = 9222;
+
+  const resp = await fetch(`http://${CDP_HOST}:${CDP_PORT}/json/list`);
+  const targets = await resp.json();
+  const chartTargets = targets.filter(t => t.type === 'page' && /tradingview\.com\/chart\//i.test(t.url));
+
+  let fallback = null;
+  for (const target of chartTargets) {
+    await fetch(`http://${CDP_HOST}:${CDP_PORT}/json/activate/${target.id}`);
+    await switchTarget(target.id);
+    await new Promise(r => setTimeout(r, 300));
+    try {
+      const state = await chart.getState();
+      const names = (state.studies || []).map(s => s.name);
+      const isScreenerTab = names.some(n => n.includes('S&O')) && names.some(n => n.includes('PAC'));
+      if (isScreenerTab) continue;
+      if (names.some(n => /nadaraya/i.test(n))) return { tab_id: target.id, state };
+      if (!fallback) fallback = { tab_id: target.id, state };
+    } catch {}
+  }
+  if (fallback) return fallback;
+  throw new Error('No main chart tab found. Open a TradingView chart tab (separate from the LUXALGO_SCREENERS tab) with the Nadaraya-Watson Envelope indicator loaded.');
+}
+
+/**
+ * Read NW Envelope position and band levels for the current chart symbol.
+ * Returns { nw_position, nw_upper, nw_lower, price, rr }.
+ *
+ * nw_position:
+ *   'extended' — most recent NW label is ▲ (price crossed above upper band)
+ *   'early'    — most recent NW label is ▼ (price crossed below lower band)
+ *   'inside'   — no recent label (price inside the envelope bands)
+ *   'unknown'  — NW indicator not readable
+ */
+async function readNwEnvelope() {
+  try {
+    const [labelsResult, linesResult, quoteResult] = await Promise.all([
+      data.getPineLabels({ study_filter: 'Nadaraya-Watson', max_labels: 3 }),
+      data.getPineLines({ study_filter: 'Nadaraya-Watson' }),
+      data.getQuote({}),
+    ]);
+
+    // Determine position from most-recent label
+    const labels = labelsResult?.studies?.[0]?.labels || [];
+    const mostRecent = labels[0]?.text;
+    let nw_position = 'inside';
+    if (mostRecent === '▲') nw_position = 'extended';
+    else if (mostRecent === '▼') nw_position = 'early';
+    else if (!labelsResult?.studies?.length) nw_position = 'unknown';
+
+    // Extract upper and lower band levels from pine lines
+    // NW Envelope draws upper and lower band lines; lines come sorted high→low
+    const lines = linesResult?.studies?.[0]?.lines || [];
+    const prices = lines.map(l => l.price).filter(p => p != null && isFinite(p)).sort((a, b) => b - a);
+    const nw_upper = prices[0] ?? null;
+    const nw_lower = prices[prices.length - 1] ?? null;
+
+    const price = quoteResult?.close ?? quoteResult?.last_price ?? null;
+
+    // R:R = room to upper band / risk to lower band
+    let rr = null;
+    if (price != null && nw_upper != null && nw_lower != null && price > nw_lower) {
+      const reward = nw_upper - price;
+      const risk   = price - nw_lower;
+      rr = risk > 0 ? Math.round((reward / risk) * 10) / 10 : null;
+    }
+
+    return { nw_position, nw_upper, nw_lower, price, rr };
+  } catch {
+    return { nw_position: 'unknown', nw_upper: null, nw_lower: null, price: null, rr: null };
+  }
 }
 
 export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' } = {}) {
@@ -477,7 +591,31 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
     restoreResult = await restoreScreenerDefaults(soStudy, pacStudy, oscStudy, preState);
   }
 
-  // 5. Sort by score descending
+  // 6. NW Envelope L3 check — passing symbols only (score > -99)
+  // Switches to main chart tab, sets to 1W, reads NW for each passer.
+  const passingSymbols = Object.values(allRows).filter(r => r.score > -99);
+  let nwPassError = null;
+  if (passingSymbols.length > 0) {
+    try {
+      await findMainChartTab(); // activates and switches connection target to main chart
+      await chart.setTimeframe({ timeframe: chartTf });
+      await new Promise(r => setTimeout(r, 1000));
+      for (const row of passingSymbols) {
+        await chart.setSymbol({ symbol: row.symbol });
+        await new Promise(r => setTimeout(r, 2500));
+        const nw = await readNwEnvelope();
+        row.nw_position = nw.nw_position;
+        row.nw_upper    = nw.nw_upper;
+        row.nw_lower    = nw.nw_lower;
+        row.price       = nw.price;
+        row.rr          = nw.rr;
+      }
+    } catch (e) {
+      nwPassError = e.message;
+    }
+  }
+
+  // 7. Sort by score descending
   const sorted = Object.values(allRows).sort((a, b) => b.score - a.score);
 
   const topCandidates = sorted.slice(0, 10);
@@ -486,7 +624,10 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
   const topSection = topCandidates.length
     ? topCandidates.map(r => {
         const chatter = r.chatter ? ` | ⚠ ${r.chatter}` : '';
-        return `- **${r.symbol}** — Score ${r.score} | ${r.so['RATING'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} divergence | ${r.pac['STRUCTURE'] || '—'} | Squeeze ${r.so['SQUEEZE'] || '—'}${chatter}`;
+        const nwPart = r.nw_position != null
+          ? ` | NW: ${r.nw_position}${r.rr != null ? ` | R:R ${r.rr.toFixed(1)}` : ''}`
+          : '';
+        return `- **${r.symbol}** — Score ${r.score} | ${r.so['RATING'] || '—'} | ${r.osc['DIVERGENCES'] || '—'} divergence | ${r.pac['STRUCTURE'] || '—'} | Squeeze ${r.so['SQUEEZE'] || '—'}${nwPart}${chatter}`;
       }).join('\n')
     : '- No symbols scanned';
 
@@ -507,6 +648,8 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D' 
     symbol_count: sorted.length,
     batch_count: batches.length,
     restore_debug: restoreResult,
+    nw_pass_symbols: passingSymbols.length,
+    nw_pass_error: nwPassError || undefined,
     table: isThematic ? buildThematicTable(sorted) : buildMarkdownTable(sorted),
     top_candidates: topCandidates.map(r => r.symbol),
     top_section: topSection,
