@@ -3,9 +3,9 @@
   "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\Watchlist_ARK.csv",
   "watchlist_generated": "2026-07-18",
   "screener_name": null,
-  "max_symbols": 128,
+  "max_symbols": 124,
   "default_timeframe": "W",
-  "pipeline": "L1: static CSV watchlist (Watchlist_ARK.csv, 128 symbols after Lux invalid-symbol exclusions) -> L2: lux_screener_scan 1W (hard filter: BOS + Bullish/Strong Bullish S&O Rating + up/up+ Signal) -> L3: NW Envelope per-symbol check on weekly (price inside bands = base coiling, price above upper = extended/already moved)",
+  "pipeline": "L1: static CSV watchlist (Watchlist_ARK.csv, 124 symbols after Lux invalid-symbol exclusions) -> L2: lux_screener_scan 1W (hard filter: BOS + Bullish/Strong Bullish S&O Rating + up/up+ Signal) -> L3: NW Envelope per-symbol check on weekly (price inside bands = base coiling, price above upper = extended/already moved)",
   "required_indicators": [
     "Nadaraya-Watson Envelope [LuxAlgo]",
     "Volume"
@@ -374,12 +374,6 @@
       "weight": "0.40%"
     },
     {
-      "symbol": "BYDDY",
-      "name": "BYD CO LTD",
-      "sector": "Consumer Discretionary",
-      "weight": "0.40%"
-    },
-    {
       "symbol": "AVAV",
       "name": "AEROVIRONMENT INC",
       "sector": "Industrials",
@@ -638,12 +632,6 @@
       "weight": "0.10%"
     },
     {
-      "symbol": "EVLO",
-      "name": "EVELO BIOSCIENCES INC",
-      "sector": "Health Care",
-      "weight": "0.10%"
-    },
-    {
       "symbol": "KNSL",
       "name": "KINSALE CAPITAL GROUP INC",
       "sector": "Financials",
@@ -740,12 +728,6 @@
       "weight": "0.10%"
     },
     {
-      "symbol": "SPCE",
-      "name": "VIRGIN GALACTIC HOLDINGS",
-      "sector": "Industrials",
-      "weight": "0.10%"
-    },
-    {
       "symbol": "JPM",
       "name": "JPMORGAN CHASE & CO",
       "sector": "Financials",
@@ -785,12 +767,6 @@
       "symbol": "ZS",
       "name": "ZSCALER INC",
       "sector": "Information Technology",
-      "weight": "0.10%"
-    },
-    {
-      "symbol": "ADYEY",
-      "name": "ADYEN NV-UNSPON ADR",
-      "sector": "Financials",
       "weight": "0.10%"
     },
     {
@@ -861,16 +837,20 @@
     }
   ],
   "invalid_symbols_excluded": [
+    "ADYEY",
     "ANSS",
     "BLSH",
+    "BYDDY",
     "CBRS",
     "CRCL",
     "CRWD",
     "CRWV",
+    "EVLO",
     "EXAS",
     "LMT",
     "OPENAI",
     "PAGS",
+    "SPCE",
     "SPCX",
     "XE"
   ]

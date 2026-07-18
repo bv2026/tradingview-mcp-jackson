@@ -22,18 +22,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '..');
 
 const ARK_LUX_INVALID_SYMBOLS = new Set([
-  'BLSH',
-  'CBRS',
-  'CRCL',
-  'CRWV',
-  'CRWD',
-  'ANSS',
-  'EXAS',
-  'OPENAI',
-  'LMT',
-  'PAGS',
-  'XE',
-  'SPCX',
+  // Confirmed Lux-incompatible (crash or all-dashes)
+  'ANSS', 'BLSH', 'CBRS', 'CRCL', 'CRWD', 'CRWV',
+  'EXAS', 'LMT', 'OPENAI', 'PAGS', 'SPCX', 'XE',
+  // OTC / foreign-primary / stale — Lux has no usable data
+  'ADYEY',  // Euronext Amsterdam (ADYEN); no US ADR
+  'BYDDY',  // OTC pink sheets BYD ADR
+  'EVLO',   // OTC distressed/bankrupt
+  'SPCE',   // Virgin Galactic rebranded to MNTN (Aug 2023); ticker stale
 ]);
 
 const THEMATIC_ETF_LUX_INVALID_SYMBOLS = new Set([
