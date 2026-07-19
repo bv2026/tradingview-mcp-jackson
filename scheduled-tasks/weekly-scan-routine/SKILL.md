@@ -29,49 +29,53 @@ Create the folder if it does not exist.
 
 ## STEP 2: RUN ALL 7 SCANS IN SEQUENCE
 
-Run each lux_screener_scan call one at a time. Wait for each to complete before starting the next. After each call returns, immediately save the FULL result object as JSON to the reports folder.
+Run each lux_screener_scan call one at a time. Wait for each to complete before starting the next.
+
+**MERGE RULE (applies to all split scans):**
+After both halves return, combine their symbols_raw arrays, deduplicate by symbol, re-sort by score descending. Save ONLY these three fields — do NOT include table, top_candidates, avoid_list, chatter_section or any other field from the raw result (those fields are per-half artifacts and are meaningless or broken after merging):
+  { "instrument_type": "...", "symbol_count": <total>, "symbols_raw": [...merged, deduped, sorted by score desc...] }
+
+**Single-call scans (sp_ndx, r2k):** save the full result object as-is (no merge needed).
 
 **Scan 1 — momentum_stocks (split, ~81 symbols):**
   Call 1a: lux_screener_scan instrument_type="momentum_stocks" timeframe="1W" offset=0 max_symbols=50
   Call 1b: lux_screener_scan instrument_type="momentum_stocks" timeframe="1W" offset=50
-  Merge: combine both symbols_raw arrays, re-sort by score descending.
-  Save merged result as: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-momentum_stocks.json
-  Merged JSON: { "instrument_type": "momentum_stocks", "symbol_count": <total>, "symbols_raw": [...merged and sorted...] }
+  Apply merge rule above.
+  Save to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-momentum_stocks.json
 
 **Scan 2 — momentum_etf (split, ~52 symbols):**
   Call 2a: lux_screener_scan instrument_type="momentum_etf" timeframe="1W" offset=0 max_symbols=30
   Call 2b: lux_screener_scan instrument_type="momentum_etf" timeframe="1W" offset=30
-  Merge same way as above.
+  Apply merge rule above.
   Save to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-momentum_etf.json
 
 **Scan 3 — sp_ndx:**
   lux_screener_scan instrument_type="sp_ndx" timeframe="1W"
-  Save result to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-sp_ndx.json
+  Save full result to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-sp_ndx.json
 
 **Scan 4 — r2k:**
   lux_screener_scan instrument_type="r2k" timeframe="1W"
-  Save result to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-r2k.json
+  Save full result to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-r2k.json
 
-**Scan 5 — momentum_ark (split, 117 symbols):**
+**Scan 5 — momentum_ark (split, ~117 symbols):**
   Call 5a: lux_screener_scan instrument_type="momentum_ark" timeframe="1W" offset=0 max_symbols=60
   Call 5b: lux_screener_scan instrument_type="momentum_ark" timeframe="1W" offset=60
-  Merge: combine the two symbols_raw arrays into one list, re-sort by score descending.
-  Save merged result as: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-momentum_ark.json
-  The merged JSON must be: { "instrument_type": "momentum_ark", "symbol_count": <total>, "symbols_raw": [...merged and sorted...] }
+  Apply merge rule above.
+  Save to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-momentum_ark.json
 
 **Scan 6 — thematic_stocks (split, ~121 symbols):**
   Call 6a: lux_screener_scan instrument_type="thematic_stocks" timeframe="1W" offset=0 max_symbols=60
   Call 6b: lux_screener_scan instrument_type="thematic_stocks" timeframe="1W" offset=60
-  Merge same way as above.
+  Apply merge rule above.
   Save to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-thematic_stocks.json
 
 **Scan 7 — thematic_etfs (split, ~90 symbols):**
   Call 7a: lux_screener_scan instrument_type="thematic_etfs" timeframe="1W" offset=0 max_symbols=50
   Call 7b: lux_screener_scan instrument_type="thematic_etfs" timeframe="1W" offset=50
-  Merge same way as above.
+  Apply merge rule above.
   Save to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-thematic_etfs.json
 
-If a scan call returns an error or times out, save { "instrument_type": "...", "error": "<message>", "symbols_raw": [] } so the decision routine knows which scan failed.
+If a scan call errors or times out, save { "instrument_type": "...", "error": "<message>", "symbols_raw": [] }.
 
 ---
 
