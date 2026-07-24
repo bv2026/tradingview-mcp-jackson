@@ -1,5 +1,5 @@
 # Session Handoff — TradingView MCP Jackson
-**Date:** 2026-07-20  
+**Date:** 2026-07-24  
 **Handoff to:** Codex (Claude Code)  
 **Project root:** `C:\work\tradingview-mcp-jackson`
 
@@ -14,6 +14,22 @@ All watchlist scans healthy and trusted for daily use (verified 2026-07-18):
 - OSC RE10041 error: resolved — caused by excluded symbols, not a code bug
 
 No remaining blockers on screener scans.
+
+---
+
+## What Was Done This Session (2026-07-24)
+
+### Scheduled Routine — Removed Daily Approval Prompts
+
+`futures-morning-routine` ran successfully via its scheduled trigger (health check → crypto/crypto_perps/futures briefs → `ct_tv_data.py` → re-armed `decision-email-routine`), but every MCP/Bash call in the routine was prompting for approval each day because `.claude/settings.json` only allowlisted `create_scheduled_task`/`delete_scheduled_task`.
+
+**Fix** (`.claude/settings.json`): added allow entries for the tools these two routines actually call:
+- `mcp__scheduled-tasks__update_scheduled_task`, `mcp__scheduled-tasks__list_scheduled_tasks`
+- `mcp__tradingview__tv_health_check`, `mcp__tradingview__morning_brief`, `mcp__tradingview__session_save`, `mcp__tradingview__session_get`
+- `mcp__18e26973-458f-4842-a655-687dfaf0ed6e__create_draft` (Gmail draft creation, used by `decision-email-routine`) — **unverified**: guessed from the routine's documented job (3 Gmail drafts); if a prompt still appears on a different Gmail tool (e.g. `label_message`), add that tool name too
+- `Bash(python C:/work/tradingview-mcp-jackson/scripts/ct_tv_data.py*)`
+
+Committed as `1131fe1` ("Allow morning-routine tools and remove dead PostToolUse hook") along with the 2026-07-20 hook-removal/SKILL.md fixes below, which had been sitting uncommitted. Pushed to `origin/main`.
 
 ---
 
@@ -140,8 +156,7 @@ WATCHLIST SCANS (lux_screener_scan tool):
 
 ## Git State
 
-Branch: `main` — clean as of 2026-07-20.
+Branch: `main` — clean and pushed as of 2026-07-24 (commit `1131fe1`).
 
-Recent changes (not yet committed):
-- `.claude/settings.json` — dead `futures_decision_hook.py` PostToolUse hook removed
-- `C:\Users\vsbra\.claude\scheduled-tasks\futures-morning-routine\SKILL.md` — Step 5 changed from `create_scheduled_task` to `update_scheduled_task`
+- `.claude/settings.json` — dead `futures_decision_hook.py` PostToolUse hook removed; permission allowlist added for morning-routine tools (both committed 2026-07-24)
+- `C:\Users\vsbra\.claude\scheduled-tasks\futures-morning-routine\SKILL.md` — Step 5 changed from `create_scheduled_task` to `update_scheduled_task` (lives outside this repo, not tracked by this git history)
