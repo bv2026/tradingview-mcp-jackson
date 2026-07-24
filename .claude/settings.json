@@ -9,8 +9,13 @@
       "mcp__tradingview__morning_brief",
       "mcp__tradingview__session_save",
       "mcp__tradingview__session_get",
+      "mcp__tradingview__lux_screener_scan",
       "mcp__18e26973-458f-4842-a655-687dfaf0ed6e__create_draft",
-      "Bash(python C:/work/tradingview-mcp-jackson/scripts/ct_tv_data.py*)"
+      "Bash(python C:/work/tradingview-mcp-jackson/scripts/ct_tv_data.py*)",
+      "Bash(mkdir -p C:/work/tradingview-mcp-jackson/reports/*)",
+      "Read(C:/work/tradingview-mcp-jackson/reports/**)",
+      "Read(C:/work/tradingview-mcp-jackson/config/**)",
+      "Write(C:/work/tradingview-mcp-jackson/reports/**)"
     ]
   }
 }
