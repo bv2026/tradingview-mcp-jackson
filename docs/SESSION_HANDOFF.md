@@ -1,5 +1,5 @@
 # Session Handoff — TradingView MCP Jackson
-**Date:** 2026-07-18  
+**Date:** 2026-07-20  
 **Handoff to:** Codex (Claude Code)  
 **Project root:** `C:\work\tradingview-mcp-jackson`
 
@@ -14,6 +14,20 @@ All watchlist scans healthy and trusted for daily use (verified 2026-07-18):
 - OSC RE10041 error: resolved — caused by excluded symbols, not a code bug
 
 No remaining blockers on screener scans.
+
+---
+
+## What Was Done This Session (2026-07-20)
+
+### Futures Routine Bug Fixes
+
+**1. Dead PostToolUse hook removed** (`.claude/settings.json`)
+- Hook ran `scripts/futures_decision_hook.py` on every `session_save` — script was deleted in commit `0a109e1` ("Remove legacy scripts") but the hook config was never updated.
+- Hook errored silently on every brief save. Removed the entire `hooks` block.
+
+**2. SKILL.md Step 5 corrected** (`futures-morning-routine/SKILL.md`)
+- Step 5 called `create_scheduled_task` for `decision-email-routine` every day. That task persists in disabled state after each run, so `create` always found a duplicate and the agent had to improvise.
+- Changed to `update_scheduled_task` with `enabled: true` — re-arms the existing task rather than creating a duplicate.
 
 ---
 
@@ -72,8 +86,8 @@ The following obsolete helpers were removed during the 2026-07-18 repo audit cle
 
 | Task ID | Schedule | Status |
 |---|---|---|
-| `futures-morning-routine` | Weekdays 10:37 AM | **Active** — data collection only: 3 briefs → ct_tv_data.json → triggers decision-email-routine |
-| `decision-email-routine` | One-time, triggered by Routine 1 (+3 min) | **Active** — reads saved files → Claude reasons → 3 decision HTML files → 3 Gmail drafts. Aborts if any of the 4 required files are missing (crypto.md, crypto_perps.md, futures.md, ct_tv_data.json) |
+| `futures-morning-routine` | Weekdays 10:37 AM | **Active** — data collection only: 3 briefs → ct_tv_data.json → re-arms decision-email-routine via `update_scheduled_task` |
+| `decision-email-routine` | One-time, re-armed daily by Routine 1 (+3 min) | **Active** — reads saved files → Claude reasons → 3 decision HTML files → 3 Gmail drafts. Aborts if any of the 4 required files are missing. Persists in disabled state between runs; never recreated. |
 | `cannonedge-daily-pipeline` | Daily 5:40 PM | Active — CT scrape + ingest |
 | `broker-daily-refresh` | Daily 7:40 AM | Active |
 | `tv-mcp-archive-old-reports` | Sundays 3 AM | Active |
@@ -126,9 +140,8 @@ WATCHLIST SCANS (lux_screener_scan tool):
 
 ## Git State
 
-Branch: `main`  
-Uncommitted new files being committed this session:
-- `scripts/ct_tv_data.py`
-- `.claude/futures-decision.md`
-- `.claude/futures-routine.md`
-- `.claude/settings.json`
+Branch: `main` — clean as of 2026-07-20.
+
+Recent changes (not yet committed):
+- `.claude/settings.json` — dead `futures_decision_hook.py` PostToolUse hook removed
+- `C:\Users\vsbra\.claude\scheduled-tasks\futures-morning-routine\SKILL.md` — Step 5 changed from `create_scheduled_task` to `update_scheduled_task`

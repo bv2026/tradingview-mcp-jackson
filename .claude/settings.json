@@ -2,20 +2,15 @@
   "permissions": {
     "allow": [
       "mcp__scheduled-tasks__create_scheduled_task",
-      "mcp__scheduled-tasks__delete_scheduled_task"
-    ]
-  },
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "mcp__tradingview__session_save",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python C:/work/tradingview-mcp-jackson/scripts/futures_decision_hook.py"
-          }
-        ]
-      }
+      "mcp__scheduled-tasks__delete_scheduled_task",
+      "mcp__scheduled-tasks__update_scheduled_task",
+      "mcp__scheduled-tasks__list_scheduled_tasks",
+      "mcp__tradingview__tv_health_check",
+      "mcp__tradingview__morning_brief",
+      "mcp__tradingview__session_save",
+      "mcp__tradingview__session_get",
+      "mcp__18e26973-458f-4842-a655-687dfaf0ed6e__create_draft",
+      "Bash(python C:/work/tradingview-mcp-jackson/scripts/ct_tv_data.py*)"
     ]
   }
 }
