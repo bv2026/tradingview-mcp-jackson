@@ -204,6 +204,10 @@ the workflow or rebuilding a static watchlist.
 
 - Keep the screener name `WKLY-DIV-ETF`, or update the configured
   `screener_name` everywhere if it is renamed.
+- Keep `config/rules.json` → `screener_targets.income_etf.screener_id` aligned
+  with the final URL segment of the saved screener. The current stable ID is
+  `YihyJcAe` from `/etf-screener/YihyJcAe/`. The ID is preferred over the
+  window title after a TradingView or MCP restart.
 - Keep the Dividends, NAV performance, Overview, Fund flows, Holdings, Risk, and
   Technicals tabs available.
 - Use the same ETF universe and compatible filters on every tab. A symbol missing
@@ -393,6 +397,7 @@ Automatic sending and trade execution require separate explicit authorization.
 |---|---|
 | TradingView unavailable | Stop; do not reuse stale results |
 | Screener missing | Stop and identify `WKLY-DIV-ETF` |
+| Configured screener ID is not open | Stop and verify `screener_targets.income_etf.screener_id` against the saved screener URL |
 | A tab lacks expected columns, is not ready, or has a different universe | Stop; do not publish a normal report |
 | No prior snapshot | Establish baseline and emit informational alert |
 | Raw scan cannot be saved | Fail the scan; do not claim monitoring history is current |

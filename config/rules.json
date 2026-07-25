@@ -27,6 +27,14 @@
     "thematic_etfs":   null
   },
 
+  "screener_targets": {
+    "_note": "screener_id is the stable final URL segment for a saved TradingView screener and survives restarts.",
+    "income_etf": {
+      "screener_name": "WKLY-DIV-ETF",
+      "screener_id": "YihyJcAe"
+    }
+  },
+
   "risk_rules": [
     "Never risk more than 1% of total account on a single trade",
     "No trading in the first 15 minutes of the NYSE open (9:30-9:45 AM ET)",

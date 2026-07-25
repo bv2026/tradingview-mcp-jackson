@@ -90,6 +90,12 @@ describe('rules.json completeness', () => {
   it('global risk_rules is a non-empty array', () => {
     assert.ok(Array.isArray(rules.risk_rules) && rules.risk_rules.length > 0);
   });
+
+  it('income ETF screener has a stable saved-screener target', () => {
+    const target = rules.screener_targets?.income_etf;
+    assert.equal(target?.screener_name, 'WKLY-DIV-ETF');
+    assert.match(target?.screener_id || '', /^[A-Za-z0-9]+$/);
+  });
 });
 
 // ─── 2. Strategy files ───────────────────────────────────────────────────────
@@ -242,6 +248,14 @@ describe('MCP tool wiring', () => {
   it('screener_get exposes optional visible-column extraction', () => {
     const src = readFileSync(join(ROOT, 'src/tools/screener.js'), 'utf8');
     assert.ok(src.includes('include_columns'));
+  });
+
+  it('income ETF tab detection ignores unrelated selected role=tab controls', () => {
+    const src = readFileSync(join(ROOT, 'src/core/income_etf.js'), 'utf8');
+    const connectionSrc = readFileSync(join(ROOT, 'src/connection.js'), 'utf8');
+    assert.ok(src.includes("button[role=\"tab\"][data-qa-id]"));
+    assert.ok(src.includes("knownTabs.includes(button.getAttribute('data-qa-id'))"));
+    assert.ok(connectionSrc.includes('Saved screener IDs are stable across restarts'));
   });
 
   it('income ETF parsing handles TradingView percentages and scaled currency', () => {

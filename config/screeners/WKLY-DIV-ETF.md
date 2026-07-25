@@ -2,6 +2,12 @@
 
 TradingView ETF Screener used by `income_etf_scan` to identify distributing ETFs that may support a monthly cash-flow plan. Despite the saved screen's name, weekly payment frequency is not a requirement.
 
+The live target is bound by the stable saved-screener ID in
+`config/rules.json` (`screener_targets.income_etf.screener_id`). The current
+URL is `/etf-screener/YihyJcAe/`, so the configured ID is `YihyJcAe`.
+Update that value if the saved screener is replaced with a new TradingView
+screen; renaming the existing screen does not require changing the ID.
+
 ## Purpose
 
 This screen is a discovery universe, not a buy list. Weekly and monthly payers are ranked together by economic quality:

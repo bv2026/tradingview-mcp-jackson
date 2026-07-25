@@ -120,14 +120,32 @@ let screenerClient = null;
 // Screener targets are cached by CDP target ID.
 const screenerClients = {};
 
-async function findScreenerTarget(screenerName) {
+async function findScreenerTarget(screenerRef) {
   const resp = await fetch(`http://${CDP_HOST}:${CDP_PORT}/json/list`);
   const targets = await resp.json();
+  const screenerName = typeof screenerRef === 'string'
+    ? screenerRef
+    : screenerRef?.screener_name;
+  const screenerId = typeof screenerRef === 'object'
+    ? screenerRef?.screener_id
+    : null;
   // TradingView uses /screener/ for stocks and /crypto-coins-screener/ (etc.) for other asset classes
   const screenerTargets = targets.filter(
     t => t.type === 'page' && /tradingview\.com\/.+-screener\/|tradingview\.com\/screener\//i.test(t.url)
   );
   if (!screenerTargets.length) return null;
+  // Saved screener IDs are stable across restarts and window-title changes.
+  if (screenerId) {
+    const byId = screenerTargets.find(target => {
+      try {
+        return new URL(target.url).pathname.split('/').filter(Boolean).at(-1) === screenerId;
+      } catch {
+        return false;
+      }
+    });
+    if (byId) return byId;
+    return null;
+  }
   // If a name is given, prefer the target whose title matches
   if (screenerName) {
     const match = screenerTargets.find(t => t.title === screenerName);
@@ -137,9 +155,9 @@ async function findScreenerTarget(screenerName) {
   return screenerTargets[0];
 }
 
-export async function getScreenerClient(screenerName) {
+export async function getScreenerClient(screenerRef) {
   // Find the right target first so we can key the cache by target ID
-  const target = await findScreenerTarget(screenerName);
+  const target = await findScreenerTarget(screenerRef);
   if (!target) return null;
   if (screenerClients[target.id]) {
     try {
@@ -155,8 +173,8 @@ export async function getScreenerClient(screenerName) {
   return sc;
 }
 
-export async function evaluateOnScreener(expression, screenerName) {
-  const sc = await getScreenerClient(screenerName);
+export async function evaluateOnScreener(expression, screenerRef) {
+  const sc = await getScreenerClient(screenerRef);
   if (!sc) return null;
   const result = await sc.Runtime.evaluate({ expression, returnByValue: true, awaitPromise: false });
   if (result.exceptionDetails) {

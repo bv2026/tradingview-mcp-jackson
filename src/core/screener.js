@@ -66,8 +66,17 @@ function filterPerpsSymbols(symbols) {
   });
 }
 
-export async function get({ screener_name, max_symbols, offset, include_columns = false } = {}) {
-  const sc = await getScreenerClient(screener_name);
+export async function get({
+  screener_name,
+  screener_id,
+  max_symbols,
+  offset,
+  include_columns = false,
+} = {}) {
+  const screenerRef = screener_id
+    ? { screener_name, screener_id }
+    : screener_name;
+  const sc = await getScreenerClient(screenerRef);
   if (!sc) {
     throw new Error(
       `Screener window "${screener_name || ''}" is not open. ` +
@@ -82,11 +91,11 @@ export async function get({ screener_name, max_symbols, offset, include_columns 
       var type = (document.querySelector('${SWITCHER_BTN} h1') || {}).textContent || '';
       return [name.trim(), type.trim()];
     })()
-  `, screener_name);
+  `, screenerRef);
 
   // If the window is showing a different screen, switch to the requested one
   if (screener_name && currentName !== screener_name) {
-    await switchToScreen(screener_name, screener_name);
+    await switchToScreen(screener_name, screenerRef);
     await new Promise(r => setTimeout(r, 1200));
   }
 
@@ -108,7 +117,7 @@ export async function get({ screener_name, max_symbols, offset, include_columns 
       }
       return symbols;
     })()
-  `, screener_name);
+  `, screenerRef);
 
   if (!allSymbols || allSymbols.length === 0) {
     throw new Error(
@@ -132,6 +141,7 @@ export async function get({ screener_name, max_symbols, offset, include_columns 
   const result = {
     success: true,
     name: finalName,
+    screener_id: screener_id || null,
     instrument_type: mapScreenerType(screenerType),
     screener_type: screenerType,
     total_in_screener: allSymbols.length,
@@ -182,7 +192,7 @@ export async function get({ screener_name, max_symbols, offset, include_columns 
           rows: rows
         };
       })()
-    `, screener_name);
+    `, screenerRef);
 
     const allowed = new Set(symbols);
     result.columns = table?.columns || [];

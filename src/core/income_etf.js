@@ -1,4 +1,5 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { evaluateOnScreener } from '../connection.js';
 import {
@@ -8,6 +9,9 @@ import {
 import { get as getScreener } from './screener.js';
 
 const SCORE_VERSION = 1;
+const DEFAULT_RULES_PATH = fileURLToPath(
+  new URL('../../config/rules.json', import.meta.url)
+);
 const TAB_IDS = {
   overview: 'overview',
   fund_flows: 'fundFlows',
@@ -290,20 +294,36 @@ function buildPortfolio(rows, {
   };
 }
 
-async function selectedTab(screenerName) {
+function configuredScreenerId(screenerName, screenerId) {
+  if (screenerId) return screenerId;
+  try {
+    const rules = JSON.parse(readFileSync(DEFAULT_RULES_PATH, 'utf8'));
+    const configured = rules.screener_targets?.income_etf;
+    return configured?.screener_name === screenerName
+      ? configured.screener_id
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+async function selectedTab(screenerRef) {
+  const tabIds = JSON.stringify(Object.values(TAB_IDS));
   return evaluateOnScreener(`
     (function() {
-      var selected = Array.from(document.querySelectorAll('button[role="tab"]'))
+      var knownTabs = ${tabIds};
+      var selected = Array.from(document.querySelectorAll('button[role="tab"][data-qa-id]'))
         .find(function(button) {
-          return button.getAttribute('aria-selected') === 'true' ||
-            /selected/.test(button.className || '');
+          return knownTabs.includes(button.getAttribute('data-qa-id')) &&
+            (button.getAttribute('aria-selected') === 'true' ||
+              /selected/.test(button.className || ''));
         });
       return selected ? selected.getAttribute('data-qa-id') : null;
     })()
-  `, screenerName);
+  `, screenerRef);
 }
 
-async function selectTab(tabId, screenerName) {
+async function selectTab(tabId, screenerRef) {
   const clicked = await evaluateOnScreener(`
     (function() {
       var button = document.querySelector('button[role="tab"][data-qa-id="${tabId}"]');
@@ -311,22 +331,26 @@ async function selectTab(tabId, screenerName) {
       button.click();
       return true;
     })()
-  `, screenerName);
+  `, screenerRef);
   if (!clicked) throw new Error(`TradingView screener tab "${tabId}" was not found.`);
   for (let attempt = 0; attempt < 20; attempt++) {
-    if (await selectedTab(screenerName) === tabId) return;
+    if (await selectedTab(screenerRef) === tabId) return;
     await wait(150);
   }
   throw new Error(`TradingView screener tab "${tabId}" did not become active.`);
 }
 
-async function captureTab(key, tabId, screenerName) {
-  await selectTab(tabId, screenerName);
+async function captureTab(key, tabId, screenerName, screenerId) {
+  const screenerRef = screenerId
+    ? { screener_name: screenerName, screener_id: screenerId }
+    : screenerName;
+  await selectTab(tabId, screenerRef);
   const expectedFields = EXPECTED_TAB_FIELDS[key] || [];
   let lastFields = [];
   for (let attempt = 0; attempt < 20; attempt++) {
     const capture = await getScreener({
       screener_name: screenerName,
+      screener_id: screenerId,
       include_columns: true,
     });
     lastFields = (capture.columns || []).map(column => column.field);
@@ -546,6 +570,7 @@ function scoreRows(rows, frequencyScope = 'all') {
 
 export async function scanIncomeEtfs({
   screener_name = 'WKLY-DIV-ETF',
+  screener_id,
   top_n = 20,
   include_all = false,
   frequency = 'all',
@@ -555,17 +580,26 @@ export async function scanIncomeEtfs({
   maximum_exposure_pct = 30,
 } = {}) {
   const generatedAt = new Date().toISOString();
-  const originalTab = await selectedTab(screener_name);
+  const resolvedScreenerId = configuredScreenerId(screener_name, screener_id);
+  const screenerRef = resolvedScreenerId
+    ? { screener_name, screener_id: resolvedScreenerId }
+    : screener_name;
+  const originalTab = await selectedTab(screenerRef);
   const captures = {};
 
   try {
     for (const [key, tabId] of Object.entries(TAB_IDS)) {
-      captures[key] = await captureTab(key, tabId, screener_name);
+      captures[key] = await captureTab(
+        key,
+        tabId,
+        screener_name,
+        resolvedScreenerId
+      );
     }
     validateCaptureUniverses(captures);
   } finally {
     if (originalTab && Object.values(TAB_IDS).includes(originalTab)) {
-      try { await selectTab(originalTab, screener_name); } catch {}
+      try { await selectTab(originalTab, screenerRef); } catch {}
     }
   }
 
@@ -590,6 +624,7 @@ export async function scanIncomeEtfs({
   const result = {
     success: true,
     screener_name,
+    screener_id: resolvedScreenerId,
     generated_at: generatedAt,
     universe_size: normalized.length,
     frequency_scope: frequency,

@@ -14,6 +14,10 @@ export function registerScreenerTools(server) {
         .string()
         .optional()
         .describe('Name of the saved screen to read (e.g. "MOMENTUM"). If omitted, reads the currently active screen.'),
+      screener_id: z
+        .string()
+        .optional()
+        .describe('Stable saved-screener ID from the TradingView screener URL. When provided, target selection uses this ID before the window title.'),
       max_symbols: z
         .number()
         .int()
@@ -32,9 +36,15 @@ export function registerScreenerTools(server) {
         .default(false)
         .describe('Return visible screener columns and their per-row values in addition to symbols. Default: false.'),
     },
-    async ({ screener_name, max_symbols, offset, include_columns } = {}) => {
+    async ({ screener_name, screener_id, max_symbols, offset, include_columns } = {}) => {
       try {
-        return jsonResult(await core.get({ screener_name, max_symbols, offset, include_columns }));
+        return jsonResult(await core.get({
+          screener_name,
+          screener_id,
+          max_symbols,
+          offset,
+          include_columns,
+        }));
       } catch (err) {
         return jsonResult({ success: false, error: err.message }, true);
       }
@@ -63,6 +73,10 @@ export function registerScreenerTools(server) {
         .optional()
         .default('WKLY-DIV-ETF')
         .describe('Saved TradingView ETF screener name. Default: WKLY-DIV-ETF.'),
+      screener_id: z
+        .string()
+        .optional()
+        .describe('Stable TradingView saved-screener ID. Defaults to config/rules.json for WKLY-DIV-ETF.'),
       top_n: z
         .number()
         .int()
@@ -111,6 +125,7 @@ export function registerScreenerTools(server) {
     },
     async ({
       screener_name,
+      screener_id,
       top_n,
       include_all,
       frequency,
@@ -122,6 +137,7 @@ export function registerScreenerTools(server) {
       try {
         return jsonResult(await scanIncomeEtfs({
           screener_name,
+          screener_id,
           top_n,
           include_all,
           frequency,
@@ -145,6 +161,10 @@ export function registerScreenerTools(server) {
         .optional()
         .default('WKLY-DIV-ETF')
         .describe('Saved TradingView ETF screener name. Default: WKLY-DIV-ETF.'),
+      screener_id: z
+        .string()
+        .optional()
+        .describe('Stable TradingView saved-screener ID. Defaults to config/rules.json for WKLY-DIV-ETF.'),
       top_n: z
         .number()
         .int()
@@ -225,6 +245,7 @@ export function registerScreenerTools(server) {
     },
     async ({
       screener_name,
+      screener_id,
       top_n,
       frequency,
       portfolio_value,
@@ -241,6 +262,7 @@ export function registerScreenerTools(server) {
       try {
         return jsonResult(await monitorIncomeEtfs({
           screener_name,
+          screener_id,
           top_n,
           frequency,
           portfolio_value,
