@@ -1,5 +1,5 @@
 # Session Handoff — TradingView MCP Jackson
-**Date:** 2026-07-24  
+**Date:** 2026-07-25  
 **Handoff to:** Codex (Claude Code)  
 **Project root:** `C:\work\tradingview-mcp-jackson`
 
@@ -14,6 +14,27 @@ All watchlist scans healthy and trusted for daily use (verified 2026-07-18):
 - OSC RE10041 error: resolved — caused by excluded symbols, not a code bug
 
 No remaining blockers on screener scans.
+
+---
+
+## What Was Done This Session (2026-07-25)
+
+### Permission allowlist: Windows-path vs POSIX-path mismatch (root cause of a second round of daily prompts)
+
+`futures-morning-routine`'s 2026-07-25 scheduled run still needed manual approval for `ct_tv_data.py` despite the 2026-07-24 fix below, because the Bash tool actually runs Git Bash and normalizes paths to POSIX form (`/c/work/...`), while the existing allow rule only matched the Windows-slash form (`C:/work/...`). Same root cause then hit `mkdir` and the archive script.
+
+**Fix** (`.claude/settings.json`): added POSIX-path companion entries alongside the existing Windows-path ones:
+- `Bash(python /c/work/tradingview-mcp-jackson/scripts/ct_tv_data.py*)`
+- `Bash(mkdir -p /c/work/tradingview-mcp-jackson/reports/*)`
+- `Bash(node C:/work/tradingview-mcp-jackson/scripts/archive-old-reports.mjs*)` + POSIX variant (`tv-mcp-archive-old-reports` task had no coverage at all)
+- `Write(C:/Windows/Temp/**)` / `Write(/c/Windows/Temp/**)` + `Bash(python /c/Windows/Temp/*.py*)` + `Bash(rm /c/Windows/Temp/*)` — `weekly-decision-routine`'s scratch-file step was uncovered
+
+**Broader audit:** user asked to check all 11 scheduled tasks across all projects for the same gap. Found and fixed:
+- `canontrading-scrape` (`cannonedge-daily-pipeline`, live daily 5:40pm) — Gmail `create_draft` and `PushNotification` were missing entirely; allowlisted Python commands used bare `python` but the routine's own SKILL.md mandates the full `Python314\python.exe` path (mismatch); `daily_scrape`, `pipeline prune`, `post_summary email`, and the real `backup create daily` arg (only `create manual-test` was allowlisted) were missing. Fixed in `.claude/settings.local.json` (gitignored — personal/local only, not committed).
+- `bot-rhood` — had no `.claude/settings.json` at all despite `rh-sync-positions` running live every weekday. Created one covering `rh_sync_positions` + Robinhood read tools + `bot-rhood-daily-scan`'s tools (disabled). Order-placement tools deliberately excluded — that routine hard-bans them.
+- `local`, `webull-platform`, `brokers` — underlying tasks (`mcp-inventory-nightly-push`, `webull-db-backup`, `broker-daily-refresh`) are currently disabled, fixed anyway for when re-enabled. Note: `broker-daily-refresh`'s SKILL.md names `C:\work\brokers` as its project root, which doesn't match the `C:\work\trading-journal` path in global CLAUDE.md — unresolved naming mismatch, worth checking before re-enabling.
+
+**Global fix:** added a standing rule to `~/.claude/CLAUDE.md` requiring any new/edited scheduled task to get matching `.claude/settings.json` permission entries (in POSIX-path form) as part of its creation, not after the first failure.
 
 ---
 
