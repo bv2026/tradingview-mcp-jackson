@@ -7,49 +7,24 @@
  */
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join, resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { evaluate, KNOWN_PATHS } from '../connection.js';
 import * as chart from './chart.js';
 import * as data from './data.js';
 import * as screener from './screener.js';
 import { classifyResults } from './classify.js';
+import {
+  PROJECT_ROOT,
+  REPORTS_DIR,
+  dateFolderName,
+  incomeEtfWeekDirFor,
+  reportDateFromInput,
+  reportDirFor,
+  weekFolderName,
+} from './report_paths.js';
 import { switchTab } from './tab.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = resolve(__dirname, '../../');
 const SESSIONS_DIR = join(homedir(), '.tradingview-mcp', 'sessions');
-const REPORTS_DIR = join(PROJECT_ROOT, 'reports');
-
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-function dateFolderName(date = new Date()) {
-  const y = date.getFullYear();
-  const m = MONTHS[date.getMonth()];
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-// ISO 8601 week: Monday-start, week 1 = the week containing the year's first Thursday.
-// isoYear can differ from date.getFullYear() for dates in late Dec / early Jan.
-function isoWeekInfo(date = new Date()) {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = (d.getUTCDay() + 6) % 7; // Mon=0 .. Sun=6
-  d.setUTCDate(d.getUTCDate() - dayNum + 3); // shift to this week's Thursday
-  const isoYear = d.getUTCFullYear();
-  const yearStart = Date.UTC(isoYear, 0, 1);
-  const weekNum = Math.ceil(((d.getTime() - yearStart) / 86400000 + 1) / 7);
-  return { isoYear, weekNum };
-}
-
-function weekFolderName(date = new Date()) {
-  const { isoYear, weekNum } = isoWeekInfo(date);
-  return `${isoYear}-Wk${String(weekNum).padStart(2, '0')}`;
-}
-
-function reportDirFor(date = new Date()) {
-  return join(REPORTS_DIR, weekFolderName(date), dateFolderName(date));
-}
 
 function loadRules(rulesPath) {
   const candidates = [
@@ -590,10 +565,12 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
 }
 
 export function saveSession({ brief, instrument_type = 'momentum_stocks', is_summary = false, date } = {}) {
-  const now = date ? new Date(date) : new Date();
+  const now = reportDateFromInput(date);
   const folder = dateFolderName(now);
   const week = weekFolderName(now);
-  const reportDir = reportDirFor(now);
+  const reportDir = instrument_type === 'income_etf'
+    ? incomeEtfWeekDirFor(now)
+    : reportDirFor(now);
   mkdirSync(reportDir, { recursive: true });
 
   const isDailySum = instrument_type === 'daily_summary';
@@ -611,6 +588,8 @@ export function saveSession({ brief, instrument_type = 'momentum_stocks', is_sum
 
   const title = isDailySum
     ? 'Daily Market Summary'
+    : instrument_type === 'income_etf'
+      ? 'Income ETF Accumulation Report'
     : is_summary
       ? `${instrument_type.replace(/_/g, ' ').toUpperCase()} Summary`
       : `${instrument_type.replace(/_/g, ' ').toUpperCase()} Morning Brief`;
@@ -624,13 +603,21 @@ export function saveSession({ brief, instrument_type = 'momentum_stocks', is_sum
 
   writeFileSync(filePath, content, 'utf8');
 
-  return { success: true, path: filePath, folder: `${week}/${folder}` };
+  return {
+    success: true,
+    path: filePath,
+    folder: instrument_type === 'income_etf'
+      ? `inc-etf/${week}`
+      : `${week}/${folder}`,
+  };
 }
 
 export function getSession({ date, instrument_type } = {}) {
-  const now = date ? new Date(date) : new Date();
+  const now = reportDateFromInput(date);
   const folder = dateFolderName(now);
-  const reportDir = reportDirFor(now);
+  const reportDir = instrument_type === 'income_etf'
+    ? incomeEtfWeekDirFor(now)
+    : reportDirFor(now);
 
   if (instrument_type) {
     const filePath = join(reportDir, `${instrument_type}.md`);
@@ -640,7 +627,12 @@ export function getSession({ date, instrument_type } = {}) {
     // Try yesterday's folder (may be in a different ISO week)
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
-    const yPath = join(reportDirFor(yesterday), `${instrument_type}.md`);
+    const yPath = join(
+      instrument_type === 'income_etf'
+        ? incomeEtfWeekDirFor(yesterday)
+        : reportDirFor(yesterday),
+      `${instrument_type}.md`
+    );
     if (existsSync(yPath)) {
       return { success: true, note: 'No report for today — returning yesterday', path: yPath, content: readFileSync(yPath, 'utf8') };
     }

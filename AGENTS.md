@@ -1,6 +1,6 @@
 # TradingView MCP — Codex Instructions
 
-84 tools for reading and controlling a live TradingView Desktop chart via CDP (port 9222).
+86 tools for reading and controlling a live TradingView Desktop chart via CDP (port 9222).
 
 ## Morning Workflow (primary daily use)
 
@@ -22,6 +22,14 @@ screener_get screener_name="MOMENTUM-ETF" max_symbols=10
 
 **Step 2 — run brief** — pulls live symbols or the complete static watchlist, scans each symbol, and returns structured data for Codex to apply strategy rules. Crypto, crypto perps, and futures use `max_symbols: 0`, so they are uncapped by default.
 
+**ETF income workflow:**
+```
+income_etf_scan screener_name="WKLY-DIV-ETF" frequency="all" portfolio_value=100000
+```
+This merges Dividends, NAV performance, Overview, Fund flows, Holdings, Risk, and Technicals by ticker. Weekly and monthly payers are ranked together; frequency is used only for cash-flow scheduling. The `portfolio` result has no minimum or target fund count: hard gates determine membership, score determines relative sizing, position/exposure caps control concentration, and cash remains unallocated when too few funds qualify. `top_n` limits only the displayed ranking, never portfolio membership. NAV total return and NAV preservation outrank indicated yield, and issuer ROC/SEC-yield checks remain mandatory. Follow the returned `instruction` to render the complete accumulation report and call `session_save instrument_type="income_etf"`. Weekly income artifacts are isolated under `reports/inc-etf/<YYYY-WkNN>/` as `income_etf.md`, `scan-income_etf.json`, and `income_etf-alerts.json`. Monthly governance reviews belong under `reports/inc-etf/Mon-review/<YYYY-Mon>/`.
+
+For scheduled operation use `income_etf_monitor` instead of calling `income_etf_scan` directly. It runs the scan, compares the prior dated snapshot, creates alerts, and can accept a transient `actual_portfolio` object or `actual_portfolio_csv_path` for recommendation-only drift calculations. Broker CSV duplicate ticker rows are aggregated. Omitted cash remains unknown; use `allow_additional_funding=true` when external funding or margin buying power may support buys. For a regular taxable brokerage account use `taxable_account=true` and `gradual_reconciliation=true`; treat full-target drift as a destination, stage loss-lot reviews first, and defer or offset gain realization. Never claim exact tax results without acquisition dates and adjusted lot-level basis. Never claim that it persisted holdings, borrowed funds, or executed a rebalance. See `docs/INCOME_ETF_OPERATIONS.md`.
+
 **Step 3 — save brief** (optional):
 ```
 session_save brief="<Codex's output>"
@@ -42,7 +50,7 @@ The `morning_brief` tool's embedded instruction says to output bare pipe-delimit
 
 The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief body should start at `## {TYPE}`. See `reports/2026-Wk24/2026-Jun-13/` for reference structure.
 
-**Reports folder layout:** `reports/<YYYY-WkNN>/<YYYY-Mon-DD>/<type>.md` — daily reports are nested under an ISO 8601 week folder (Monday-start, year-prefixed so it sorts correctly across year boundaries, e.g. `2026-Wk27`) to keep `reports/` from accumulating hundreds of flat date folders. `reports/weekly/` (weekly review narratives) and `reports/archive/` (zipped old weeks) are separate, un-nested top-level folders — not part of this pattern. A weekly scheduled task (`tv-mcp-archive-old-reports`, Sundays) zips and moves week folders older than 8 weeks into `reports/archive/`; see `scripts/archive-old-reports.mjs`.
+**Reports folder layout:** `reports/<YYYY-WkNN>/<YYYY-Mon-DD>/<type>.md` — daily reports are nested under an ISO 8601 week folder (Monday-start, year-prefixed so it sorts correctly across year boundaries, e.g. `2026-Wk27`) to keep `reports/` from accumulating hundreds of flat date folders. Income ETF artifacts are the exception: use `reports/inc-etf/<YYYY-WkNN>/` for weekly files and `reports/inc-etf/Mon-review/<YYYY-Mon>/` for monthly reviews. `reports/weekly/` (weekly review narratives) and `reports/archive/` (zipped old weeks) are separate, un-nested top-level folders — not part of this pattern. A weekly scheduled task (`tv-mcp-archive-old-reports`, Sundays) zips and moves week folders older than 8 weeks into `reports/archive/`; see `scripts/archive-old-reports.mjs`.
 
 **Key files:**
 - `rules.json` — screener name per instrument type

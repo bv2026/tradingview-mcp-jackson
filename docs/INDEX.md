@@ -12,6 +12,7 @@ All working documentation is centralized here.
 | [docs/SETUP_GUIDE.md](/C:/work/tradingview-mcp-jackson/docs/SETUP_GUIDE.md) | Step-by-step setup guide |
 | [docs/USAGE_PROMPTS.md](/C:/work/tradingview-mcp-jackson/docs/USAGE_PROMPTS.md) | Prompt examples and workflow prompts |
 | [docs/CHEATSHEET.md](/C:/work/tradingview-mcp-jackson/docs/CHEATSHEET.md) | Daily and weekly quick reference |
+| [docs/INCOME_ETF_OPERATIONS.md](/C:/work/tradingview-mcp-jackson/docs/INCOME_ETF_OPERATIONS.md) | Income ETF monitoring, alerts, portfolio-provider contract, and operating cadence |
 | [docs/SESSION_HANDOFF.md](/C:/work/tradingview-mcp-jackson/docs/SESSION_HANDOFF.md) | Active handoff / session notes |
 
 ## Supporting Docs

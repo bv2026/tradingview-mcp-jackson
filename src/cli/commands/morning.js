@@ -57,7 +57,7 @@ register("session", {
             type: "string",
             short: "t",
             description:
-              "Instrument type: momentum_stocks | momentum_etf | momentum_ark | crypto | crypto_perps | futures | daily_summary (default: momentum_stocks)",
+              "Instrument type: momentum_stocks | momentum_etf | income_etf | momentum_ark | crypto | crypto_perps | futures | daily_summary (default: momentum_stocks)",
           },
           summary: {
             type: "boolean",

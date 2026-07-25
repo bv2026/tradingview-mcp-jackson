@@ -198,6 +198,16 @@ If a brief is rejected with an "invalid enum value" error for a new instrument t
 
 ## 🧠 How a brief works (so the output makes sense)
 
+### ETF income
+
+```text
+income ETF scan
+```
+
+Runs `income_etf_scan` against `WKLY-DIV-ETF`. It merges the Dividends, NAV performance, Overview, Fund flows, Holdings, Risk, and Technicals tabs and ranks weekly and monthly payers together, with NAV total return and NAV preservation weighted above indicated yield. The scanner also builds a score-driven model portfolio: there is no target fund count, `top_n` is display-only, risk caps can leave cash unallocated, and limited-history funds are capped at small weights. Weekly artifacts are isolated under `reports/inc-etf/<YYYY-WkNN>/`; monthly governance reviews use `reports/inc-etf/Mon-review/<YYYY-Mon>/`. Payment frequency is retained only for cash-flow scheduling. See `config/screeners/WKLY-DIV-ETF.md`.
+
+For the weekly scheduled workflow, run `income_etf_monitor` instead. It performs the scan, compares the prior dated snapshot, saves alert metadata, and optionally accepts an external `actual_portfolio` object or broker `actual_portfolio_csv_path` to calculate recommendation-only drift. Duplicate CSV ticker rows are aggregated. Omitted cash remains unknown; set `allow_additional_funding=true` when external capital or margin buying power is available. For this taxable brokerage workflow also set `taxable_account=true` and `gradual_reconciliation=true` so loss reviews precede gain realization and model exits are staged rather than treated as immediate liquidation. See `docs/INCOME_ETF_OPERATIONS.md`.
+
 **Core equity types** (momentum_stocks, momentum_etf — live screener):
 1. **L1 — universe:** live MOMENTUM screener supplies the symbols.
 2. **L2 — lux_screener_scan:** batches symbols through LuxAlgo S&O + PAC + OSC on the weekly chart. Hard filter: BOS + Bullish/Strong Bullish S&O Rating + ▲/▲+ Signal. Only passing symbols proceed.
