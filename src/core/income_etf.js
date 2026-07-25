@@ -2,10 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { evaluateOnScreener } from '../connection.js';
-import {
-  archiveIncomeEtfRun,
-  incomeEtfWeekDirFor,
-} from './report_paths.js';
+import { incomeEtfWeekDirFor } from './report_paths.js';
 import { get as getScreener } from './screener.js';
 
 const SCORE_VERSION = 1;
@@ -677,7 +674,6 @@ export async function scanIncomeEtfs({
   const reportDir = incomeEtfWeekDirFor();
   mkdirSync(reportDir, { recursive: true });
   const rawPath = join(reportDir, 'scan-income_etf.json');
-  result.previous_run_archived_to = archiveIncomeEtfRun(reportDir);
   writeFileSync(rawPath, JSON.stringify({ ...result, all: ranked }, null, 2), 'utf8');
   result.saved_to = rawPath;
 

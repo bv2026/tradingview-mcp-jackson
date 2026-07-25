@@ -20,8 +20,6 @@ import { incomeEtfTestHelpers } from '../src/core/income_etf.js';
 import { incomeEtfMonitorTestHelpers } from '../src/core/income_etf_monitor.js';
 import { buildMonthlyReview } from '../src/core/income_etf_monthly_review.js';
 import {
-  archiveIncomeEtfArtifact,
-  archiveIncomeEtfRun,
   incomeEtfMonthlyReviewDirFor,
   incomeEtfWeekDirFor,
   reportDateFromInput,
@@ -684,37 +682,16 @@ describe('MCP tool wiring', () => {
     assert.ok(!src.includes('alerts: result.alerts,'));
   });
 
-  it('income ETF canonical artifacts are archived before replacement', () => {
-    const root = join(tmpdir(), `income-etf-archive-${Date.now()}`);
-    const file = join(root, '2026-Wk30', 'scan-income_etf.json');
-    mkdirSync(dirname(file), { recursive: true });
-    writeFileSync(file, JSON.stringify({
-      generated_at: '2026-07-25T14:00:00.000Z',
-      marker: 'first',
-    }));
-    const archived = archiveIncomeEtfArtifact(file);
-    assert.ok(existsSync(archived));
-    assert.equal(JSON.parse(readFileSync(archived, 'utf8')).marker, 'first');
-    rmSync(root, { recursive: true, force: true });
-  });
-
-  it('income ETF run archiving groups scan, alerts, and report together', () => {
-    const root = join(tmpdir(), `income-etf-run-${Date.now()}`);
-    mkdirSync(root, { recursive: true });
-    writeFileSync(join(root, 'scan-income_etf.json'), JSON.stringify({
-      generated_at: '2026-07-25T14:00:00.000Z',
-    }));
-    writeFileSync(join(root, 'income_etf-alerts.json'), '{}');
-    writeFileSync(join(root, 'income_etf.md'), '# Report');
-    const archiveDir = archiveIncomeEtfRun(root);
-    for (const artifact of [
-      'scan-income_etf.json',
-      'income_etf-alerts.json',
-      'income_etf.md',
-    ]) {
-      assert.ok(existsSync(join(archiveDir, artifact)));
-    }
-    rmSync(root, { recursive: true, force: true });
+  it('income ETF reruns overwrite canonical artifacts without a runs archive', () => {
+    const scanSrc = readFileSync(join(ROOT, 'src/core/income_etf.js'), 'utf8');
+    const monthlySrc = readFileSync(
+      join(ROOT, 'src/core/income_etf_monthly_review.js'),
+      'utf8'
+    );
+    const pathsSrc = readFileSync(join(ROOT, 'src/core/report_paths.js'), 'utf8');
+    assert.ok(!scanSrc.includes('archiveIncomeEtfRun'));
+    assert.ok(!monthlySrc.includes('archiveIncomeEtfArtifact'));
+    assert.ok(!pathsSrc.includes("'runs'"));
   });
 
   it('income ETF confirmation history uses distinct prior weeks', () => {

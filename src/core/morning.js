@@ -16,7 +16,6 @@ import { classifyResults } from './classify.js';
 import {
   PROJECT_ROOT,
   REPORTS_DIR,
-  archiveIncomeEtfArtifact,
   dateFolderName,
   incomeEtfMonthlyReviewDirFor,
   incomeEtfWeekDirFor,
@@ -609,9 +608,6 @@ export function saveSession({ brief, instrument_type = 'momentum_stocks', is_sum
     brief,
   ].join('\n');
 
-  if (instrument_type === 'income_etf_monthly_review') {
-    archiveIncomeEtfArtifact(filePath);
-  }
   writeFileSync(filePath, content, 'utf8');
 
   return {

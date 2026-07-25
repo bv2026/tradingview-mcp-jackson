@@ -7,7 +7,6 @@ import {
 } from 'node:fs';
 import { basename, join } from 'node:path';
 import {
-  archiveIncomeEtfArtifact,
   INCOME_ETF_REPORTS_DIR,
   incomeEtfMonthlyReviewDirFor,
   reportDateFromInput,
@@ -161,7 +160,6 @@ export function buildMonthlyReview({
       );
   mkdirSync(reportDir, { recursive: true });
   const path = join(reportDir, 'monthly-review.json');
-  result.previous_run_archived_to = archiveIncomeEtfArtifact(path);
   writeFileSync(path, JSON.stringify(result, null, 2), 'utf8');
   result.saved_to = path;
   return result;

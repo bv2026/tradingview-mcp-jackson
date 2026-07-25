@@ -154,7 +154,7 @@ export function registerScreenerTools(server) {
 
   server.tool(
     'income_etf_monitor',
-    'Persist the complete income ETF market scan before processing external holdings, compare it with archived prior runs, generate qualification/NAV/yield/allocation alerts and two-scan confirmation state, and optionally compare the model target with an externally supplied actual portfolio object or broker-exported CSV. Duplicate tickers are aggregated and partial cost basis remains unknown. Holdings-derived details are transient and are not persisted or traded. Returns deterministic report inputs compatible with session_save instrument_type="income_etf".',
+    'Persist the complete income ETF market scan before processing external holdings, compare it with distinct prior-week canonical snapshots, generate qualification/NAV/yield/allocation alerts and two-scan confirmation state, and optionally compare the model target with an externally supplied actual portfolio object or broker-exported CSV. Same-week reruns overwrite canonical artifacts in place. Duplicate tickers are aggregated and partial cost basis remains unknown. Holdings-derived details are transient and are not persisted or traded. Returns deterministic report inputs compatible with session_save instrument_type="income_etf".',
     {
       screener_name: z
         .string()

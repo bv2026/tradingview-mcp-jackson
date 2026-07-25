@@ -126,9 +126,9 @@ The workflow matches the standard strategy-report pipeline:
 4. `income_etf_monitor` writes `reports/inc-etf/<YYYY-WkNN>/income_etf-alerts.json`.
 5. `session_save instrument_type="income_etf"` writes `reports/inc-etf/<YYYY-WkNN>/income_etf.md`.
 
-When a canonical weekly scan already exists, the prior scan, alert artifact, and
-Markdown report are copied together into the same week's `runs/<timestamp>/`
-folder before the new scan replaces the canonical latest snapshot.
+When a canonical weekly scan already exists, the new operation overwrites the
+canonical scan, alert artifact, and Markdown report in place. No same-week
+`runs/` archive is created.
 
 The Markdown narrative is model-rendered from deterministic structured values, just like the other strategy briefs. Scores, gates, allocations, cash, and projections come from code and must not be recalculated or changed during rendering.
 

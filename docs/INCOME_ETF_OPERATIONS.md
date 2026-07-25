@@ -131,10 +131,8 @@ reports/inc-etf/Mon-review/<YYYY-Mon>/
 weekly snapshots. Render its returned instruction and save the narrative with
 `session_save instrument_type="income_etf_monthly_review"`.
 
-When a canonical weekly artifact already exists, it is copied to
-`reports/inc-etf/<YYYY-WkNN>/runs/<timestamp>/` before replacement. The canonical
-files always represent the latest completed run; the `runs/` tree preserves
-same-week reruns and exception scans.
+When a weekly or monthly operation is rerun, it overwrites that period's
+canonical artifacts in place. No `runs/` archive is created.
 
 The alert artifact contains scanner/model alerts and confirmation state. It does
 not persist actual holdings, values, weights, cost basis, or holdings-derived alert
@@ -216,9 +214,8 @@ the workflow or rebuilding a static watchlist.
   Saturday run can produce a model-exit alert.
 - Broker CSV holdings are independent of screener membership. Removing a symbol
   from TradingView does not delete or persistently alter the supplied holdings.
-- The canonical weekly snapshot is replaceable, but the prior copy is archived
-  under `runs/<timestamp>/` before replacement. Archived runs provide the baseline
-  for entry, exit, score, yield, frequency, and allocation comparisons.
+- The canonical weekly snapshot is overwritten in place on a same-week rerun.
+  Comparisons use distinct prior-week canonical snapshots, not same-week reruns.
 
 ## Scanner alerts
 

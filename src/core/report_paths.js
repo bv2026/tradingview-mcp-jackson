@@ -1,11 +1,4 @@
-import {
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  statSync,
-} from 'node:fs';
-import { basename, dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -66,46 +59,4 @@ export function incomeEtfMonthlyReviewDirFor(date = new Date()) {
     'Mon-review',
     `${date.getFullYear()}-${MONTHS[date.getMonth()]}`,
   );
-}
-
-function safeRunFolderName(value) {
-  const date = reportDateFromInput(value);
-  return date.toISOString().replace(/[:.]/g, '-');
-}
-
-export function archiveIncomeEtfArtifact(filePath, generatedAt = null) {
-  if (!existsSync(filePath)) return null;
-  let artifactDate = generatedAt;
-  if (!artifactDate && filePath.endsWith('.json')) {
-    try {
-      artifactDate = JSON.parse(readFileSync(filePath, 'utf8')).generated_at;
-    } catch {}
-  }
-  if (!artifactDate) artifactDate = statSync(filePath).mtime;
-  const archiveDir = join(dirname(filePath), 'runs', safeRunFolderName(artifactDate));
-  mkdirSync(archiveDir, { recursive: true });
-  const archivedPath = join(archiveDir, basename(filePath));
-  copyFileSync(filePath, archivedPath);
-  return archivedPath;
-}
-
-export function archiveIncomeEtfRun(reportDir) {
-  const snapshotPath = join(reportDir, 'scan-income_etf.json');
-  if (!existsSync(snapshotPath)) return null;
-  let generatedAt = null;
-  try {
-    generatedAt = JSON.parse(readFileSync(snapshotPath, 'utf8')).generated_at;
-  } catch {}
-  if (!generatedAt) generatedAt = statSync(snapshotPath).mtime;
-  const archiveDir = join(reportDir, 'runs', safeRunFolderName(generatedAt));
-  mkdirSync(archiveDir, { recursive: true });
-  for (const artifact of [
-    'scan-income_etf.json',
-    'income_etf-alerts.json',
-    'income_etf.md',
-  ]) {
-    const source = join(reportDir, artifact);
-    if (existsSync(source)) copyFileSync(source, join(archiveDir, artifact));
-  }
-  return archiveDir;
 }
