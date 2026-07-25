@@ -177,7 +177,8 @@ WATCHLIST SCANS (lux_screener_scan tool):
 
 ## Git State
 
-Branch: `main` — clean and pushed as of 2026-07-24 (commit `1131fe1`).
+Branch: `main` — committed locally as of 2026-07-25 (commit `c567ae1`), not yet pushed.
 
-- `.claude/settings.json` — dead `futures_decision_hook.py` PostToolUse hook removed; permission allowlist added for morning-routine tools (both committed 2026-07-24)
+- `.claude/settings.json` — dead `futures_decision_hook.py` PostToolUse hook removed; permission allowlist added for morning-routine tools (committed 2026-07-24); POSIX-path Bash entries + archive/scratch-file permissions added (committed 2026-07-25, `c567ae1`)
 - `C:\Users\vsbra\.claude\scheduled-tasks\futures-morning-routine\SKILL.md` — Step 5 changed from `create_scheduled_task` to `update_scheduled_task` (lives outside this repo, not tracked by this git history)
+- `C:\Users\vsbra\.claude\CLAUDE.md` — new global rule added 2026-07-25: any new/edited scheduled task must get matching `.claude/settings.json` permission entries as part of its creation (lives outside this repo)
