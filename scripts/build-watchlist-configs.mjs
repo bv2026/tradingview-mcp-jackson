@@ -127,7 +127,8 @@ function parseArkCsv(path) {
 /**
  * Parse CSV/CRYPTO.csv (TradingView Crypto Coins Screener export).
  * Instrument column = bare base ticker (BTC, ETH, …).
- * Returns array of COINBASE:{BASE}USD symbol strings, blocklist applied.
+ * Returns every CSV row as a COINBASE:{BASE}USD symbol string.
+ * The CSV is the source of truth; no runtime blocklist is applied here.
  */
 function parseCryptoCsv(path) {
   const lines = readFileSync(path, 'utf8').split('\n').filter(l => l.trim());
@@ -147,7 +148,8 @@ function parseCryptoCsv(path) {
 /**
  * Parse CSV/PERPS.csv (TradingView CEX Screener export).
  * Symbol column = raw perp ticker (BTCUSDC.P, ETHUSDC.P, …).
- * Returns array of COINBASE:{SYMBOL} strings, blocklist applied to base ticker.
+ * Returns every CSV row as a COINBASE:{SYMBOL} string.
+ * The CSV is the source of truth; no runtime blocklist is applied here.
  */
 /**
  * Parse CSV/FUTURES.csv. Symbol column already has full exchange prefix (e.g. CME_MINI:ES1!).
@@ -325,6 +327,7 @@ function main() {
       watchlist_source:    cryptoCsv,
       watchlist_generated: generated,
       screener_name:       null,
+      max_symbols:         0,
       watchlist:           cryptoSymbols,
     });
     console.log(`\ncrypto:          ${cryptoSymbols.length} symbols → ${cryptoOut}`);
@@ -341,6 +344,7 @@ function main() {
       watchlist_source:    perpsCsv,
       watchlist_generated: generated,
       screener_name:       null,
+      max_symbols:         0,
       watchlist:           perpsSymbols,
     });
     console.log(`\ncrypto_perps:    ${perpsSymbols.length} symbols → ${perpsOut}`);
@@ -365,13 +369,10 @@ function main() {
       watchlist_source:    futuresCsv,
       watchlist_generated: generated,
       screener_name:       null,
+      max_symbols:         0,
       watchlist,
       sector_map:          sectorMap,
     });
-    // Remove stale max_symbols if present
-    const cfg = JSON.parse(readFileSync(futuresOut, 'utf8'));
-    delete cfg.max_symbols;
-    writeFileSync(futuresOut, JSON.stringify(cfg, null, 2) + '\n', 'utf8');
     console.log(`\nfutures:         ${watchlist.length} symbols → ${futuresOut}`);
     watchlist.forEach(s => console.log(`  ${s}`));
   } else {

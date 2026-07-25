@@ -1,15 +1,17 @@
 # TradingView MCP — Claude Instructions
 
-84 tools for reading and controlling a live TradingView Desktop chart via CDP (port 9222).
+86 tools for reading and controlling a live TradingView Desktop chart via CDP (port 9222).
 
 ## Morning Workflow (primary daily use)
 
-Core briefs (live screeners):
+Core briefs:
 
 ```
-morning_brief instrument_type="momentum_stocks" # equity momentum
-morning_brief instrument_type="crypto"          # crypto spot (Coinbase)
-morning_brief instrument_type="crypto_perps"    # crypto perps (Coinbase CDE)
+morning_brief instrument_type="momentum_stocks" # live MOMENTUM screener
+morning_brief instrument_type="momentum_etf"    # live MOMENTUM-ETF screener
+morning_brief instrument_type="crypto"          # full static CSV/CRYPTO.csv watchlist
+morning_brief instrument_type="crypto_perps"    # full static CSV/PERPS.csv watchlist
+morning_brief instrument_type="futures"         # full static CSV/FUTURES.csv watchlist
 ```
 
 Watchlist briefs (static CSV → lux_screener_scan, no live screener needed):
@@ -37,6 +39,14 @@ screener_get screener_name="MOMENTUM" max_symbols=10
 
 **Step 2 — run brief** — pulls live symbols (or static watchlist), scans each symbol, returns structured data for Claude to apply strategy rules.
 
+**ETF income workflow:**
+```
+income_etf_scan screener_name="WKLY-DIV-ETF" frequency="all" portfolio_value=100000
+```
+This merges Dividends, NAV performance, Overview, Fund flows, Holdings, Risk, and Technicals by ticker. Weekly and monthly payers are ranked together; frequency is used only for cash-flow scheduling. The `portfolio` result has no minimum or target fund count: hard gates determine membership, score determines relative sizing, position/exposure caps control concentration, and cash remains unallocated when too few funds qualify. `top_n` limits only the displayed ranking, never portfolio membership. NAV total return and NAV preservation outrank indicated yield, and issuer ROC/SEC-yield checks remain mandatory. Follow the returned `instruction` to render the complete accumulation report and call `session_save instrument_type="income_etf"`. Weekly income artifacts are isolated under `reports/inc-etf/<YYYY-WkNN>/` as `income_etf.md`, `scan-income_etf.json`, and `income_etf-alerts.json`. Monthly governance reviews belong under `reports/inc-etf/Mon-review/<YYYY-Mon>/`.
+
+For scheduled operation use `income_etf_monitor` instead of calling `income_etf_scan` directly. It runs the scan, compares the prior dated snapshot, creates alerts, and can accept a transient `actual_portfolio` object or `actual_portfolio_csv_path` for recommendation-only drift calculations. Broker CSV duplicate ticker rows are aggregated. Omitted cash remains unknown; use `allow_additional_funding=true` when external funding or margin buying power may support buys. For a regular taxable brokerage account use `taxable_account=true` and `gradual_reconciliation=true`; treat full-target drift as a destination, stage loss-lot reviews first, and defer or offset gain realization. Never claim exact tax results without acquisition dates and adjusted lot-level basis. Never claim that it persisted holdings, borrowed funds, or executed a rebalance. See `docs/INCOME_ETF_OPERATIONS.md`.
+
 **Chart sharing note:** `crypto` and `crypto_perps` both use the MY-PERPS chart tab (`6y8jPo4Y`). Do NOT run both briefs simultaneously — run one, wait for it to finish, then run the other.
 
 **Step 3 — save brief** (optional):
@@ -50,7 +60,7 @@ session_get   # retrieve today's or yesterday's saved brief
 **Brief formatting convention (REQUIRED for `session_save`):**
 The `morning_brief` tool's embedded instruction says to output bare pipe-delimited lines (`SYMBOL | BIAS: ... | SIGNAL: ...`). Do NOT save that raw form — it does not render as a table in markdown. Always reshape the analysis into proper GitHub-flavored markdown before calling `session_save`:
 - `## {TYPE}` section, then `**Benchmark:**` and `**Theme:**` bullet blocks
-- For `momentum_stocks` and `momentum_etf` (large symbol lists): insert a `### Top 20 Setups` table here, before the full symbol table. Sorted descending by `GAP` (TWB Histogram − Signal — strongest divergence first). This is a trade-quality ranking, NOT the same as the underlying screener's own live rank. State this distinction in one line above the table so readers don't confuse the two orderings. Columns: `| RANK | SYMBOL | TWB HIST | TWB SIG | GAP | CLOSE | NW POSITION |`, filtered to **Bullish-biased symbols only**.
+- For `momentum_stocks` and `momentum_etf` (large symbol lists): insert a `### Top 20 Setups` table before the full symbol table. Rank the names that passed the Lux BOS + Bullish S&O + ▲ hard filter by Lux score, then use NW position to exclude extended entries. This trade-quality order is separate from the live screener rank. Columns: `| RANK | SYMBOL | S&O RATING | SIGNAL | PAC STRUCTURE | SCORE | NW POSITION |`.
 - For `momentum_ark` (lux_screener_scan output, 141 symbols): insert a `### Top 20 Setups` table sorted descending by lux score. Columns: `| RANK | SYMBOL | S&O RATING | SIGNAL | PAC STRUCTURE | SCORE | CLUSTER |`, filtered to **passing symbols only** (score ≥ 0, i.e. BOS + Bullish + ▲). Add a cluster-concentration note below if any correlation cluster (ai_semis/fintech_crypto/autonomy_space/ai_software/genomics) appears more than once, naming the single best pick per cluster.
 - A per-symbol **markdown table** with a header row and `|---|` separator: `| SYMBOL | BIAS | SIGNAL | WATCH |` (use `| SYMBOL | S&O RATING | SIGNAL | PAC | SCORE | CLUSTER |` for `momentum_ark`). Precede with a `### Screener List` header and a leading `#` column numbering rows 1-N in watchlist weight order.
 - `### Top 3 Setups` — prose or a table with Entry/Stop/TP1/R:R columns. For `momentum_stocks`/`momentum_etf`/`momentum_ark`, top 3 from the Top 20 table above — not independently re-selected. For `momentum_ark`, note any cluster overlap and swap in next-ranked name from a different cluster if needed.
@@ -63,7 +73,7 @@ The `morning_brief` tool's embedded instruction says to output bare pipe-delimit
 
 The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief body should start at `## {TYPE}`. See `reports/2026-Wk24/2026-Jun-13/` for reference structure.
 
-**Reports folder layout:** `reports/<YYYY-WkNN>/<YYYY-Mon-DD>/<type>.md` — daily reports are nested under an ISO 8601 week folder (Monday-start, year-prefixed so it sorts correctly across year boundaries, e.g. `2026-Wk27`) to keep `reports/` from accumulating hundreds of flat date folders. `reports/weekly/` (weekly review narratives) and `reports/archive/` (zipped old weeks) are separate, un-nested top-level folders — not part of this pattern. A weekly scheduled task (`tv-mcp-archive-old-reports`, Sundays) zips and moves week folders older than 8 weeks into `reports/archive/`; see `scripts/archive-old-reports.mjs`.
+**Reports folder layout:** `reports/<YYYY-WkNN>/<YYYY-Mon-DD>/<type>.md` — daily reports are nested under an ISO 8601 week folder (Monday-start, year-prefixed so it sorts correctly across year boundaries, e.g. `2026-Wk27`) to keep `reports/` from accumulating hundreds of flat date folders. Income ETF artifacts are the exception: use `reports/inc-etf/<YYYY-WkNN>/` for weekly files and `reports/inc-etf/Mon-review/<YYYY-Mon>/` for monthly reviews. `reports/weekly/` (weekly review narratives) and `reports/archive/` (zipped old weeks) are separate, un-nested top-level folders — not part of this pattern. A weekly scheduled task (`tv-mcp-archive-old-reports`, Sundays) zips and moves week folders older than 8 weeks into `reports/archive/`; see `scripts/archive-old-reports.mjs`.
 
 **Key files:**
 - `rules.json` — screener name per instrument type
@@ -108,21 +118,21 @@ The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief 
 
 | | |
 |---|---|
-| **Screener** | `MOMENTUM-CRYPTO` (Crypto Coins Screener, Coinbase large caps >$5B mcap, >$100M vol) |
+| **Source** | Static `CSV/CRYPTO.csv` watchlist; `max_symbols: 0` scans the complete list |
 | **Timeframe** | Daily bias, 4H entry confirmation |
-| **Benchmark** | BTC above 50-day SMA → longs only. BTC below 50d SMA → all alts neutral/bearish. |
-| **Side** | Long only (spot + max 3x futures). No shorts. |
-| **Exchange** | Coinbase only. Non-Coinbase coins → SKIP. |
-| **Universe** | BTC, ETH, SOL, XRP, DOGE, ZEC, ADA, LINK, XLM (9 coins after blocklist) |
+| **Benchmark** | No hard BTC-SMA gate. Evaluate every symbol on its own TWB + NW + S/R data; use BTC as session context. |
+| **Side** | Long only. |
+| **Exchange** | Coinbase USD spot pairs generated from the CSV |
+| **Universe** | Whatever is present in `CSV/CRYPTO.csv`; no runtime blocklist |
 
 **Bias rules:**
-- Bullish: BTC above 50d SMA + HH/HL + TWB bullish + volume + approaching upper NW band + catalyst
-- Bearish: BTC below 50d SMA → avoid all alt longs
-- Neutral: BTC consolidating near 50d SMA, no TWB signal, chop
+- Long: symbol TWB Histogram positive and above signal, NW not extended, and price above S/R support
+- Bonus confirmation: `sr_break > 0` can validate a breakout even when the NW reading is extended
+- Skip: negative TWB, an unconfirmed move beyond the upper NW band, or rejection at S/R resistance
 
-**Entry:** Consolidation near highs + Daily TWB bullish + 4H TWB confirms + volume + NW not extended
+**Entry:** Daily TWB positive and above signal + 4H confirmation + volume + NW inside bands, unless `sr_break > 0` confirms the breakout.
 **Exits:** Stop below breakout low. TP1: 1/3 at upper NW band. TP2: 1/3 at 2R + trail 4H 9 EMA. TP3: 1/3 if 4H 9 EMA violated for 2 candles. Emergency: BTC −8% intraday → exit ALL.
-**Risk:** 2% max/trade, max 3 positions, max 3x leverage on futures, no averaging down.
+**Risk:** 2% max/trade, max 3 positions, no averaging down.
 
 ---
 
@@ -130,12 +140,12 @@ The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief 
 
 | | |
 |---|---|
-| **Screener** | `MOMENTUM-PERPS` (CEX Screener, Coinbase, Perpetual, USDC, >$1M vol) |
+| **Source** | Static `CSV/PERPS.csv` watchlist; `max_symbols: 0` scans the complete list |
 | **Timeframe** | Daily bias, 4H entry confirmation |
 | **Benchmark** | BTC perp **TWB Histogram direction** (not SMA) |
 | **Side** | **Both long AND short** depending on BTC TWB signal |
 | **Exchange** | Coinbase CDE (USDC-settled perps) |
-| **Universe** | ~12 clean crypto + SILVER + GOLD after blocklist |
+| **Universe** | Whatever is present in `CSV/PERPS.csv`; no runtime blocklist |
 
 **Benchmark signal rules:**
 - BTC TWB Histogram **> 0** → uptrend → scan ALL alts for **LONG** setups
@@ -151,24 +161,18 @@ The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief 
 **Funding exit:** Long: exit if funding >0.1%/hr. Short: exit if funding <−0.05%/hr.
 **Emergency:** BTC ±8% intraday → exit ALL.
 
-**Commodity perps (SILVER, GOLD):** Exempt from BTC benchmark. Use their own TWB signal + DXY direction. Positive TWB + DXY weakening = long. Negative TWB + DXY strengthening = short.
+**Commodity perps:** When SILVER or GOLD is present in the CSV, it is exempt from the BTC benchmark. Use its own TWB signal + DXY direction.
 
 **Risk:** 2% max/trade, max 3 positions, max 3x leverage, no averaging down.
 
 ---
 
-## Screener Blocklists (enforced in code)
+## Static CSV Watchlists
 
-### Crypto Spot blocklist (`CRYPTO_BLOCKLIST` in `src/core/screener.js`)
-Removes: stablecoins (USDT/USDC/DAI), wrapped tokens (WBTC/WETH), tokenized gold (XAUT/PAXG), BNB, XMR, TRX
-
-### Perps blocklist (`PERPS_BASE_BLOCKLIST` in `src/core/screener.js`)
-Removes by base ticker:
-- **Stocks/ETFs:** META, TSLA, GOOGL, INTC, AMZN, SPY, NVDA, AAPL, MSFT, MU, AMD, ARM, QQQ, ROBO, NBIS
-- **Fiat:** EURC, USDT, USDC, DAI
-- **Meme/micro:** PUMP, BILL, 1000SHIB, 1000PEPE, MEME, SNDK, CBRS, MERL, W
-- **Low quality:** HYPE, CRV, BE
-- **Keeps:** SILVER, GOLD, PAXG (commodity perps intentionally included)
+- `CSV/CRYPTO.csv`, `CSV/PERPS.csv`, and `CSV/FUTURES.csv` are the source of truth.
+- `scripts/build-watchlist-configs.mjs` regenerates the corresponding strategy watchlists.
+- The builder preserves every CSV row; there is no hidden runtime blocklist.
+- These three strategies use `max_symbols: 0`, so a normal `morning_brief` scans the entire generated watchlist. Callers can still pass `offset` and `max_symbols` explicitly to batch a run.
 
 ---
 
@@ -177,10 +181,11 @@ Removes by base ticker:
 ```
 morning_brief instrument_type="crypto"
 ```
-- Screener window must be open in TradingView — separate CDP target at `tradingview.com/crypto-coins-screener/`
-- Benchmark: BTC above 50-day SMA required for any alt bullish bias
+- No crypto screener window is required; symbols come from `CSV/CRYPTO.csv`
+- The complete generated watchlist is scanned by default
+- No BTC 50-day-SMA gate; apply per-symbol TWB + NW + S/R rules
 - Timeframe: Daily for bias, 4H for entry confirmation
-- Spot + futures (max 3x leverage), Coinbase only
+- Coinbase USD spot pairs only
 - Emergency exit: BTC drops 8%+ intraday → exit ALL positions
 
 ## Crypto Perps Workflow
@@ -188,10 +193,11 @@ morning_brief instrument_type="crypto"
 ```
 morning_brief instrument_type="crypto_perps"
 ```
-- Screener window must be open — separate CDP target at `tradingview.com/cex-screener/`
+- No CEX screener window is required; symbols come from `CSV/PERPS.csv`
+- The complete generated watchlist is scanned by default
 - Benchmark: BTC perp TWB Histogram direction (positive = longs, negative = shorts)
 - Both sides active — brief outputs top 3 LONG or top 3 SHORT candidates
-- Commodity perps (SILVER, GOLD) evaluated independently of BTC signal
+- Commodity perps, when present in the CSV, are evaluated independently of BTC
 
 ## Decision Tree — Which Tool When
 

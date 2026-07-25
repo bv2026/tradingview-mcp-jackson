@@ -66,7 +66,7 @@ function filterPerpsSymbols(symbols) {
   });
 }
 
-export async function get({ screener_name, max_symbols, offset } = {}) {
+export async function get({ screener_name, max_symbols, offset, include_columns = false } = {}) {
   const sc = await getScreenerClient(screener_name);
   if (!sc) {
     throw new Error(
@@ -129,7 +129,7 @@ export async function get({ screener_name, max_symbols, offset } = {}) {
   const limit = max_symbols && max_symbols > 0 ? max_symbols : filtered.length;
   const symbols = filtered.slice(start, start + limit);
 
-  return {
+  const result = {
     success: true,
     name: finalName,
     instrument_type: mapScreenerType(screenerType),
@@ -141,6 +141,56 @@ export async function get({ screener_name, max_symbols, offset } = {}) {
     max_symbols: limit,
     symbols,
   };
+
+  if (include_columns) {
+    const table = await ev(`
+      (function() {
+        var headerEls = Array.from(document.querySelectorAll('thead th'));
+        var columns = headerEls
+          .map(function(el, index) {
+            var field = el.getAttribute('data-field');
+            if (!field) return null;
+            return {
+              index: index,
+              field: field,
+              label: (el.innerText || '').trim().replace(/\\s+/g, ' '),
+              sorted: !!el.querySelector('[class*="activeSortColumnTitle"]')
+            };
+          })
+          .filter(Boolean);
+
+        var rows = Array.from(document.querySelectorAll('tbody tr[data-rowkey]')).map(function(row) {
+          var symbol = row.getAttribute('data-rowkey');
+          var cells = Array.from(row.querySelectorAll('td'));
+          var symbolText = cells[0] ? (cells[0].innerText || '').trim() : '';
+          var symbolLines = symbolText.split('\\n').map(function(s) { return s.trim(); }).filter(Boolean);
+          var values = {};
+          columns.forEach(function(column) {
+            var cell = cells[column.index];
+            values[column.field] = cell ? (cell.innerText || '').trim().replace(/\\s+/g, ' ') : '';
+          });
+          return {
+            symbol: symbol,
+            ticker: symbolLines[0] || (symbol || '').split(':').pop(),
+            name: symbolLines.slice(1).join(' '),
+            values: values
+          };
+        });
+
+        return {
+          columns: columns,
+          rows: rows
+        };
+      })()
+    `, screener_name);
+
+    const allowed = new Set(symbols);
+    result.columns = table?.columns || [];
+    result.rows = (table?.rows || []).filter(row => allowed.has(row.symbol));
+    result.sorted_by = result.columns.find(column => column.sorted)?.field || null;
+  }
+
+  return result;
 }
 
 export async function list() {
