@@ -3,6 +3,7 @@ import { jsonResult } from './_format.js';
 import * as core from '../core/screener.js';
 import { scanIncomeEtfs } from '../core/income_etf.js';
 import { monitorIncomeEtfs } from '../core/income_etf_monitor.js';
+import { buildMonthlyReview } from '../core/income_etf_monthly_review.js';
 
 export function registerScreenerTools(server) {
   server.tool(
@@ -137,7 +138,7 @@ export function registerScreenerTools(server) {
 
   server.tool(
     'income_etf_monitor',
-    'Run the complete income ETF scan, compare it with the most recent prior dated snapshot, generate qualification/NAV/yield/allocation alerts, and optionally compare the model target with an externally supplied actual portfolio object or broker-exported CSV. Duplicate CSV ticker rows are aggregated. Actual holdings are used only for the current comparison and are not persisted or traded. Returns report instructions compatible with session_save instrument_type="income_etf".',
+    'Persist the complete income ETF market scan before processing external holdings, compare it with archived prior runs, generate qualification/NAV/yield/allocation alerts and two-scan confirmation state, and optionally compare the model target with an externally supplied actual portfolio object or broker-exported CSV. Duplicate tickers are aggregated and partial cost basis remains unknown. Holdings-derived details are transient and are not persisted or traded. Returns deterministic report inputs compatible with session_save instrument_type="income_etf".',
     {
       screener_name: z
         .string()
@@ -187,7 +188,7 @@ export function registerScreenerTools(server) {
       actual_portfolio: z
         .object({
           as_of: z.string().optional(),
-          cash: z.number().nonnegative().default(0),
+          cash: z.number().nonnegative().optional(),
           positions: z.array(z.object({
             ticker: z.string().min(1),
             market_value: z.number().nonnegative(),
@@ -196,7 +197,7 @@ export function registerScreenerTools(server) {
           })).default([]),
         })
         .optional()
-        .describe('Optional external holdings snapshot. Used transiently for drift/rebalance recommendations; never persisted or traded.'),
+        .describe('Optional external holdings snapshot. Duplicate tickers are aggregated. Omitted cash remains unknown. Used transiently for drift/rebalance recommendations; never persisted or traded.'),
       actual_portfolio_csv_path: z
         .string()
         .optional()
@@ -253,6 +254,24 @@ export function registerScreenerTools(server) {
           taxable_account,
           gradual_reconciliation,
         }));
+      } catch (err) {
+        return jsonResult({ success: false, error: err.message }, true);
+      }
+    }
+  );
+
+  server.tool(
+    'income_etf_monthly_review',
+    'Aggregate the completed weekly income ETF snapshots for a month into deterministic persistence, entry/exit, NAV, income, and latest-target data. Saves monthly-review.json under reports/inc-etf/Mon-review/<YYYY-Mon>/ and returns instructions for session_save instrument_type="income_etf_monthly_review".',
+    {
+      date: z
+        .string()
+        .optional()
+        .describe('Any date within the review month, preferably YYYY-MM-DD. Defaults to the current month.'),
+    },
+    async ({ date } = {}) => {
+      try {
+        return jsonResult(buildMonthlyReview({ date }));
       } catch (err) {
         return jsonResult({ success: false, error: err.message }, true);
       }

@@ -1,9 +1,13 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { evaluateOnScreener } from '../connection.js';
-import { incomeEtfWeekDirFor } from './report_paths.js';
+import {
+  archiveIncomeEtfRun,
+  incomeEtfWeekDirFor,
+} from './report_paths.js';
 import { get as getScreener } from './screener.js';
 
+const SCORE_VERSION = 1;
 const TAB_IDS = {
   overview: 'overview',
   fund_flows: 'fundFlows',
@@ -12,6 +16,18 @@ const TAB_IDS = {
   holdings: 'holdings',
   risk: 'risk',
   technicals: 'technicals',
+};
+const EXPECTED_TAB_FIELDS = {
+  overview: ['AssetsUnderManagement', 'VolumePrice|TimeResolution1D'],
+  fund_flows: ['FundFlows|Interval3M'],
+  dividends: ['DividendsFrequency', 'DividendsYieldForward'],
+  nav: ['NavTotalReturn|Interval3M', 'NavPerformance|Interval1Y'],
+  holdings: ['TotalHoldings', 'Leverage'],
+  risk: ['Beta|Interval1Y', 'Volatility|Interval1M'],
+  technicals: [
+    'TechnicalRating|TimeResolution1D',
+    'RelativeStrengthIndex|14|TimeResolution1D',
+  ],
 };
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -66,7 +82,7 @@ function exposureBucket(row) {
   if ((row.holdings_count ?? Infinity) <= 10 && (row.top_10_weight_pct ?? 0) >= 95) {
     return 'single_asset_or_synthetic';
   }
-  return `other:${row.ticker || row.symbol}`;
+  return 'unclassified';
 }
 
 function qualification(row, minScore = 55) {
@@ -75,7 +91,6 @@ function qualification(row, minScore = 55) {
     row.nav_performance_1y_pct == null;
   const leveraged = row.flags?.includes('LEVERAGED');
 
-  if (row.score < minScore) rejectionReasons.push('SCORE_BELOW_MINIMUM');
   if (row.indicated_yield_pct == null || row.indicated_yield_pct < 5) {
     rejectionReasons.push('YIELD_DATA_OR_MINIMUM_FAILED');
   }
@@ -98,13 +113,16 @@ function qualification(row, minScore = 55) {
     return { status: 'EXCLUDED', rejection_reasons: rejectionReasons };
   }
   if (limitedHistory) {
-    if (row.score < Math.max(minScore, 65)) {
-      return {
-        status: 'WATCHLIST',
-        rejection_reasons: ['LIMITED_HISTORY_NEEDS_HIGHER_SCORE'],
-      };
-    }
-    return { status: 'LIMITED_HISTORY_QUALIFIED', rejection_reasons: [] };
+    return {
+      status: 'WATCHLIST',
+      rejection_reasons: ['LIMITED_HISTORY_REQUIRES_FULL_YEAR'],
+    };
+  }
+  if (row.score < minScore) {
+    return {
+      status: 'EXCLUDED',
+      rejection_reasons: ['SCORE_BELOW_MINIMUM'],
+    };
   }
   return { status: 'QUALIFIED', rejection_reasons: [] };
 }
@@ -115,7 +133,6 @@ function positionCap(row, status, maximumPct) {
   else if (row.score < 75) cap = Math.min(cap, 6);
   else if (row.score < 85) cap = Math.min(cap, 9);
   if (row.tier === 'INCOME_SATELLITE') cap = Math.min(cap, 6);
-  if (status === 'LIMITED_HISTORY_QUALIFIED') cap = Math.min(cap, 3);
   if (row.flags?.includes('CONCENTRATED_OR_SYNTHETIC')) cap = Math.min(cap, 2.5);
   if ((row.beta_1y ?? 0) > 1.5) cap = Math.min(cap, 4);
   return cap;
@@ -151,7 +168,6 @@ function exposureCap(bucket, maximumExposurePct) {
   if (bucket === 'single_asset_or_synthetic' || bucket === 'crypto') {
     return Math.min(10, maximumExposurePct);
   }
-  if (bucket.startsWith('other:')) return 100;
   return maximumExposurePct;
 }
 
@@ -171,9 +187,9 @@ function buildPortfolio(rows, {
     exposure_bucket: exposureBucket(row),
     ...qualification(row, minScore),
   }));
-  const candidates = evaluated.filter(row =>
-    row.status === 'QUALIFIED' || row.status === 'LIMITED_HISTORY_QUALIFIED'
-  ).map(row => ({ ...row, qualification_status: row.status }));
+  const candidates = evaluated
+    .filter(row => row.status === 'QUALIFIED')
+    .map(row => ({ ...row, qualification_status: row.status }));
   const allocated = allocateWithCaps(candidates, maximumPositionPct);
 
   const bucketTotals = new Map();
@@ -211,6 +227,8 @@ function buildPortfolio(rows, {
         indicated_yield_pct: position.row.indicated_yield_pct,
         projected_annual_distribution: Number(annualDistribution.toFixed(2)),
         projected_average_monthly_distribution: Number((annualDistribution / 12).toFixed(2)),
+        technical_rating: position.row.technical_rating,
+        rsi_14: position.row.rsi_14,
         flags: position.row.flags,
       };
     })
@@ -272,14 +290,6 @@ function buildPortfolio(rows, {
   };
 }
 
-export const incomeEtfTestHelpers = {
-  parseNumber,
-  yieldQuality,
-  exposureBucket,
-  qualification,
-  buildPortfolio,
-};
-
 async function selectedTab(screenerName) {
   return evaluateOnScreener(`
     (function() {
@@ -303,13 +313,65 @@ async function selectTab(tabId, screenerName) {
     })()
   `, screenerName);
   if (!clicked) throw new Error(`TradingView screener tab "${tabId}" was not found.`);
-  await wait(550);
+  for (let attempt = 0; attempt < 20; attempt++) {
+    if (await selectedTab(screenerName) === tabId) return;
+    await wait(150);
+  }
+  throw new Error(`TradingView screener tab "${tabId}" did not become active.`);
 }
 
-async function captureTab(tabId, screenerName) {
+async function captureTab(key, tabId, screenerName) {
   await selectTab(tabId, screenerName);
-  return getScreener({ screener_name: screenerName, include_columns: true });
+  const expectedFields = EXPECTED_TAB_FIELDS[key] || [];
+  let lastFields = [];
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const capture = await getScreener({
+      screener_name: screenerName,
+      include_columns: true,
+    });
+    lastFields = (capture.columns || []).map(column => column.field);
+    if (
+      capture.rows?.length &&
+      expectedFields.every(field => lastFields.includes(field))
+    ) {
+      return capture;
+    }
+    await wait(250);
+  }
+  throw new Error(
+    `TradingView screener tab "${tabId}" did not expose its expected columns. ` +
+    `Expected: ${expectedFields.join(', ')}. Found: ${lastFields.join(', ')}.`
+  );
 }
+
+function validateCaptureUniverses(captures) {
+  const entries = Object.entries(captures);
+  if (!entries.length) throw new Error('No TradingView screener tabs were captured.');
+  const [baselineKey, baselineCapture] = entries[0];
+  const baseline = new Set((baselineCapture.rows || []).map(row => row.symbol));
+  for (const [key, capture] of entries.slice(1)) {
+    const current = new Set((capture.rows || []).map(row => row.symbol));
+    const missing = [...baseline].filter(symbol => !current.has(symbol));
+    const added = [...current].filter(symbol => !baseline.has(symbol));
+    if (missing.length || added.length) {
+      throw new Error(
+        `TradingView screener tab universe mismatch: ${baselineKey} has ` +
+        `${baseline.size} symbols and ${key} has ${current.size}. ` +
+        `Missing from ${key}: ${missing.slice(0, 10).join(', ') || 'none'}. ` +
+        `Only in ${key}: ${added.slice(0, 10).join(', ') || 'none'}.`
+      );
+    }
+  }
+}
+
+export const incomeEtfTestHelpers = {
+  parseNumber,
+  yieldQuality,
+  exposureBucket,
+  qualification,
+  buildPortfolio,
+  validateCaptureUniverses,
+};
 
 function value(row, field) {
   return row?.values?.[field] ?? null;
@@ -492,13 +554,15 @@ export async function scanIncomeEtfs({
   maximum_position_pct = 8,
   maximum_exposure_pct = 30,
 } = {}) {
+  const generatedAt = new Date().toISOString();
   const originalTab = await selectedTab(screener_name);
   const captures = {};
 
   try {
     for (const [key, tabId] of Object.entries(TAB_IDS)) {
-      captures[key] = await captureTab(tabId, screener_name);
+      captures[key] = await captureTab(key, tabId, screener_name);
     }
+    validateCaptureUniverses(captures);
   } finally {
     if (originalTab && Object.values(TAB_IDS).includes(originalTab)) {
       try { await selectTab(originalTab, screener_name); } catch {}
@@ -526,7 +590,7 @@ export async function scanIncomeEtfs({
   const result = {
     success: true,
     screener_name,
-    generated_at: new Date().toISOString(),
+    generated_at: generatedAt,
     universe_size: normalized.length,
     frequency_scope: frequency,
     funds_ranked: ranked.length,
@@ -534,8 +598,20 @@ export async function scanIncomeEtfs({
     funds_excluded_by_frequency: normalized.length - ranked.length,
     tier_counts: tierCounts,
     methodology: {
+      score_version: SCORE_VERSION,
       primary: 'NAV total return and NAV preservation regardless of payment frequency',
       secondary: 'indicated yield quality, liquidity, risk, expenses, and fund flows',
+      score_components: {
+        nav_total_return_1y: 0.28,
+        nav_total_return_3m: 0.16,
+        nav_performance_1y: 0.16,
+        indicated_yield_quality: 0.12,
+        liquidity: 0.10,
+        risk: 0.10,
+        expense_ratio: 0.04,
+        fund_flows_3m: 0.04,
+      },
+      missing_data_policy: 'Missing values receive zero contribution; weights are not renormalized. Funds missing either required one-year NAV field remain watchlist-only.',
       frequency_policy: 'Payment frequency is reported for cash-flow scheduling, not used as a quality score.',
       indicated_yield_warning: 'TradingView indicated yield is not SEC yield or guaranteed total return.',
       external_due_diligence_required: [
@@ -563,15 +639,12 @@ export async function scanIncomeEtfs({
   };
   if (include_all) result.all = ranked;
 
-  try {
-    const reportDir = incomeEtfWeekDirFor();
-    mkdirSync(reportDir, { recursive: true });
-    const rawPath = join(reportDir, 'scan-income_etf.json');
-    writeFileSync(rawPath, JSON.stringify({ ...result, all: ranked }, null, 2), 'utf8');
-    result.saved_to = rawPath;
-  } catch (error) {
-    result.save_error = error.message;
-  }
+  const reportDir = incomeEtfWeekDirFor();
+  mkdirSync(reportDir, { recursive: true });
+  const rawPath = join(reportDir, 'scan-income_etf.json');
+  result.previous_run_archived_to = archiveIncomeEtfRun(reportDir);
+  writeFileSync(rawPath, JSON.stringify({ ...result, all: ranked }, null, 2), 'utf8');
+  result.saved_to = rawPath;
 
   return result;
 }

@@ -18,7 +18,10 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { incomeEtfTestHelpers } from '../src/core/income_etf.js';
 import { incomeEtfMonitorTestHelpers } from '../src/core/income_etf_monitor.js';
+import { buildMonthlyReview } from '../src/core/income_etf_monthly_review.js';
 import {
+  archiveIncomeEtfArtifact,
+  archiveIncomeEtfRun,
   incomeEtfMonthlyReviewDirFor,
   incomeEtfWeekDirFor,
   reportDateFromInput,
@@ -225,7 +228,13 @@ describe('MCP tool wiring', () => {
 
   it('screener_get and screener_list are registered in tools/screener.js', () => {
     const src = readFileSync(join(ROOT, 'src/tools/screener.js'), 'utf8');
-    for (const tool of ['screener_get', 'screener_list', 'income_etf_scan', 'income_etf_monitor']) {
+    for (const tool of [
+      'screener_get',
+      'screener_list',
+      'income_etf_scan',
+      'income_etf_monitor',
+      'income_etf_monthly_review',
+    ]) {
       assert.ok(src.includes(`'${tool}'`), `tools/screener.js missing tool: ${tool}`);
     }
   });
@@ -268,6 +277,25 @@ describe('MCP tool wiring', () => {
     );
   });
 
+  it('income ETF keeps limited-history funds on the watchlist without changing the score formula', () => {
+    const { qualification } = incomeEtfTestHelpers;
+    const limited = {
+      score: 90,
+      indicated_yield_pct: 14,
+      nav_total_return_3m_pct: 6,
+      nav_total_return_1m_pct: 2,
+      nav_total_return_1y_pct: null,
+      nav_performance_1y_pct: null,
+      aum: 500_000_000,
+      daily_dollar_volume: 10_000_000,
+      flags: ['LIMITED_HISTORY'],
+    };
+    assert.deepEqual(qualification(limited, 55), {
+      status: 'WATCHLIST',
+      rejection_reasons: ['LIMITED_HISTORY_REQUIRES_FULL_YEAR'],
+    });
+  });
+
   it('income ETF exposure classification recognizes broad-index option funds before concentration', () => {
     const { exposureBucket } = incomeEtfTestHelpers;
     assert.equal(exposureBucket({
@@ -282,6 +310,20 @@ describe('MCP tool wiring', () => {
       holdings_count: 1,
       top_10_weight_pct: 100,
     }), 'single_asset_or_synthetic');
+    assert.equal(exposureBucket({
+      ticker: 'NEWX',
+      name: 'New Unmapped Income Fund',
+      holdings_count: 50,
+      top_10_weight_pct: 40,
+    }), 'unclassified');
+  });
+
+  it('income ETF rejects inconsistent TradingView tab universes', () => {
+    const { validateCaptureUniverses } = incomeEtfTestHelpers;
+    assert.throws(() => validateCaptureUniverses({
+      overview: { rows: [{ symbol: 'AMEX:AAA' }, { symbol: 'AMEX:BBB' }] },
+      dividends: { rows: [{ symbol: 'AMEX:AAA' }] },
+    }), /universe mismatch/i);
   });
 
   it('income ETF portfolio sizes by score, applies caps, and can retain cash', () => {
@@ -323,6 +365,36 @@ describe('MCP tool wiring', () => {
     assert.equal(portfolio.excluded_count, 1);
   });
 
+  it('income ETF unclassified exposure is capped instead of bypassing concentration controls', () => {
+    const { buildPortfolio } = incomeEtfTestHelpers;
+    const rows = Array.from({ length: 5 }, (_, index) => ({
+      symbol: `AAA${index}`,
+      ticker: `AAA${index}`,
+      name: `Unmapped Income Fund ${index}`,
+      score: 90,
+      tier: 'CORE_CANDIDATE',
+      indicated_yield_pct: 12,
+      nav_total_return_3m_pct: 5,
+      nav_total_return_1m_pct: 1,
+      nav_total_return_1y_pct: 15,
+      nav_performance_1y_pct: 4,
+      aum: 500_000_000,
+      daily_dollar_volume: 5_000_000,
+      holdings_count: 100,
+      top_10_weight_pct: 30,
+      flags: [],
+    }));
+    const portfolio = buildPortfolio(rows, {
+      portfolioValue: 100_000,
+      maximumPositionPct: 25,
+      maximumExposurePct: 30,
+    });
+    assert.equal(portfolio.invested_pct, 30);
+    assert.ok(portfolio.positions.every(
+      position => position.exposure_bucket === 'unclassified'
+    ));
+  });
+
   it('income ETF monitor detects model exits, score moves, and cash changes', () => {
     const { compareSnapshots, alertSummary } = incomeEtfMonitorTestHelpers;
     const previous = {
@@ -356,6 +428,16 @@ describe('MCP tool wiring', () => {
     assert.equal(alertSummary(alerts).highest_severity, 'critical');
   });
 
+  it('income ETF baseline runs still emit intrinsic severe-drawdown alerts', () => {
+    const { compareSnapshots } = incomeEtfMonitorTestHelpers;
+    const alerts = compareSnapshots(null, {
+      all: [{ ticker: 'AAA', score: 40, nav_total_return_1m_pct: -12.5 }],
+      portfolio: { cash_pct: 100, positions: [] },
+    });
+    assert.ok(alerts.some(alert => alert.id === 'BASELINE_CREATED'));
+    assert.ok(alerts.some(alert => alert.id === 'SEVERE_DRAWDOWN:AAA'));
+  });
+
   it('income ETF monitor compares external holdings without placing trades', () => {
     const { buildRebalanceComparison } = incomeEtfMonitorTestHelpers;
     const comparison = buildRebalanceComparison({
@@ -372,6 +454,11 @@ describe('MCP tool wiring', () => {
         { ticker: 'AAA', market_value: 20_000 },
         { ticker: 'OLD', market_value: 70_000 },
       ],
+    }, {
+      rankedRows: [
+        { ticker: 'AAA', indicated_yield_pct: 12 },
+        { ticker: 'OLD', indicated_yield_pct: 20 },
+      ],
     });
 
     assert.equal(comparison.available, true);
@@ -381,6 +468,10 @@ describe('MCP tool wiring', () => {
       'REVIEW_EXIT'
     );
     assert.ok(comparison.alerts.some(alert => alert.id === 'POSITION_CAP_BREACH:AAA'));
+    assert.equal(
+      comparison.actual_income_estimate.projected_average_monthly_distribution,
+      1366.67
+    );
   });
 
   it('income ETF monitor aggregates duplicate broker CSV lots by ticker', () => {
@@ -402,6 +493,52 @@ describe('MCP tool wiring', () => {
       portfolio.source.duplicate_tickers,
       [{ ticker: 'AAA', lots: 2 }]
     );
+  });
+
+  it('income ETF monitor treats partially missing CSV cost basis as unknown', () => {
+    const { parseBrokerPortfolioCsv, buildRebalanceComparison } =
+      incomeEtfMonitorTestHelpers;
+    const portfolio = parseBrokerPortfolioCsv([
+      'Ticker,Mkt Value,Cost Basis',
+      'AAA,600,500',
+      'AAA,400,',
+    ].join('\n'));
+    assert.equal(portfolio.positions[0].cost_basis, undefined);
+    assert.deepEqual(
+      portfolio.source.incomplete_cost_basis_tickers,
+      ['AAA']
+    );
+    const comparison = buildRebalanceComparison({
+      maximum_position_pct: 8,
+      cash_pct: 100,
+      positions: [],
+    }, portfolio, {
+      taxableAccount: true,
+      gradualReconciliation: true,
+    });
+    assert.equal(comparison.rows[0].estimated_unrealized_gain_loss, null);
+  });
+
+  it('income ETF monitor aggregates duplicate direct-input positions', () => {
+    const { buildRebalanceComparison } = incomeEtfMonitorTestHelpers;
+    const comparison = buildRebalanceComparison({
+      maximum_position_pct: 100,
+      cash_pct: 50,
+      positions: [{ ticker: 'AAA', score: 80, allocation_pct: 50 }],
+    }, {
+      cash: 0,
+      positions: [
+        { ticker: 'AAA', market_value: 600, cost_basis: 500 },
+        { ticker: 'AAA', market_value: 400, cost_basis: 300 },
+      ],
+    });
+    const row = comparison.rows.find(item => item.ticker === 'AAA');
+    assert.equal(row.actual_value, 1000);
+    assert.equal(row.actual_pct, 100);
+    assert.equal(row.cost_basis, 800);
+    assert.deepEqual(comparison.source.duplicate_tickers, [
+      { ticker: 'AAA', rows: 2 },
+    ]);
   });
 
   it('income ETF monitor treats omitted CSV cash as unknown and allows flexible funding', () => {
@@ -426,10 +563,56 @@ describe('MCP tool wiring', () => {
     assert.equal(comparison.cash_status, 'not_reported');
     assert.equal(comparison.allow_additional_funding, true);
     assert.match(comparison.buying_power_policy, /external funding or margin/i);
+    assert.equal(comparison.estimated_external_funding_required, null);
+    assert.equal(comparison.funding_estimate_status, 'cash_unknown');
+    assert.equal(comparison.external_funding_if_no_cash_available, 0);
     assert.equal(
       comparison.rows.find(row => row.ticker === 'BBB').action,
       'BUY_CANDIDATE'
     );
+  });
+
+  it('income ETF monitor enforces reduced per-fund position caps', () => {
+    const { buildRebalanceComparison } = incomeEtfMonitorTestHelpers;
+    const comparison = buildRebalanceComparison({
+      maximum_position_pct: 8,
+      cash_pct: 96,
+      positions: [{
+        ticker: 'AAA',
+        score: 60,
+        allocation_pct: 4,
+        position_cap_pct: 4,
+      }],
+    }, {
+      cash: 940,
+      positions: [{ ticker: 'AAA', market_value: 60 }],
+    });
+    const alert = comparison.alerts.find(
+      item => item.id === 'POSITION_CAP_BREACH:AAA'
+    );
+    assert.equal(alert.position_cap_pct, 4);
+  });
+
+  it('income ETF monitor marks new entries and ordinary exits pending for a second scan', () => {
+    const { buildConfirmationState, compareSnapshots } =
+      incomeEtfMonitorTestHelpers;
+    const previous = {
+      all: [{ ticker: 'OLD', score: 70, flags: [] }],
+      portfolio: { positions: [{ ticker: 'OLD', allocation_pct: 6 }] },
+    };
+    const current = {
+      all: [
+        { ticker: 'OLD', score: 54, flags: [] },
+        { ticker: 'NEW', score: 75, flags: [] },
+      ],
+      portfolio: { positions: [{ ticker: 'NEW', allocation_pct: 8 }] },
+    };
+    const state = buildConfirmationState(previous, current);
+    assert.equal(state.entries[0].status, 'PENDING_SECOND_SCAN');
+    assert.equal(state.exits[0].status, 'PENDING_SECOND_SCAN');
+    assert.ok(compareSnapshots(previous, current).some(
+      alert => alert.id === 'MODEL_EXIT_PENDING:OLD' && alert.severity === 'warning'
+    ));
   });
 
   it('income ETF monitor stages taxable-account reductions by aggregate gain or loss', () => {
@@ -477,6 +660,106 @@ describe('MCP tool wiring', () => {
     assert.ok(monitorSrc.includes("join(reportDir, 'income_etf-alerts.json')"));
   });
 
+  it('income ETF monitor runs the market scan before loading the broker CSV', () => {
+    const src = readFileSync(join(ROOT, 'src/core/income_etf_monitor.js'), 'utf8');
+    assert.ok(
+      src.indexOf('await scanIncomeEtfs(scanOptions)') <
+      src.indexOf('loadBrokerPortfolioCsv(actual_portfolio_csv_path')
+    );
+    assert.ok(src.includes('alerts: persistentAlerts'));
+    assert.ok(!src.includes('alerts: result.alerts,'));
+  });
+
+  it('income ETF canonical artifacts are archived before replacement', () => {
+    const root = join(tmpdir(), `income-etf-archive-${Date.now()}`);
+    const file = join(root, '2026-Wk30', 'scan-income_etf.json');
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, JSON.stringify({
+      generated_at: '2026-07-25T14:00:00.000Z',
+      marker: 'first',
+    }));
+    const archived = archiveIncomeEtfArtifact(file);
+    assert.ok(existsSync(archived));
+    assert.equal(JSON.parse(readFileSync(archived, 'utf8')).marker, 'first');
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it('income ETF run archiving groups scan, alerts, and report together', () => {
+    const root = join(tmpdir(), `income-etf-run-${Date.now()}`);
+    mkdirSync(root, { recursive: true });
+    writeFileSync(join(root, 'scan-income_etf.json'), JSON.stringify({
+      generated_at: '2026-07-25T14:00:00.000Z',
+    }));
+    writeFileSync(join(root, 'income_etf-alerts.json'), '{}');
+    writeFileSync(join(root, 'income_etf.md'), '# Report');
+    const archiveDir = archiveIncomeEtfRun(root);
+    for (const artifact of [
+      'scan-income_etf.json',
+      'income_etf-alerts.json',
+      'income_etf.md',
+    ]) {
+      assert.ok(existsSync(join(archiveDir, artifact)));
+    }
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it('income ETF confirmation history uses distinct prior weeks', () => {
+    const { previousSnapshotPaths } = incomeEtfMonitorTestHelpers;
+    const root = join(tmpdir(), `income-etf-history-${Date.now()}`);
+    const writeSnapshot = (path, generatedAt) => {
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, JSON.stringify({ generated_at: generatedAt }));
+    };
+    const current = join(root, '2026-Wk30', 'scan-income_etf.json');
+    writeSnapshot(current, '2026-07-25T14:00:00.000Z');
+    writeSnapshot(
+      join(root, '2026-Wk30', 'runs', 'rerun', 'scan-income_etf.json'),
+      '2026-07-25T13:00:00.000Z'
+    );
+    const priorWeek = join(root, '2026-Wk29', 'scan-income_etf.json');
+    writeSnapshot(priorWeek, '2026-07-18T14:00:00.000Z');
+    assert.deepEqual(previousSnapshotPaths(current, root, 2), [priorWeek]);
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it('income ETF monthly review aggregates canonical weekly snapshots', () => {
+    const root = join(tmpdir(), `income-etf-monthly-${Date.now()}`);
+    const writeSnapshot = (week, generatedAt, positions) => {
+      const dir = join(root, week);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, 'scan-income_etf.json'), JSON.stringify({
+        generated_at: generatedAt,
+        methodology: { score_version: 1 },
+        universe_size: 2,
+        all: [
+          { ticker: 'AAA', score: 80, tier: 'CORE_CANDIDATE' },
+          { ticker: 'BBB', score: 70, tier: 'INCOME_SATELLITE' },
+        ],
+        portfolio: {
+          qualified_count: positions.length,
+          invested_pct: positions.length * 8,
+          cash_pct: 100 - positions.length * 8,
+          positions: positions.map(ticker => ({
+            ticker,
+            score: ticker === 'AAA' ? 80 : 70,
+            allocation_pct: 8,
+          })),
+        },
+      }));
+    };
+    writeSnapshot('2026-Wk27', '2026-07-04T14:00:00.000Z', ['AAA']);
+    writeSnapshot('2026-Wk28', '2026-07-11T14:00:00.000Z', ['AAA', 'BBB']);
+    const review = buildMonthlyReview({
+      date: '2026-07-25',
+      reportsDir: root,
+    });
+    assert.equal(review.weekly_snapshots.length, 2);
+    assert.ok(review.persistent_qualified.some(item => item.ticker === 'AAA'));
+    assert.ok(review.pending_confirmation.some(item => item.ticker === 'BBB'));
+    assert.ok(existsSync(review.saved_to));
+    rmSync(root, { recursive: true, force: true });
+  });
+
   it('date-only report inputs stay on the requested local calendar date', () => {
     const parsed = reportDateFromInput('2026-07-25');
     assert.equal(parsed.getFullYear(), 2026);
@@ -493,14 +776,23 @@ describe('MCP tool wiring', () => {
 
   it('session_save instrument_type enum includes daily_summary and all supported briefs', () => {
     const src = readFileSync(join(ROOT, 'src/tools/morning.js'), 'utf8');
-    for (const inst of [...BRIEF_INSTRUMENTS, 'income_etf', 'daily_summary']) {
+    for (const inst of [
+      ...BRIEF_INSTRUMENTS,
+      'income_etf',
+      'income_etf_monthly_review',
+      'daily_summary',
+    ]) {
       assert.ok(src.includes(`'${inst}'`), `session_save enum missing: '${inst}'`);
     }
   });
 
   it('session_get instrument_type enum includes all supported briefs', () => {
     const src = readFileSync(join(ROOT, 'src/tools/morning.js'), 'utf8');
-    for (const inst of [...BRIEF_INSTRUMENTS, 'income_etf']) {
+    for (const inst of [
+      ...BRIEF_INSTRUMENTS,
+      'income_etf',
+      'income_etf_monthly_review',
+    ]) {
       assert.ok(src.includes(`'${inst}'`), `session_get enum missing: '${inst}'`);
     }
   });
@@ -510,6 +802,19 @@ describe('MCP tool wiring', () => {
     assert.ok(src.includes('## Portfolio Decision'));
     assert.ok(src.includes('session_save with instrument_type="income_etf"'));
     assert.ok(src.includes('scan-income_etf.json'));
+  });
+
+  it('income ETF established score formula is versioned and documented', () => {
+    const src = readFileSync(join(ROOT, 'src/core/income_etf.js'), 'utf8');
+    const docs = readFileSync(
+      join(ROOT, 'config/screeners/WKLY-DIV-ETF.md'),
+      'utf8'
+    );
+    assert.ok(src.includes('const SCORE_VERSION = 1'));
+    for (const weight of ['28%', '16%', '12%', '10%', '4%']) {
+      assert.ok(docs.includes(weight), `score documentation missing ${weight}`);
+    }
+    assert.ok(docs.includes('score_version: 1'));
   });
 
   it('core/morning.js ALL_INSTRUMENTS matches the standard all-mode sequence', () => {

@@ -22,8 +22,9 @@ All working docs are centralized in [docs/INDEX.md](docs/INDEX.md). The root-lev
 | Feature | What it does |
 |---------|-------------|
 | `morning_brief` | One command that scans your screener, reads all your indicators, and returns structured data for Claude to generate your session bias |
-| `income_etf_scan` | Builds a frequency-neutral, NAV-first model portfolio from `WKLY-DIV-ETF`, preserves the raw JSON scan, and routes the rendered accumulation report through `session_save` like the other strategy reports |
-| `income_etf_monitor` | Compares the latest income scan with prior history, emits material-change alerts, and optionally calculates recommendations from a transient external holdings snapshot |
+| `income_etf_scan` | Builds the unchanged `score_version: 1` frequency-neutral, NAV-first model portfolio from validated `WKLY-DIV-ETF` tabs and preserves canonical plus same-week run history |
+| `income_etf_monitor` | Persists the market scan before reading holdings, applies weekly confirmation state, emits material-change alerts, and optionally calculates transient tax-aware reconciliation |
+| `income_etf_monthly_review` | Aggregates canonical weekly snapshots into deterministic monthly persistence, entry/exit, NAV, income, and latest-target review data |
 | **8 independent briefs + thematic scans** | Momentum stocks/ETF/ARK, crypto spot/perps, futures, weekly S&P-Nasdaq, weekly Russell 2000, plus thematic stock/ETF scans — each with its own live screener or static CSV watchlist, strategy, and bias logic. `instrument_type="all"` runs the whole set. |
 | **Crypto perps (long + short)** | Perps brief uses BTC TWB signal direction to determine side — negative = scan for shorts, positive = scan for longs |
 | `session_save` / `session_get` | Saves your daily brief to `~/.tradingview-mcp/sessions/` so you can compare today vs yesterday |
@@ -248,7 +249,7 @@ Claude reads `CLAUDE.md` automatically when working in this project. It contains
 
 ---
 
-## Tool Reference (86 MCP tools)
+## Tool Reference (87 MCP tools)
 
 ### Morning Brief (new in this fork)
 
@@ -371,7 +372,7 @@ Full command list: `tv --help`
 Claude Code  ←→  MCP Server (stdio)  ←→  CDP (port 9222)  ←→  TradingView Desktop (Electron)
 ```
 
-- **86 MCP tools** total
+- **87 MCP tools** total
 - **Transport**: MCP over stdio + CLI (`tv` command)
 - **Connection**: Chrome DevTools Protocol on localhost:9222
 - **No external network calls** — everything runs locally

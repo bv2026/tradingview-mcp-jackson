@@ -45,7 +45,7 @@ export function registerMorningTools(server) {
         .string()
         .describe("The text to save. Full analysis for normal saves; 4-line summary block for is_summary=true; all 6 summaries stacked for instrument_type='daily_summary'."),
       instrument_type: z
-        .enum(['momentum_stocks', 'momentum_ark', 'crypto', 'crypto_perps', 'futures', 'momentum_etf', 'income_etf', 'indices', 'sp_ndx', 'r2k', 'thematic_stocks', 'thematic_etfs', 'thematic_etfs_1', 'thematic_etfs_2', 'daily_summary'])
+        .enum(['momentum_stocks', 'momentum_ark', 'crypto', 'crypto_perps', 'futures', 'momentum_etf', 'income_etf', 'income_etf_monthly_review', 'indices', 'sp_ndx', 'r2k', 'thematic_stocks', 'thematic_etfs', 'thematic_etfs_1', 'thematic_etfs_2', 'daily_summary'])
         .default('momentum_stocks')
         .describe('Instrument type. Use "daily_summary" to save the combined all-briefs summary to daily-summary.md.'),
       is_summary: z
@@ -76,7 +76,7 @@ export function registerMorningTools(server) {
         .optional()
         .describe('Date string YYYY-MM-DD. Defaults to today.'),
       instrument_type: z
-        .enum(['momentum_stocks', 'momentum_ark', 'crypto', 'crypto_perps', 'futures', 'momentum_etf', 'income_etf', 'indices', 'sp_ndx', 'r2k', 'thematic_stocks', 'thematic_etfs', 'thematic_etfs_1', 'thematic_etfs_2'])
+        .enum(['momentum_stocks', 'momentum_ark', 'crypto', 'crypto_perps', 'futures', 'momentum_etf', 'income_etf', 'income_etf_monthly_review', 'indices', 'sp_ndx', 'r2k', 'thematic_stocks', 'thematic_etfs', 'thematic_etfs_1', 'thematic_etfs_2'])
         .optional()
         .describe('Retrieve a specific instrument brief. Omit to list all briefs saved today.'),
     },

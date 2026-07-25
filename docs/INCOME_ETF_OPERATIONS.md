@@ -21,7 +21,7 @@ The TradingView MCP owns market-data collection, scoring, model targets, scan hi
 flowchart LR
     TV["TradingView WKLY-DIV-ETF"] --> SCAN["income_etf_scan"]
     SCAN --> SCORE["Scores, gates and model target"]
-    SCORE --> RAW["Dated raw JSON snapshot"]
+    SCORE --> RAW["Canonical weekly snapshot + archived runs"]
     RAW --> MON["income_etf_monitor"]
     PRIOR["Previous dated snapshot"] --> MON
     EXT["External actual holdings (optional)"] --> MON
@@ -38,8 +38,8 @@ flowchart LR
 |---|---|---|
 | TradingView metrics | TradingView | TradingView |
 | Scores and qualification | Income scanner | Recomputed each run |
-| Model target allocations | Income scanner | Raw dated scan |
-| Scan-to-scan alerts | Income monitor | Dated alert artifact |
+| Model target allocations | Income scanner | Canonical weekly scan plus archived runs |
+| Scan-to-scan alerts | Income monitor | Canonical weekly alert artifact plus archived runs |
 | Actual holdings and cash | Broker or external portfolio store | External only |
 | Rebalance recommendations | Income monitor | Returned for the current run |
 | Trade execution | Broker/user | Never performed by this workflow |
@@ -48,7 +48,11 @@ flowchart LR
 
 ### `income_etf_scan`
 
-Reads the configured TradingView tabs, merges rows by ticker, calculates scores, applies qualification gates, and builds the model target.
+Reads the configured TradingView tabs, validates the expected columns and identical
+TradingView-symbol universe, merges rows by full TradingView symbol, calculates
+scores, applies qualification gates, and builds the model target. The established
+score is `score_version: 1`; its exact unchanged formula is documented in
+`config/screeners/WKLY-DIV-ETF.md`.
 
 ```text
 income_etf_scan
@@ -68,7 +72,10 @@ reports/inc-etf/<YYYY-WkNN>/scan-income_etf.json
 
 ### `income_etf_monitor`
 
-Runs the scan, loads the most recent earlier dated snapshot, creates alerts, and optionally compares model targets with actual holdings.
+Runs and persists the TradingView scan first, then loads the most recent earlier
+snapshot, creates alerts, and optionally compares model targets with actual
+holdings. A missing or malformed holdings CSV rejects only the holdings comparison;
+it does not prevent the Saturday market scan.
 
 ```text
 income_etf_monitor
@@ -81,6 +88,26 @@ The monitor automatically saves alert metadata:
 
 ```text
 reports/inc-etf/<YYYY-WkNN>/income_etf-alerts.json
+```
+
+### `income_etf_monthly_review`
+
+Aggregates the canonical weekly scans for the requested month and calculates
+qualification persistence, pending confirmations, entries, exits, and the latest
+model target.
+
+```text
+income_etf_monthly_review
+  date="2026-07-25"
+```
+
+It automatically saves `monthly-review.json`. Render the returned instruction and
+call:
+
+```text
+session_save
+  instrument_type="income_etf_monthly_review"
+  date="2026-07-25"
 ```
 
 The dedicated weekly folder therefore keeps the complete income workflow together:
@@ -100,7 +127,18 @@ reports/inc-etf/Mon-review/<YYYY-Mon>/
   monthly-review.json
 ```
 
-The alert artifact does not contain actual holdings.
+`income_etf_monthly_review` creates the structured monthly JSON from the canonical
+weekly snapshots. Render its returned instruction and save the narrative with
+`session_save instrument_type="income_etf_monthly_review"`.
+
+When a canonical weekly artifact already exists, it is copied to
+`reports/inc-etf/<YYYY-WkNN>/runs/<timestamp>/` before replacement. The canonical
+files always represent the latest completed run; the `runs/` tree preserves
+same-week reruns and exception scans.
+
+The alert artifact contains scanner/model alerts and confirmation state. It does
+not persist actual holdings, values, weights, cost basis, or holdings-derived alert
+details.
 
 ## Operating cadence
 
@@ -113,13 +151,70 @@ The alert artifact does not contain actual holdings.
 
 Recommended weekly run: Saturday after Friday's closing data.
 
+The operation is split into two routines:
+
+| Routine | Schedule | Responsibility |
+|---|---|---|
+| Weekly Income ETF Portfolio Monitor | Saturday 10:00 AM | Market scan, confirmation state, optional holdings reconciliation, report and alerts |
+| Monthly Income ETF Governance Review | First Sunday 11:00 AM | Aggregate the preceding month's weekly scans and save the monthly governance review |
+
+CSV freshness controls only the holdings-comparison label. It never controls
+whether the Saturday TradingView scan runs.
+
 ### Turnover controls
 
-- A new candidate should normally qualify on two consecutive weekly scans before funding.
+- A new candidate must qualify on two consecutive weekly scans before significant funding. First-scan entries are marked `PENDING_SECOND_SCAN`.
+- Same-week reruns are archived but do not count as a second weekly confirmation.
 - A critical hard-gate failure is reviewed immediately.
-- A normal score decline should persist for two scans before discretionary replacement.
-- Formal rebalancing occurs monthly unless a critical condition requires earlier action.
+- A normal model exit must persist for two scans before discretionary replacement. First-scan exits are marked `PENDING_SECOND_SCAN`.
+- Governance review occurs monthly; normal reconciliation/rebalancing is quarterly unless a critical condition requires earlier action.
 - Retained cash is not forced into lower-quality candidates.
+
+## Managing screener membership
+
+`WKLY-DIV-ETF` is a dynamic universe. There is no fixed fund-count requirement, so
+symbols may be added to or removed from the TradingView screener without changing
+the workflow or rebuilding a static watchlist.
+
+### Adding a symbol
+
+- The next scan collects the symbol from the configured TradingView tabs, merges
+  its data by full TradingView symbol, and applies the same qualification gates
+  and scoring rules.
+- Adding a symbol can change existing scores and target weights because several
+  score components are percentiles calculated across the current universe.
+- A newly qualified model position generates a `MODEL_ENTRY` informational alert.
+- Follow the turnover policy above: a new candidate should normally qualify on two
+  consecutive weekly scans before receiving significant funding.
+
+### Removing a symbol
+
+- The symbol disappears from the current candidate universe and cannot remain in
+  the current model target.
+- If it was in the prior model target, the monitor generates a critical
+  `MODEL_EXIT` review alert.
+- If it remains in the broker CSV, the actual-versus-target comparison reports it
+  as held but absent from the current model target.
+- In a taxable account, absence from the model is a review trigger, not an
+  instruction to liquidate immediately. Use the gradual reconciliation output to
+  review tax lots, holding periods, gains or losses, wash-sale exposure, and
+  distribution reinvestment before selling.
+
+### Membership safeguards
+
+- Keep the screener name `WKLY-DIV-ETF`, or update the configured
+  `screener_name` everywhere if it is renamed.
+- Keep the Dividends, NAV performance, Overview, Fund flows, Holdings, Risk, and
+  Technicals tabs available.
+- Use the same ETF universe and compatible filters on every tab. A symbol missing
+  from one tab can have incomplete required data and fail qualification.
+- Treat temporary filters as membership changes. Hiding a symbol during the
+  Saturday run can produce a model-exit alert.
+- Broker CSV holdings are independent of screener membership. Removing a symbol
+  from TradingView does not delete or persistently alter the supplied holdings.
+- The canonical weekly snapshot is replaceable, but the prior copy is archived
+  under `runs/<timestamp>/` before replacement. Archived runs provide the baseline
+  for entry, exit, score, yield, frequency, and allocation comparisons.
 
 ## Scanner alerts
 
@@ -127,8 +222,10 @@ These alerts do not require actual portfolio data.
 
 | Alert | Default trigger | Severity |
 |---|---|---|
-| Model entry | Ticker newly appears in model target | Info |
-| Model exit | Prior model ticker disappears from target | Critical |
+| Model entry | Ticker newly appears in model target; pending second scan | Info |
+| Model exit pending | Ordinary model absence for one scan | Warning |
+| Model exit confirmed | Ordinary model absence for two scans | Critical |
+| Immediate model exit review | Critical NAV/yield/leverage condition | Critical |
 | Score move | Absolute score change of at least 10 points | Warning when down, info when up |
 | Severe drawdown | One-month NAV total return at or below -12% | Critical |
 | Drawdown watch | One-month NAV total return at or below -10% | Warning |
@@ -159,15 +256,18 @@ Actual holdings may be passed to `income_etf_monitor` for one run:
 
 Required fields:
 
-- Portfolio: `cash`, `positions`
+- Portfolio: `positions`
 - Position: `ticker`, `market_value`
 
 Optional fields:
 
-- Portfolio: `as_of`
+- Portfolio: `as_of`, `cash`
 - Position: `shares`, `cost_basis`
 
-The provider may be a read-only broker API, Google Sheet, broker CSV adapter, or another portfolio service. Provider authentication and portfolio persistence remain outside this MCP.
+Duplicate tickers in direct input are aggregated before weights are calculated.
+Omitted cash remains unknown. The provider may be a read-only broker API, Google
+Sheet, broker CSV adapter, or another portfolio service. Provider authentication
+and portfolio persistence remain outside this MCP.
 
 ### Broker-exported CSV
 
@@ -191,9 +291,9 @@ Supported header aliases:
 | Shares, optional | `Sh`, `Shares`, `Quantity`, `Qty` |
 | Cost basis, optional | `Total Cost`, `Cost Basis`, `Cost` |
 
-Formatting such as `$4,406`, `(394)`, and quoted fields is normalized. Multiple rows with the same ticker are treated as separate lots/accounts and aggregated into one position before drift is calculated.
+Formatting such as `$4,406`, `(394)`, and quoted fields is normalized. Multiple rows with the same ticker are treated as separate lots/accounts and aggregated into one position before drift is calculated. If any row for a ticker has missing or invalid cost basis, aggregate cost basis for that ticker is marked unknown; it is never completed with an assumed zero.
 
-Position-only exports commonly omit cash. Supply a known balance through `actual_portfolio_cash`; when omitted, the monitor reports cash as unknown rather than assuming zero. Set `allow_additional_funding=true` for a margin account or a workflow where new capital can be added. Buy recommendations will then remain unconstrained by the reported cash balance, and the output will estimate gross buys, gross sales, and any net external funding requirement. This setting never borrows funds or submits a trade.
+Position-only exports commonly omit cash. Supply a known balance through `actual_portfolio_cash`; when omitted, the monitor reports cash as unknown rather than assuming zero. Set `allow_additional_funding=true` for a margin account or a workflow where new capital can be added. Buy recommendations will then remain unconstrained by the reported cash balance. When cash is unknown, `estimated_external_funding_required` is also unknown; `external_funding_if_no_cash_available` provides a clearly labeled no-cash assumption. This setting never borrows funds or submits a trade.
 
 The CSV is read transiently and remains the external source of truth. Its rows are not copied into the alert artifact.
 
@@ -220,6 +320,8 @@ When actual holdings are supplied, the monitor calculates:
 - Suggested value change
 - Gross suggested buys/sales and estimated external funding requirement
 - Aggregate estimated unrealized gain/loss and a tax-aware transition action
+- Deterministic actual-versus-target indicated-income estimates, including coverage and missing-yield tickers
+- Entry/exit confirmation status
 - Recommendation: `HOLD`, `ADD`, `TRIM`, `BUY_CANDIDATE`, or `REVIEW_EXIT`
 
 Default drift trigger:
@@ -230,7 +332,7 @@ Default drift trigger:
 Additional warnings:
 
 - Actual holding absent from the model target
-- Actual position above the configured maximum position
+- Actual position above its fund-specific position cap
 
 All outputs are recommendations. No order is created, staged, routed, or submitted.
 
@@ -259,11 +361,13 @@ Required report sections:
 5. Why Cash Is Retained
 6. Exposure Review
 7. Watchlist
-8. Rebalance Recommendations, when actual holdings are supplied
+8. Rebalance Recommendations, or Tax-Aware Gradual Reconciliation when enabled
 9. Reinvestment Projection
 10. Portfolio Actions
 
-The renderer must use the scanner's scores, allocation, cash, and projection values without recalculating them.
+The renderer must use the scanner's scores, allocation, cash, income, confirmation,
+and projection values without recalculating them. It must not invent tax phases,
+phase totals, or ticker assignments that are absent from the structured result.
 
 ## Notifications
 
@@ -289,17 +393,18 @@ Automatic sending and trade execution require separate explicit authorization.
 |---|---|
 | TradingView unavailable | Stop; do not reuse stale results |
 | Screener missing | Stop and identify `WKLY-DIV-ETF` |
-| A tab cannot be read | Stop or mark scan incomplete; do not publish a normal report |
+| A tab lacks expected columns, is not ready, or has a different universe | Stop; do not publish a normal report |
 | No prior snapshot | Establish baseline and emit informational alert |
-| Raw scan cannot be saved | Report failure; do not claim monitoring history is current |
-| External holdings malformed | Reject the holdings comparison; preserve scanner result |
+| Raw scan cannot be saved | Fail the scan; do not claim monitoring history is current |
+| External holdings malformed | Preserve the completed scanner result, reject holdings comparison, and emit a processing warning |
+| Cost basis partly missing | Mark the ticker's basis unknown and require tax-lot data before classifying a reduction |
 | Report save fails | Keep raw/alert artifacts and surface the failure |
 
 ## Monthly and quarterly checklist
 
 ### Monthly
 
-- Compare the four weekly qualification sets.
+- Run `income_etf_monthly_review` to compare the completed weekly qualification sets.
 - Confirm new candidates persisted for two scans.
 - Review actual-versus-target drift if holdings are available.
 - Confirm distribution changes with issuer declarations.

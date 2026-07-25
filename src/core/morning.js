@@ -7,7 +7,7 @@
  */
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { evaluate, KNOWN_PATHS } from '../connection.js';
 import * as chart from './chart.js';
 import * as data from './data.js';
@@ -16,7 +16,9 @@ import { classifyResults } from './classify.js';
 import {
   PROJECT_ROOT,
   REPORTS_DIR,
+  archiveIncomeEtfArtifact,
   dateFolderName,
+  incomeEtfMonthlyReviewDirFor,
   incomeEtfWeekDirFor,
   reportDateFromInput,
   reportDirFor,
@@ -570,11 +572,15 @@ export function saveSession({ brief, instrument_type = 'momentum_stocks', is_sum
   const week = weekFolderName(now);
   const reportDir = instrument_type === 'income_etf'
     ? incomeEtfWeekDirFor(now)
-    : reportDirFor(now);
+    : instrument_type === 'income_etf_monthly_review'
+      ? incomeEtfMonthlyReviewDirFor(now)
+      : reportDirFor(now);
   mkdirSync(reportDir, { recursive: true });
 
   const isDailySum = instrument_type === 'daily_summary';
-  const filename = isDailySum
+  const filename = instrument_type === 'income_etf_monthly_review'
+    ? 'monthly-review.md'
+    : isDailySum
     ? 'daily-summary.md'
     : is_summary
       ? `${instrument_type}-summary.md`
@@ -590,6 +596,8 @@ export function saveSession({ brief, instrument_type = 'momentum_stocks', is_sum
     ? 'Daily Market Summary'
     : instrument_type === 'income_etf'
       ? 'Income ETF Accumulation Report'
+    : instrument_type === 'income_etf_monthly_review'
+      ? 'Income ETF Monthly Review'
     : is_summary
       ? `${instrument_type.replace(/_/g, ' ').toUpperCase()} Summary`
       : `${instrument_type.replace(/_/g, ' ').toUpperCase()} Morning Brief`;
@@ -601,6 +609,9 @@ export function saveSession({ brief, instrument_type = 'momentum_stocks', is_sum
     brief,
   ].join('\n');
 
+  if (instrument_type === 'income_etf_monthly_review') {
+    archiveIncomeEtfArtifact(filePath);
+  }
   writeFileSync(filePath, content, 'utf8');
 
   return {
@@ -608,6 +619,8 @@ export function saveSession({ brief, instrument_type = 'momentum_stocks', is_sum
     path: filePath,
     folder: instrument_type === 'income_etf'
       ? `inc-etf/${week}`
+      : instrument_type === 'income_etf_monthly_review'
+        ? `inc-etf/Mon-review/${basename(reportDir)}`
       : `${week}/${folder}`,
   };
 }
@@ -617,10 +630,15 @@ export function getSession({ date, instrument_type } = {}) {
   const folder = dateFolderName(now);
   const reportDir = instrument_type === 'income_etf'
     ? incomeEtfWeekDirFor(now)
-    : reportDirFor(now);
+    : instrument_type === 'income_etf_monthly_review'
+      ? incomeEtfMonthlyReviewDirFor(now)
+      : reportDirFor(now);
 
   if (instrument_type) {
-    const filePath = join(reportDir, `${instrument_type}.md`);
+    const filename = instrument_type === 'income_etf_monthly_review'
+      ? 'monthly-review.md'
+      : `${instrument_type}.md`;
+    const filePath = join(reportDir, filename);
     if (existsSync(filePath)) {
       return { success: true, path: filePath, content: readFileSync(filePath, 'utf8') };
     }
@@ -630,8 +648,10 @@ export function getSession({ date, instrument_type } = {}) {
     const yPath = join(
       instrument_type === 'income_etf'
         ? incomeEtfWeekDirFor(yesterday)
+        : instrument_type === 'income_etf_monthly_review'
+          ? incomeEtfMonthlyReviewDirFor(yesterday)
         : reportDirFor(yesterday),
-      `${instrument_type}.md`
+      filename
     );
     if (existsSync(yPath)) {
       return { success: true, note: 'No report for today — returning yesterday', path: yPath, content: readFileSync(yPath, 'utf8') };
