@@ -1,6 +1,7 @@
 {
   "instrument_type": "crypto",
   "screener_name": null,
+  "max_symbols": 0,
   "default_timeframe": "D",
   "entry_timeframe_note": "Use Daily for bias. Drop to 4H for entry timing — confirm TWB signal on 4H before entering.",
   "required_indicators": [
@@ -43,7 +44,7 @@
     "No crypto trading during major macro events (FOMC, CPI)",
     "If BTC drops 8%+ intraday, exit ALL crypto positions"
   ],
-  "asset_notes": "Coinbase spot — USD pairs only (COINBASE:BTCUSD, not BINANCE:BTCUSDT). Each symbol evaluated on its own TWB + NW + S/R reading. BTC is first in the watchlist — read its reading first to set session tone before evaluating alts.",
+  "asset_notes": "Coinbase spot — USD pairs only (COINBASE:BTCUSD, not BINANCE:BTCUSDT). Each symbol is evaluated on its own TWB + NW + S/R reading. Use BTC's reading as session context when evaluating alts.",
   "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\CRYPTO.csv",
   "watchlist_generated": "2026-07-18",
   "watchlist": [

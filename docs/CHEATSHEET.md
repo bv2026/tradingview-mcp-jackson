@@ -189,7 +189,8 @@ If a brief is rejected with an "invalid enum value" error for a new instrument t
 | Current indicator values | `read the study values` |
 | Price levels / labels from Pine indicators | `show the pine levels` / `show the pine labels` |
 | Switch symbol / timeframe | `set chart to NVDA` / `set timeframe to 4H` |
-| Sync a screener's symbols | `screener get MOMENTUM` (or MOMENTUM-CRYPTO, MOMENTUM-PERPS, MOMENTUM-ETF, MOMENTUM-ARK) |
+| Sync a live screener's symbols | `screener get MOMENTUM` or `screener get MOMENTUM-ETF` |
+| Rebuild static watchlists | `node scripts/build-watchlist-configs.mjs` after editing the CSV source |
 | Screenshot | `screenshot the chart` |
 | Is TradingView running? | `health check` / `launch TradingView` |
 
@@ -208,7 +209,7 @@ If a brief is rejected with an "invalid enum value" error for a new instrument t
 3. **Entry check:** NW Envelope extension verified manually on the chart for final entries.
 
 **Crypto/futures types** (crypto, crypto_perps, futures):
-1. **L1 — universe:** live screener supplies the symbols.
+1. **L1 — universe:** static `CSV/CRYPTO.csv`, `CSV/PERPS.csv`, or `CSV/FUTURES.csv` supplies the complete symbol list. `max_symbols: 0` means uncapped by default.
 2. **L2 — morning_brief scan:** chart loads TWB Oscillator + NW Envelope. TWB Histogram/Signal direction determines bias. For crypto_perps: BTC TWB direction = long or short side.
 3. **L3 — bias:** Claude applies strategy rules (entry/exit/risk) and writes the brief.
 
@@ -229,3 +230,4 @@ If a brief is rejected with an "invalid enum value" error for a new instrument t
 | Raw scan data | `~/.tradingview-mcp/sessions/{date}-{type}.json` — one file per day per instrument; batched calls (offset 0, 50, ...) merge by symbol into the same file rather than overwriting, so the weekly review always sees the full day's scan |
 | Momentum source CSVs | `CSV/momentum-sp500-*.csv`, `CSV/momentum-nasdaq100-*.csv`, `CSV/momentum-russell2000-*.csv`, `CSV/market-chatter-*.csv` |
 | Thematic watchlist CSVs | `CSV/Watchlist_Stocks.csv`, `CSV/Watchlist_ETFs.csv` |
+| Trading watchlist CSVs | `CSV/CRYPTO.csv`, `CSV/PERPS.csv`, `CSV/FUTURES.csv`, `CSV/Watchlist_ARK.csv` |

@@ -1,6 +1,7 @@
 {
   "instrument_type": "futures",
   "screener_name": null,
+  "max_symbols": 0,
   "watchlist": [
     "CME_MINI:ES1!",
     "CME_MINI:NQ1!",

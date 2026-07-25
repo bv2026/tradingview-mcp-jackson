@@ -1,6 +1,7 @@
 {
   "instrument_type": "crypto_perps",
   "screener_name": null,
+  "max_symbols": 0,
   "default_timeframe": "D",
   "entry_timeframe_note": "Use Daily for bias. Drop to 4H for entry timing — confirm TWB signal on 4H before entering.",
   "required_indicators": [
@@ -82,7 +83,7 @@
   "tradeable_exchanges": [
     "Coinbase"
   ],
-  "tradeable_note": "All perps in MOMENTUM-PERPS are Coinbase CDE USDC-settled contracts. No exchange check needed.",
+  "tradeable_note": "The generated PERPS.csv watchlist is the source of truth. Verify any non-crypto or non-Coinbase row before trading; no runtime blocklist or exchange filter is applied.",
   "asset_notes": "Coinbase perp universe is USDC-settled and regulated. Perps allow both sides — the TWB signal on BTC tells you which side the market favors today. For shorts, the ideal entry is a retrace back up into the lower NW band after an initial breakdown — not chasing the drop. Funding rate and open interest are NOT available in TradingView — check them manually on Coinbase before entry. Prefer entries during US session (9:30am-4pm ET) or Asia open (8pm-midnight ET) — avoid low-liquidity gaps in between.",
   "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\PERPS.csv",
   "watchlist_generated": "2026-07-18",

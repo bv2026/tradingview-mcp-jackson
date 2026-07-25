@@ -20,19 +20,26 @@ Copy the example rules file:
 cp ~/tradingview-mcp-jackson/rules.example.json ~/tradingview-mcp-jackson/rules.json
 ```
 
-`rules.json` maps instrument types to TradingView screener names. The strategy files (`strategy-momentum_stocks.json`, `strategy-crypto.json`, `strategy-crypto_perps.json`) contain all bias criteria, entry/exit rules, and risk rules — they are pre-configured and ready to use.
+`rules.json` maps instrument types to live TradingView screeners or static watchlists. The strategy files contain bias criteria, entry/exit rules, risk rules, and generated watchlists.
 
-Tell the user: "Open `rules.json` and verify the screener names match the saved screens in your TradingView account. Each screener must be open and visible in TradingView for the morning brief to read it."
+Tell the user: "Open `rules.json` and verify that the live screener names match the saved screens in your TradingView account. Static-watchlist briefs read their symbols from the generated strategy files and do not need separate screener windows."
 
 ### Required TradingView Screeners
 
 | Screener Name | Type | Filters |
 |--------------|------|---------|
 | `MOMENTUM` | Stock Screener | Your momentum watchlist |
-| `MOMENTUM-CRYPTO` | Crypto Coins Screener | Coinbase, >$5B mcap, >$100M vol |
-| `MOMENTUM-PERPS` | CEX Screener | Coinbase, Perpetual, USDC, >$1M vol |
+| `MOMENTUM-ETF` | ETF Screener | Your momentum ETF universe |
 
-Each screener opens in its own TradingView window — keep all three open during the morning workflow.
+Keep the live screeners available during their briefs. Crypto, crypto perps, futures, ARK, S&P/Nasdaq, and Russell workflows use static CSV-derived watchlists.
+
+To rebuild static watchlists after editing their CSV files:
+
+```bash
+node scripts/build-watchlist-configs.mjs
+```
+
+The builder preserves every crypto/perps/futures CSV row and sets `max_symbols: 0`, so those briefs scan their complete watchlists by default.
 
 ## Step 3: Add to MCP Config
 
@@ -108,13 +115,13 @@ If `cdp_connected: false`, TradingView is not running with `--remote-debugging-p
 
 ## Step 7: Run Your First Morning Brief
 
-Several briefs available — run each with its screener window open in TradingView (or use `instrument_type="all"` to run every standard brief plus the thematic reports in one workflow):
+Several briefs are available. Only momentum stocks and momentum ETF require live screener windows; the others use static watchlists. Use `instrument_type="all"` to run every standard brief plus the thematic reports:
 
 ```
 morning_brief instrument_type="momentum_stocks" # equity momentum, long only
 morning_brief instrument_type="momentum_etf"    # equity ETF momentum, long only
 morning_brief instrument_type="momentum_ark"    # ARK-style growth names, base/breakout detection
-morning_brief instrument_type="crypto"          # crypto spot, BTC 50d SMA benchmark, long only
+morning_brief instrument_type="crypto"          # static Coinbase spot list, per-symbol TWB/NW/S/R, long only
 morning_brief instrument_type="crypto_perps"    # perps, BTC TWB signal = long or short
 morning_brief instrument_type="futures"         # multi-sector futures, trend/mean-reversion regime detection
 morning_brief instrument_type="sp_ndx"          # weekly S&P 500 + Nasdaq 100 momentum (Saturdays)
@@ -123,7 +130,7 @@ morning_brief instrument_type="r2k"             # weekly Russell 2000 momentum (
 
 Ask Claude: *"Run morning_brief instrument_type='momentum_stocks' and give me my session bias"*
 
-Claude scans every symbol in the screener, reads the TWB Oscillator + NW Envelope, applies the strategy rules, and outputs one line per symbol plus top 3 candidates.
+Claude scans the selected live screener or complete static watchlist and applies the matching strategy. Crypto/perps/futures use TWB + NW; equity workflows use Lux structure filters plus NW extension checks.
 
 To save it: *"Save this brief using session_save"*
 To retrieve: *"Get yesterday's session using session_get"*
@@ -134,7 +141,7 @@ The perps brief (`crypto_perps`) is the only one that trades both sides:
 - BTC perp TWB Histogram **positive** → outputs top 3 **LONG** candidates
 - BTC perp TWB Histogram **negative** → outputs top 3 **SHORT** candidates
 - For shorts: never chase the initial drop — wait for a dead-cat bounce to the lower NW band
-- SILVER and GOLD perps use their own TWB signal independent of BTC
+- Commodity perps, when present in `CSV/PERPS.csv`, use their own TWB signal independent of BTC
 
 ## Step 8: Install CLI (Optional)
 

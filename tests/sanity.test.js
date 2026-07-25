@@ -2,8 +2,8 @@
  * Sanity tests — no TradingView connection needed.
  *
  * Covers:
- *   1. Config completeness  — rules.json consistent with ALL_INSTRUMENTS
- *   2. Strategy files       — all 6 exist and have required fields
+ *   1. Config completeness  — rules.json consistent with supported briefs
+ *   2. Strategy files       — all supported briefs have the fields their pipeline needs
  *   3. MCP wiring           — expected tool names registered in tool files + server.js
  *   4. Session round-trip   — saveSession / getSession file I/O logic
  *
@@ -21,7 +21,21 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const CONFIG = join(ROOT, 'config');
 
-const ALL_INSTRUMENTS = ['momentum_stocks', 'momentum_etf', 'momentum_ark', 'crypto', 'crypto_perps', 'futures'];
+const BRIEF_INSTRUMENTS = [
+  'momentum_stocks', 'momentum_etf', 'momentum_ark',
+  'crypto', 'crypto_perps', 'futures', 'sp_ndx', 'r2k',
+];
+const LIVE_SCREENER_INSTRUMENTS = ['momentum_stocks', 'momentum_etf'];
+const STATIC_WATCHLIST_INSTRUMENTS = [
+  'momentum_ark', 'crypto', 'crypto_perps', 'futures', 'sp_ndx', 'r2k',
+];
+const LUX_PIPELINE_INSTRUMENTS = [
+  'momentum_stocks', 'momentum_etf', 'momentum_ark', 'sp_ndx', 'r2k',
+];
+const DIRECT_OSCILLATOR_INSTRUMENTS = ['crypto', 'crypto_perps', 'futures'];
+const ALL_MODE_INSTRUMENTS = [
+  'momentum_stocks', 'momentum_etf', 'crypto', 'crypto_perps', 'futures', 'sp_ndx', 'r2k',
+];
 
 function loadJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
@@ -33,7 +47,7 @@ describe('rules.json completeness', () => {
   const rules = loadJson(join(CONFIG, 'rules.json'));
 
   it('chart_tabs exists for every instrument', () => {
-    for (const inst of ALL_INSTRUMENTS) {
+    for (const inst of BRIEF_INSTRUMENTS) {
       assert.ok(rules.chart_tabs?.[inst], `Missing chart_tabs["${inst}"]`);
       assert.ok(rules.chart_tabs[inst].chart_id,    `chart_tabs["${inst}"].chart_id is empty`);
       assert.ok(rules.chart_tabs[inst].layout_name, `chart_tabs["${inst}"].layout_name is empty`);
@@ -41,7 +55,7 @@ describe('rules.json completeness', () => {
   });
 
   it('screener_sources has an entry for every instrument', () => {
-    for (const inst of ALL_INSTRUMENTS) {
+    for (const inst of BRIEF_INSTRUMENTS) {
       assert.ok(
         Object.prototype.hasOwnProperty.call(rules.screener_sources ?? {}, inst),
         `Missing screener_sources["${inst}"]`
@@ -49,14 +63,17 @@ describe('rules.json completeness', () => {
     }
   });
 
-  it('screener-based instruments point to a non-null screener name', () => {
-    for (const inst of ['momentum_stocks', 'momentum_etf', 'crypto', 'crypto_perps']) {
+  it('live-screener instruments point to a non-null screener name', () => {
+    for (const inst of LIVE_SCREENER_INSTRUMENTS) {
       assert.ok(rules.screener_sources[inst], `screener_sources["${inst}"] should be non-null`);
     }
   });
 
-  it('futures has null screener source (uses static watchlist)', () => {
-    assert.equal(rules.screener_sources['futures'], null);
+  it('static-watchlist instruments have null screener sources', () => {
+    for (const inst of STATIC_WATCHLIST_INSTRUMENTS) {
+      assert.equal(rules.screener_sources[inst], null,
+        `screener_sources["${inst}"] should be null`);
+    }
   });
 
   it('global risk_rules is a non-empty array', () => {
@@ -68,15 +85,15 @@ describe('rules.json completeness', () => {
 
 describe('strategy files', () => {
   const REQUIRED_FIELDS = [
-    'max_symbols', 'required_indicators', 'bias_criteria', 'entry_criteria', 'exit_criteria',
+    'instrument_type', 'max_symbols', 'default_timeframe', 'required_indicators',
+    'entry_criteria', 'exit_criteria', 'risk_rules',
   ];
-  const REQUIRED_INDICATORS = [
-    'Trendlines with Breaks Oscillator [LuxAlgo]',
+  const CHART_INDICATORS = [
     'Nadaraya-Watson Envelope [LuxAlgo]',
     'Volume',
   ];
 
-  for (const inst of ALL_INSTRUMENTS) {
+  for (const inst of BRIEF_INSTRUMENTS) {
     const path = join(CONFIG, `strategy-${inst}.json`);
 
     it(`strategy-${inst}.json exists`, () => {
@@ -96,14 +113,34 @@ describe('strategy files', () => {
         `max_symbols must be a non-negative integer, got ${max_symbols}`);
     });
 
-    it(`strategy-${inst}.json required_indicators includes all 3 LuxAlgo indicators`, () => {
+    it(`strategy-${inst}.json includes the common chart indicators`, () => {
       const { required_indicators } = loadJson(path);
-      for (const ind of REQUIRED_INDICATORS) {
+      for (const ind of CHART_INDICATORS) {
         assert.ok((required_indicators ?? []).includes(ind),
           `strategy-${inst}.json missing indicator: "${ind}"`);
       }
     });
   }
+
+  it('direct oscillator strategies define bias criteria and require TWB', () => {
+    for (const inst of DIRECT_OSCILLATOR_INSTRUMENTS) {
+      const strategy = loadJson(join(CONFIG, `strategy-${inst}.json`));
+      assert.ok(strategy.bias_criteria && typeof strategy.bias_criteria === 'object',
+        `strategy-${inst}.json must define bias_criteria`);
+      assert.ok(strategy.required_indicators.includes('Trendlines with Breaks Oscillator [LuxAlgo]'),
+        `strategy-${inst}.json must require the TWB oscillator`);
+    }
+  });
+
+  it('Lux screener strategies define their pipeline and NW position rules', () => {
+    for (const inst of LUX_PIPELINE_INSTRUMENTS) {
+      const strategy = loadJson(join(CONFIG, `strategy-${inst}.json`));
+      assert.ok(typeof strategy.pipeline === 'string' && strategy.pipeline.length > 0,
+        `strategy-${inst}.json must describe its Lux pipeline`);
+      assert.ok(strategy.nw_position_rules && typeof strategy.nw_position_rules === 'object',
+        `strategy-${inst}.json must define nw_position_rules`);
+    }
+  });
 
   it('momentum_stocks and momentum_etf both have max_symbols = 50 (capped to avoid tool timeout)', () => {
     // Uncapped (0) caused morning_brief to scan all ~100 screener symbols in one
@@ -114,20 +151,36 @@ describe('strategy files', () => {
     assert.equal(loadJson(join(CONFIG, 'strategy-momentum_etf.json')).max_symbols, 50);
   });
 
-  it('watchlist instruments (momentum_ark, futures) have non-empty watchlist array', () => {
-    for (const inst of ['momentum_ark', 'futures']) {
+  it('static-watchlist instruments have non-empty watchlist arrays', () => {
+    for (const inst of STATIC_WATCHLIST_INSTRUMENTS) {
       const { watchlist } = loadJson(join(CONFIG, `strategy-${inst}.json`));
       assert.ok(Array.isArray(watchlist) && watchlist.length > 0,
         `strategy-${inst}.json must have a non-empty watchlist array`);
     }
   });
 
-  it('screener instruments have a screener_name string', () => {
-    for (const inst of ['momentum_stocks', 'momentum_etf', 'momentum_ark', 'crypto', 'crypto_perps']) {
+  it('live-screener strategies have a screener_name string', () => {
+    for (const inst of LIVE_SCREENER_INSTRUMENTS) {
       const { screener_name } = loadJson(join(CONFIG, `strategy-${inst}.json`));
       assert.ok(typeof screener_name === 'string' && screener_name.length > 0,
         `strategy-${inst}.json must have a non-empty screener_name`);
     }
+  });
+
+  it('static-watchlist strategies are uncapped or cover their full watchlist', () => {
+    for (const inst of STATIC_WATCHLIST_INSTRUMENTS) {
+      const { max_symbols, watchlist } = loadJson(join(CONFIG, `strategy-${inst}.json`));
+      assert.ok(max_symbols === 0 || max_symbols >= watchlist.length,
+        `strategy-${inst}.json max_symbols=${max_symbols} truncates its ${watchlist.length}-symbol watchlist`);
+    }
+  });
+
+  it('CSV regeneration preserves uncapped crypto, perps, and futures scans', () => {
+    const src = readFileSync(join(ROOT, 'scripts', 'build-watchlist-configs.mjs'), 'utf8');
+    assert.ok(!/delete\s+cfg\.max_symbols/.test(src),
+      'watchlist builder must not delete max_symbols');
+    assert.ok((src.match(/max_symbols:\s+0/g) ?? []).length >= 3,
+      'watchlist builder must set max_symbols: 0 for crypto, perps, and futures');
   });
 });
 
@@ -169,35 +222,35 @@ describe('MCP tool wiring', () => {
     }
   });
 
-  it('morning_brief instrument_type enum includes all 6 instruments plus "all"', () => {
+  it('morning_brief instrument_type enum includes all supported briefs plus "all"', () => {
     const src = readFileSync(join(ROOT, 'src/tools/morning.js'), 'utf8');
-    for (const inst of [...ALL_INSTRUMENTS, 'all']) {
+    for (const inst of [...BRIEF_INSTRUMENTS, 'all']) {
       assert.ok(src.includes(`'${inst}'`), `morning_brief enum missing: '${inst}'`);
     }
   });
 
-  it('session_save instrument_type enum includes daily_summary and all 6 instruments', () => {
+  it('session_save instrument_type enum includes daily_summary and all supported briefs', () => {
     const src = readFileSync(join(ROOT, 'src/tools/morning.js'), 'utf8');
-    for (const inst of [...ALL_INSTRUMENTS, 'daily_summary']) {
+    for (const inst of [...BRIEF_INSTRUMENTS, 'daily_summary']) {
       assert.ok(src.includes(`'${inst}'`), `session_save enum missing: '${inst}'`);
     }
   });
 
-  it('session_get instrument_type enum includes all 6 instruments', () => {
+  it('session_get instrument_type enum includes all supported briefs', () => {
     const src = readFileSync(join(ROOT, 'src/tools/morning.js'), 'utf8');
-    for (const inst of ALL_INSTRUMENTS) {
+    for (const inst of BRIEF_INSTRUMENTS) {
       assert.ok(src.includes(`'${inst}'`), `session_get enum missing: '${inst}'`);
     }
   });
 
-  it('core/morning.js ALL_INSTRUMENTS matches the canonical 6', () => {
+  it('core/morning.js ALL_INSTRUMENTS matches the standard all-mode sequence', () => {
     const src = readFileSync(join(ROOT, 'src/core/morning.js'), 'utf8');
-    // The array is a literal — check all 6 are present in the ALL_INSTRUMENTS line
     const match = src.match(/ALL_INSTRUMENTS\s*=\s*\[([^\]]+)\]/);
     assert.ok(match, 'ALL_INSTRUMENTS array not found in core/morning.js');
-    for (const inst of ALL_INSTRUMENTS) {
-      assert.ok(match[1].includes(`'${inst}'`), `ALL_INSTRUMENTS missing: '${inst}'`);
-    }
+    const actual = [...match[1].matchAll(/'([^']+)'/g)].map(item => item[1]);
+    assert.deepEqual(actual, ALL_MODE_INSTRUMENTS);
+    assert.ok(src.includes('THEMATIC STEP 0 — ARK Innovation'),
+      'all-mode instructions must route momentum_ark through lux_screener_scan');
   });
 
   it('getSession discovers available briefs dynamically instead of a fixed types list', () => {
@@ -266,7 +319,7 @@ describe('session file I/O round-trip', () => {
 
   const today = new Date().toISOString().split('T')[0];
 
-  for (const inst of ALL_INSTRUMENTS) {
+  for (const inst of BRIEF_INSTRUMENTS) {
     it(`round-trip: ${inst}.md saves and reads back correctly`, () => {
       const text = `Test brief for ${inst}`;
       const saved = save({ brief: text, instrument_type: inst, date: today });
@@ -279,7 +332,7 @@ describe('session file I/O round-trip', () => {
   }
 
   it('daily_summary writes to daily-summary.md, not stocks.md', () => {
-    const saved = save({ brief: 'All 6 summaries here', instrument_type: 'daily_summary', date: today });
+    const saved = save({ brief: 'All brief summaries here', instrument_type: 'daily_summary', date: today });
     assert.ok(saved.path.endsWith('daily-summary.md'), `Expected daily-summary.md, got: ${saved.path}`);
     assert.ok(existsSync(saved.path));
   });

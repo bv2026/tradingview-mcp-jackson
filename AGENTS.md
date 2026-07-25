@@ -4,22 +4,23 @@
 
 ## Morning Workflow (primary daily use)
 
-Three independent briefs — run each in its own TradingView screener window:
+Core briefs:
 
 ```
-morning_brief instrument_type="momentum_stocks" # equity momentum
-morning_brief instrument_type="crypto"       # crypto spot (Coinbase)
-morning_brief instrument_type="crypto_perps" # crypto perps (Coinbase CDE)
+morning_brief instrument_type="momentum_stocks" # live MOMENTUM screener
+morning_brief instrument_type="momentum_etf"    # live MOMENTUM-ETF screener
+morning_brief instrument_type="crypto"          # full static CSV/CRYPTO.csv watchlist
+morning_brief instrument_type="crypto_perps"    # full static CSV/PERPS.csv watchlist
+morning_brief instrument_type="futures"         # full static CSV/FUTURES.csv watchlist
 ```
 
-**Step 1 — sync screener** (when TV screener results change during the day):
+**Step 1 — sync live screeners** (stocks/ETF only; crypto/perps/futures use static CSV watchlists):
 ```
 screener_get screener_name="MOMENTUM" max_symbols=10
-screener_get screener_name="MOMENTUM-CRYPTO" max_symbols=9
-screener_get screener_name="MOMENTUM-PERPS" max_symbols=12
+screener_get screener_name="MOMENTUM-ETF" max_symbols=10
 ```
 
-**Step 2 — run brief** — pulls live symbols, scans each symbol, returns structured data for Codex to apply strategy rules.
+**Step 2 — run brief** — pulls live symbols or the complete static watchlist, scans each symbol, and returns structured data for Codex to apply strategy rules. Crypto, crypto perps, and futures use `max_symbols: 0`, so they are uncapped by default.
 
 **Step 3 — save brief** (optional):
 ```
@@ -30,9 +31,9 @@ session_get   # retrieve today's or yesterday's saved brief
 **Brief formatting convention (REQUIRED for `session_save`):**
 The `morning_brief` tool's embedded instruction says to output bare pipe-delimited lines (`SYMBOL | BIAS: ... | SIGNAL: ...`). Do NOT save that raw form — it does not render as a table in markdown. Always reshape the analysis into proper GitHub-flavored markdown before calling `session_save`:
 - `## {TYPE}` section, then `**Benchmark:**` and `**Theme:**` bullet blocks
-- For `momentum_stocks`, `momentum_etf`, and `momentum_ark` (large symbol lists mixing bullish/bearish/neutral, or BASE_BUILDING/BREAKOUT_READY/EXTENDED/SKIP for ark): insert a `### Top 20 Setups` table here, before the full symbol table. Sorted descending by `GAP` (TWB Histogram − Signal — strongest divergence first). This is a trade-quality ranking, NOT the same as the underlying screener's own live rank (MOMENTUM/MOMENTUM-ETF/MOMENTUM-ARK have their own sort/filters — see `config/screeners/MOMENTUM.md` / `MOMENTUM-ETF.md` / `MOMENTUM-ARK.md`). State this distinction in one line above the table so readers don't confuse the two orderings.
-  - For `momentum_stocks`/`momentum_etf`: columns `| RANK | SYMBOL | TWB HIST | TWB SIG | GAP | CLOSE | NW POSITION |`, filtered to **Bullish-biased symbols only**.
-  - For `momentum_ark`: columns `| RANK | SYMBOL | STATUS | TWB HIST | TWB SIG | GAP | CLOSE | CLUSTER |`, filtered to **BASE_BUILDING/BREAKOUT_READY status only** (EXTENDED and SKIP excluded — not fresh entries). Add a cluster-concentration note below the table if any correlation cluster (ai_semis/fintech_crypto/autonomy_space/ai_software/genomics) appears more than once, naming the single best pick per cluster per the cluster_rule.
+- For `momentum_stocks`, `momentum_etf`, and `momentum_ark`, insert a `### Top 20 Setups` table before the full symbol table. Rank names that passed the Lux BOS + Bullish S&O + ▲ hard filter by Lux score, then use NW position to exclude extended entries. This trade-quality order is separate from the live screener or CSV watchlist order.
+  - For `momentum_stocks`/`momentum_etf`: columns `| RANK | SYMBOL | S&O RATING | SIGNAL | PAC STRUCTURE | SCORE | NW POSITION |`.
+  - For `momentum_ark`: columns `| RANK | SYMBOL | S&O RATING | SIGNAL | PAC STRUCTURE | SCORE | CLUSTER |`. Add a cluster-concentration note if any correlation cluster appears more than once, naming the best pick per cluster.
 - A per-symbol **markdown table** with a header row and `|---|` separator: `| SYMBOL | BIAS | SIGNAL | WATCH |` (use `| SYMBOL | STATUS | RS | SIGNAL | CLUSTER |` for `momentum_ark`). This table keeps the screener's own live rank order (i.e., do NOT re-sort it to match the Top 20 table above — the Top 20 table is a separate curated view, the full table is the raw scan in screener order). Precede this table with a `### Screener List` header and add a leading `#` column numbering each row 1-N in screener rank order.
 - `### Top 3 Setups` — prose or a table with Entry/Stop/TP1/R:R columns. For `momentum_stocks`/`momentum_etf`/`momentum_ark`, these should be the top 3 from the Top 20 Setups table above (same trade-quality ranking, deepest tier) — not independently re-selected. For `momentum_ark`, note any cluster overlap among the top 3 and swap in the next-ranked name from a different cluster if needed to respect the max-1-per-cluster rule.
 - `## Overall Market Read` — bullet list
@@ -51,9 +52,10 @@ The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief 
 - `~/.tradingview-mcp/sessions/` — saved daily briefs
 
 **Required indicators on chart** (auto-added if missing):
-- Trendlines with Breaks Oscillator [LuxAlgo]
-- Nadaraya-Watson Envelope [LuxAlgo]
-- Volume
+- Nadaraya-Watson Envelope [LuxAlgo] — all instrument types
+- Trendlines with Breaks Oscillator [LuxAlgo] — crypto, crypto_perps, futures only
+- Support and Resistance Levels with Breaks [LuxAlgo] — crypto and crypto_perps
+- Volume — all instrument types
 
 **NW Envelope note**: Does NOT appear in `data_get_study_values` (it's a price overlay, not an oscillator). Use `data_get_pine_labels` with `study_filter: "Nadaraya-Watson"` to get signal markers: ▲ = price crossed above a band, ▼ = price crossed below. The most recent label (first in array) indicates current band position.
 
@@ -66,19 +68,14 @@ The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief 
 | | |
 |---|---|
 | **Screener** | `MOMENTUM` (Stock Screener, US equities) |
-| **Timeframe** | Daily |
-| **Benchmark** | SPY / QQQ above 50-day SMA → longs only |
-| **Side** | Long only. No shorts (future work). |
-| **Indicators** | TWB Oscillator + NW Envelope + Volume |
+| **Timeframe** | Weekly (1W) for Lux L2; daily context for entries |
+| **Pipeline** | L1 live screener → L2 `lux_screener_scan` hard filter → L3 NW extension check |
+| **Side** | Long only |
+| **Indicators** | NW Envelope + Volume; TWB is not used for equity briefs |
 
-**Bias rules:**
-- Bullish: HH/HL pattern + TWB bullish breakout + volume surge + approaching (not outside) upper NW band + catalyst
-- Bearish: LL/LH + TWB breakdown + price back below trendline → exit/avoid longs only
-- Neutral: consolidation, no breakout, below-average volume
-
-**Entry:** Flag/pennant near highs + TWB bullish B signal + volume + NW band not extended
-**Exits:** Stop below breakout candle low. TP1: upper NW band (scale 1/2–1/3). TP2: trail 9 EMA.
-**Risk:** 1% max risk/trade, 1:2 min R:R, max 3 positions, no entry if SPY/QQQ below 50d SMA.
+**Entry:** Symbol passes the Lux BOS + Bullish S&O + ▲ filter, remains inside the NW bands, and offers acceptable R:R.
+**Exits:** Stop below weekly NW lower band. TP1 at upper NW band. Trail the remainder with the 9-week EMA.
+**Risk:** 1% max risk/trade, 1:2 minimum R:R, max 3 positions.
 
 ---
 
@@ -86,21 +83,21 @@ The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief 
 
 | | |
 |---|---|
-| **Screener** | `MOMENTUM-CRYPTO` (Crypto Coins Screener, Coinbase large caps >$5B mcap, >$100M vol) |
+| **Source** | Static `CSV/CRYPTO.csv` watchlist; `max_symbols: 0` scans the complete list |
 | **Timeframe** | Daily bias, 4H entry confirmation |
-| **Benchmark** | BTC above 50-day SMA → longs only. BTC below 50d SMA → all alts neutral/bearish. |
-| **Side** | Long only (spot + max 3x futures). No shorts. |
-| **Exchange** | Coinbase only. Non-Coinbase coins → SKIP. |
-| **Universe** | BTC, ETH, SOL, XRP, DOGE, ZEC, ADA, LINK, XLM (9 coins after blocklist) |
+| **Benchmark** | No hard BTC-SMA gate; evaluate each symbol on TWB + NW + S/R and use BTC as session context |
+| **Side** | Long only |
+| **Exchange** | Coinbase USD spot pairs generated from the CSV |
+| **Universe** | Whatever is present in `CSV/CRYPTO.csv`; no runtime blocklist |
 
 **Bias rules:**
-- Bullish: BTC above 50d SMA + HH/HL + TWB bullish + volume + approaching upper NW band + catalyst
-- Bearish: BTC below 50d SMA → avoid all alt longs
-- Neutral: BTC consolidating near 50d SMA, no TWB signal, chop
+- Long: symbol TWB Histogram positive and above signal, NW not extended, and price above S/R support
+- Bonus confirmation: `sr_break > 0` can validate a breakout even when NW reads extended
+- Skip: negative TWB, an unconfirmed move beyond the upper NW band, or rejection at S/R resistance
 
-**Entry:** Consolidation near highs + Daily TWB bullish + 4H TWB confirms + volume + NW not extended
+**Entry:** Daily TWB positive and above signal + 4H confirmation + volume + NW inside bands, unless `sr_break > 0` confirms the breakout.
 **Exits:** Stop below breakout low. TP1: 1/3 at upper NW band. TP2: 1/3 at 2R + trail 4H 9 EMA. TP3: 1/3 if 4H 9 EMA violated for 2 candles. Emergency: BTC −8% intraday → exit ALL.
-**Risk:** 2% max/trade, max 3 positions, max 3x leverage on futures, no averaging down.
+**Risk:** 2% max/trade, max 3 positions, no averaging down.
 
 ---
 
@@ -108,12 +105,12 @@ The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief 
 
 | | |
 |---|---|
-| **Screener** | `MOMENTUM-PERPS` (CEX Screener, Coinbase, Perpetual, USDC, >$1M vol) |
+| **Source** | Static `CSV/PERPS.csv` watchlist; `max_symbols: 0` scans the complete list |
 | **Timeframe** | Daily bias, 4H entry confirmation |
 | **Benchmark** | BTC perp **TWB Histogram direction** (not SMA) |
 | **Side** | **Both long AND short** depending on BTC TWB signal |
 | **Exchange** | Coinbase CDE (USDC-settled perps) |
-| **Universe** | ~12 clean crypto + SILVER + GOLD after blocklist |
+| **Universe** | Whatever is present in `CSV/PERPS.csv`; no runtime blocklist |
 
 **Benchmark signal rules:**
 - BTC TWB Histogram **> 0** → uptrend → scan ALL alts for **LONG** setups
@@ -129,24 +126,18 @@ The tool auto-prepends the `# {TYPE} Morning Brief` + date header, so the brief 
 **Funding exit:** Long: exit if funding >0.1%/hr. Short: exit if funding <−0.05%/hr.
 **Emergency:** BTC ±8% intraday → exit ALL.
 
-**Commodity perps (SILVER, GOLD):** Exempt from BTC benchmark. Use their own TWB signal + DXY direction. Positive TWB + DXY weakening = long. Negative TWB + DXY strengthening = short.
+**Commodity perps:** When SILVER or GOLD is present in the CSV, it is exempt from the BTC benchmark. Use its own TWB signal + DXY direction.
 
 **Risk:** 2% max/trade, max 3 positions, max 3x leverage, no averaging down.
 
 ---
 
-## Screener Blocklists (enforced in code)
+## Static CSV Watchlists
 
-### Crypto Spot blocklist (`CRYPTO_BLOCKLIST` in `src/core/screener.js`)
-Removes: stablecoins (USDT/USDC/DAI), wrapped tokens (WBTC/WETH), tokenized gold (XAUT/PAXG), BNB, XMR, TRX
-
-### Perps blocklist (`PERPS_BASE_BLOCKLIST` in `src/core/screener.js`)
-Removes by base ticker:
-- **Stocks/ETFs:** META, TSLA, GOOGL, INTC, AMZN, SPY, NVDA, AAPL, MSFT, MU, AMD, ARM, QQQ, ROBO, NBIS
-- **Fiat:** EURC, USDT, USDC, DAI
-- **Meme/micro:** PUMP, BILL, 1000SHIB, 1000PEPE, MEME, SNDK, CBRS, MERL, W
-- **Low quality:** HYPE, CRV, BE
-- **Keeps:** SILVER, GOLD, PAXG (commodity perps intentionally included)
+- `CSV/CRYPTO.csv`, `CSV/PERPS.csv`, and `CSV/FUTURES.csv` are the source of truth.
+- `scripts/build-watchlist-configs.mjs` regenerates the corresponding strategy watchlists.
+- The builder preserves every CSV row; there is no hidden runtime blocklist.
+- These strategies use `max_symbols: 0`, so normal brief calls scan their complete watchlists. Explicit `offset` and `max_symbols` arguments can still batch a run.
 
 ---
 
@@ -155,10 +146,11 @@ Removes by base ticker:
 ```
 morning_brief instrument_type="crypto"
 ```
-- Screener window must be open in TradingView — separate CDP target at `tradingview.com/crypto-coins-screener/`
-- Benchmark: BTC above 50-day SMA required for any alt bullish bias
+- No crypto screener window is required; symbols come from `CSV/CRYPTO.csv`
+- The complete generated watchlist is scanned by default
+- No BTC 50-day-SMA gate; apply per-symbol TWB + NW + S/R rules
 - Timeframe: Daily for bias, 4H for entry confirmation
-- Spot + futures (max 3x leverage), Coinbase only
+- Coinbase USD spot pairs only
 - Emergency exit: BTC drops 8%+ intraday → exit ALL positions
 
 ## Crypto Perps Workflow
@@ -166,10 +158,11 @@ morning_brief instrument_type="crypto"
 ```
 morning_brief instrument_type="crypto_perps"
 ```
-- Screener window must be open — separate CDP target at `tradingview.com/cex-screener/`
+- No CEX screener window is required; symbols come from `CSV/PERPS.csv`
+- The complete generated watchlist is scanned by default
 - Benchmark: BTC perp TWB Histogram direction (positive = longs, negative = shorts)
 - Both sides active — brief outputs top 3 LONG or top 3 SHORT candidates
-- Commodity perps (SILVER, GOLD) evaluated independently of BTC signal
+- Commodity perps, when present in the CSV, are evaluated independently of BTC
 
 ## Decision Tree — Which Tool When
 

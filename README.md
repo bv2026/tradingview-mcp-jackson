@@ -22,11 +22,11 @@ All working docs are centralized in [docs/INDEX.md](docs/INDEX.md). The root-lev
 | Feature | What it does |
 |---------|-------------|
 | `morning_brief` | One command that scans your screener, reads all your indicators, and returns structured data for Claude to generate your session bias |
-| **8 independent briefs + thematic scans** | Momentum stocks/ETF/ARK, crypto spot/perps, futures, weekly S&P-Nasdaq, weekly Russell 2000, plus thematic stock/ETF scans — each with its own screener, strategy, and bias logic. `instrument_type="all"` runs the whole set. |
+| **8 independent briefs + thematic scans** | Momentum stocks/ETF/ARK, crypto spot/perps, futures, weekly S&P-Nasdaq, weekly Russell 2000, plus thematic stock/ETF scans — each with its own live screener or static CSV watchlist, strategy, and bias logic. `instrument_type="all"` runs the whole set. |
 | **Crypto perps (long + short)** | Perps brief uses BTC TWB signal direction to determine side — negative = scan for shorts, positive = scan for longs |
 | `session_save` / `session_get` | Saves your daily brief to `~/.tradingview-mcp/sessions/` so you can compare today vs yesterday |
 | `rules.json` | Maps instrument types to screener names. Strategy files hold all bias/entry/exit/risk rules |
-| **Screener blocklists** | Auto-removes stablecoins, wrapped tokens, stock perps, meme coins from results in code |
+| **CSV watchlists** | Crypto, crypto perps, futures, ARK, and weekly index universes are generated from versioned CSV files; the CSV contents are the source of truth |
 | Launch bug fix | Fixed `tv_launch` compatibility with TradingView Desktop v2.14+ and Windows Store (MSIX) installs |
 | `tv brief` CLI | Run your morning brief from the terminal in one word |
 
@@ -148,7 +148,7 @@ This is the feature that turns this from a toolkit into a daily habit. Eight ind
 
 **Before every session:**
 
-1. TradingView is open with all screener windows visible (stocks, ETF, ARK, crypto, perps, futures)
+1. TradingView is open with the `MOMENTUM` and `MOMENTUM-ETF` screener windows available. Static-watchlist briefs do not require separate screener windows.
 2. Run one or more briefs:
 
 ```
@@ -162,11 +162,11 @@ morning_brief instrument_type="sp_ndx"          # weekly S&P/Nasdaq momentum (Sa
 morning_brief instrument_type="r2k"             # weekly Russell 2000 momentum (Saturdays)
 ```
 
-Large screeners (~100 symbols) can exceed the tool's timeout on a plain call — batch with `offset`/`max_symbols` if needed (e.g. `offset=0 max_symbols=50` then `offset=50 max_symbols=50`).
+Large live screeners (~100 symbols) can exceed the tool's timeout on a plain call — batch with `offset`/`max_symbols` if needed (e.g. `offset=0 max_symbols=50` then `offset=50 max_symbols=50`). Crypto, crypto perps, and futures use `max_symbols: 0`, meaning their complete static CSV watchlists are scanned by default.
 
 Thematic scans (separate from the above, run via `lux_screener_scan` and `morning_brief instrument_type="thematic_etfs_1"/"thematic_etfs_2"`) cover ~121 stocks and ~90 ETFs across 8 themes — see `CLAUDE.md` for the full formatting spec.
 
-3. Claude scans every symbol in the screener, reads TWB Oscillator + NW Envelope, applies the strategy rules, and prints one line per symbol:
+3. Claude scans the selected live screener or static watchlist and applies the matching strategy. Crypto/perps/futures read TWB + NW (and S/R where configured); equity pipelines use the Lux screener pass plus NW extension checks.
 
 ```
 SOL  | BIAS: SHORT | SIGNAL: TWB −17.4, NW bounce at $78 = short entry zone | WATCH: Wait for retrace to $75–78
@@ -193,10 +193,10 @@ Each brief loads its own strategy file:
 |-------|---------|----------|---------------|------|
 | Momentum Stocks | `instrument_type="momentum_stocks"` | `MOMENTUM` | `strategy-momentum_stocks.json` | Long only |
 | Momentum ETF | `instrument_type="momentum_etf"` | `MOMENTUM-ETF` | `strategy-momentum_etf.json` | Long only |
-| Momentum ARK | `instrument_type="momentum_ark"` | `MOMENTUM-ARK` | `strategy-momentum_ark.json` | Long only (base/breakout detection) |
-| Crypto Spot | `instrument_type="crypto"` | `MOMENTUM-CRYPTO` | `strategy-crypto.json` | Long only |
-| Crypto Perps | `instrument_type="crypto_perps"` | `MOMENTUM-PERPS` | `strategy-crypto_perps.json` | **Long + Short** |
-| Futures | `instrument_type="futures"` | static watchlist | `strategy-futures.json` | Trend/mean-reversion regime, both sides |
+| Momentum ARK | `instrument_type="momentum_ark"` | `CSV/Watchlist_ARK.csv` | `strategy-momentum_ark.json` | Long only (base/breakout detection) |
+| Crypto Spot | `instrument_type="crypto"` | `CSV/CRYPTO.csv` (full list) | `strategy-crypto.json` | Long only |
+| Crypto Perps | `instrument_type="crypto_perps"` | `CSV/PERPS.csv` (full list) | `strategy-crypto_perps.json` | **Long + Short** |
+| Futures | `instrument_type="futures"` | `CSV/FUTURES.csv` (full list) | `strategy-futures.json` | Trend/mean-reversion regime, both sides |
 | Weekly S&P/Nasdaq | `instrument_type="sp_ndx"` | static (weekly CSV) | `strategy-sp_ndx.json` | Long only |
 | Weekly Russell 2000 | `instrument_type="r2k"` | static (weekly CSV) | `strategy-r2k.json` | Long only |
 
@@ -204,8 +204,8 @@ Each brief loads its own strategy file:
 
 | Brief | Benchmark | Logic |
 |-------|-----------|-------|
-| Stocks | SPY/QQQ 50-day SMA | Above = longs ok. Below = avoid longs. |
-| Crypto Spot | BTC 50-day SMA | Above = alt longs ok. Below = avoid alts. |
+| Stocks | Lux weekly structure + NW position | Lux pass identifies bullish structure; NW determines whether the entry is early, inside, or extended. |
+| Crypto Spot | Per-symbol TWB + NW + S/R | No hard BTC-SMA gate. BTC remains useful session context, but each symbol must qualify on its own indicators. |
 | Crypto Perps | **BTC perp TWB Histogram** | Positive = scan for longs. Negative = scan for shorts. |
 
 The perps brief is the only one that trades both sides — the BTC TWB signal determines which side the market favors that day.
