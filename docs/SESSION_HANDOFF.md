@@ -1,5 +1,5 @@
 # Session Handoff — TradingView MCP Jackson
-**Date:** 2026-07-25  
+**Date:** 2026-07-26  
 **Handoff to:** Codex (Claude Code)  
 **Project root:** `C:\work\tradingview-mcp-jackson`
 
@@ -13,7 +13,35 @@ All watchlist scans healthy and trusted for daily use (verified 2026-07-18):
 - `thematic_etfs`: 77 symbols, clean
 - OSC RE10041 error: resolved — caused by excluded symbols, not a code bug
 
-No remaining blockers on screener scans.
+Income ETF tools (`income_etf_scan`, `income_etf_monitor`, `income_etf_monthly_review`) added and tested. Weekly and monthly routines active (see Scheduled Task State table below).
+
+No remaining blockers.
+
+---
+
+## What Was Done This Session (2026-07-26)
+
+### MCP Review + Income ETF Weekly/Monthly Routines
+
+**Review findings:**
+- All 95 sanity tests pass. Income ETF tools correctly wired in `src/tools/screener.js` → `src/core/income_etf*.js`.
+- `settings.json` was missing the 3 new income ETF tool allowlist entries — fixed.
+- `config/strategy-r2k.json` and `config/strategy-sp_ndx.json` were uncommitted Saturday watchlist refreshes — committed.
+
+**New scheduled routines created:**
+1. `income-etf-weekly-routine` — Saturdays 10:00 AM
+   - Calls `income_etf_monitor` (model-only, $100k, no holdings CSV)
+   - Renders report → `session_save instrument_type="income_etf"` → Gmail draft
+   - SKILL.md: `~/.claude/scheduled-tasks/income-etf-weekly-routine/SKILL.md`
+
+2. `income-etf-monthly-review-routine` — Every Sunday 11:00 AM, self-gates to first Sunday
+   - Checks date ≤ 7 before proceeding; reviews previous calendar month
+   - Calls `income_etf_monthly_review` → renders → `session_save` → Gmail draft
+   - SKILL.md: `~/.claude/scheduled-tasks/income-etf-monthly-review-routine/SKILL.md`
+
+**Committed:** `.claude/settings.json` + watchlist configs (SHA on main, not yet pushed)
+
+**Note:** The monthly routine fires every Sunday at 11:00 AM but self-aborts unless the date is 1–7 (first Sunday). Next meaningful run: Sun 2026-Aug-02 (reviews July 2026 data — requires at least one weekly scan from July).
 
 ---
 
@@ -125,6 +153,8 @@ The following obsolete helpers were removed during the 2026-07-18 repo audit cle
 |---|---|---|
 | `futures-morning-routine` | Weekdays 10:37 AM | **Active** — data collection only: 3 briefs → ct_tv_data.json → re-arms decision-email-routine via `update_scheduled_task` |
 | `decision-email-routine` | One-time, re-armed daily by Routine 1 (+3 min) | **Active** — reads saved files → Claude reasons → 3 decision HTML files → 3 Gmail drafts. Aborts if any of the 4 required files are missing. Persists in disabled state between runs; never recreated. |
+| `income-etf-weekly-routine` | Saturdays 10:00 AM | **Active** — income_etf_monitor → render report → session_save → Gmail draft |
+| `income-etf-monthly-review-routine` | Sundays 11:00 AM (self-gates to first Sunday) | **Active** — income_etf_monthly_review for prior month → render → session_save → Gmail draft |
 | `cannonedge-daily-pipeline` | Daily 5:40 PM | Active — CT scrape + ingest |
 | `broker-daily-refresh` | Daily 7:40 AM | Active |
 | `tv-mcp-archive-old-reports` | Sundays 3 AM | Active |
