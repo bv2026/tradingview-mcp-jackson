@@ -40,7 +40,9 @@ Quick reference for the daily/weekly trading workflow. Prompts are what you type
 | Day | What runs | Instruments |
 |-----|-----------|-------------|
 | **Saturday** | Rebuild watchlists (scripts below) | sp_ndx, r2k, ARK lists refreshed |
+| **Saturday 10:00 AM** | **Income ETF weekly monitor** (automated — `income-etf-weekly-routine`) | WKLY-DIV-ETF screener → model portfolio → Gmail draft |
 | **Sunday 8:00 AM ET** | **Sunday brief** — LuxAlgo 1W scan on all weekly equity/ETF types | momentum_stocks, momentum_etf, momentum_ark, sp_ndx, r2k, thematic_stocks, thematic_etfs |
+| **First Sunday 11:00 AM** | **Income ETF monthly governance review** (automated — `income-etf-monthly-review-routine`) | Aggregates prior month's weekly scans → Gmail draft |
 | **Mon–Fri** | **Daily brief** — short-term trading instruments only | crypto, crypto_perps, futures |
 
 **Sunday brief prompts** (run in order on Sunday morning):
@@ -232,6 +234,8 @@ For the weekly scheduled workflow, run `income_etf_monitor` instead. It saves th
 | Thing | Path |
 |---|---|
 | Daily reports | `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/` |
+| Income ETF weekly artifacts | `reports/inc-etf/{YYYY-WkNN}/` — `scan-income_etf.json`, `income_etf-alerts.json`, `income_etf.md` |
+| Income ETF monthly reviews | `reports/inc-etf/Mon-review/{YYYY-Mon}/` — `monthly-review.json`, `monthly-review.md` |
 | Weekly reviews | `reports/weekly/` |
 | Old week folders (8+ weeks) | zipped into `reports/archive/` by the Sunday `tv-mcp-archive-old-reports` task |
 | Strategy rules per type | `config/strategy-{type}.json` |
