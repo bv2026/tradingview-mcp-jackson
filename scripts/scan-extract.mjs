@@ -30,7 +30,15 @@ if (!sourceFile || !outFile || !instrumentType) {
   process.exit(1);
 }
 
-const data = JSON.parse(readFileSync(sourceFile, 'utf-8'));
+const parsed = JSON.parse(readFileSync(sourceFile, 'utf-8'));
+
+// The harness sometimes persists large tool results wrapped in the raw MCP content
+// envelope ([{ type: "text", text: "<json string>" }]) instead of the tool's own
+// unwrapped JSON object. Detect and unwrap that shape so this script handles both
+// without a separate throwaway unwrap step.
+const data = Array.isArray(parsed) && parsed[0]?.text
+  ? JSON.parse(parsed[0].text)
+  : parsed;
 
 // Keep only the fields weekly-decision-routine's glossary/rules actually use:
 // score + nw_position/nw_upper/nw_lower/rr/price for the L3 hard filter and
