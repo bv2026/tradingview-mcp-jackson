@@ -471,10 +471,10 @@ function timeoutResolve(ms, value = null) {
 
 async function readNwEnvelope() {
   try {
-    const [labelsResult, linesResult, quoteResult] = await Promise.race([
+    const [labelsResult, studyValResult, quoteResult] = await Promise.race([
       Promise.all([
         data.getPineLabels({ study_filter: 'Nadaraya-Watson', max_labels: 3 }),
-        data.getPineLines({ study_filter: 'Nadaraya-Watson' }),
+        data.getStudyValues(),
         data.getQuote({}),
       ]),
       timeoutResolve(4000, [null, null, null]),
@@ -482,20 +482,35 @@ async function readNwEnvelope() {
 
     // Determine position from most-recent label
     const labels = labelsResult?.studies?.[0]?.labels || [];
-    const mostRecent = labels[0]?.text;
+    const mostRecent = labels[0];
     let nw_position = 'inside';
-    if (mostRecent === '▲') nw_position = 'extended';
-    else if (mostRecent === '▼') nw_position = 'early';
+    if (mostRecent?.text === '▲') nw_position = 'extended';
+    else if (mostRecent?.text === '▼') nw_position = 'early';
     else if (!labelsResult?.studies?.length) nw_position = 'unknown';
 
-    // Extract upper and lower band levels from pine lines
-    // NW Envelope draws upper and lower band lines; lines come sorted high→low
-    const lines = linesResult?.studies?.[0]?.lines || [];
-    const prices = lines.map(l => l.price).filter(p => p != null && isFinite(p)).sort((a, b) => b - a);
-    const nw_upper = prices[0] ?? null;
-    const nw_lower = prices[prices.length - 1] ?? null;
-
     const price = quoteResult?.close ?? quoteResult?.last_price ?? null;
+
+    // Primary: extract NW band levels from Data Window (getStudyValues reads plot() overlays)
+    // NW Envelope uses plot() not line.new(), so getPineLines returns nothing for it.
+    let nw_upper = null;
+    let nw_lower = null;
+    const nwStudy = studyValResult?.studies?.find(s => /nadaraya/i.test(s.name));
+    if (nwStudy && price != null) {
+      const vals = Object.values(nwStudy.values ?? {})
+        .map(v => parseFloat(String(v).replace(/,/g, '')))
+        .filter(v => isFinite(v) && v > 0 && Math.abs(v - price) / price < 0.5);
+      if (vals.length >= 2) {
+        vals.sort((a, b) => b - a);
+        nw_upper = vals[0];
+        nw_lower = vals[vals.length - 1];
+      }
+    }
+
+    // Fallback: use label crossing price as a one-sided band proxy
+    if (mostRecent?.price != null) {
+      if (nw_position === 'extended' && nw_upper == null) nw_upper = mostRecent.price;
+      else if (nw_position === 'early'    && nw_lower == null) nw_lower = mostRecent.price;
+    }
 
     // R:R = room to upper band / risk to lower band
     let rr = null;
@@ -682,6 +697,14 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D',
   const chatterSection = buildChatterSection(sorted);
   const isThematic = sorted.some(r => r.theme);
 
+  // NW data quality check — warn if passers exist but R:R is universally null
+  const passersWithNw = passingSymbols.filter(r => r.rr != null);
+  const nwDataWarning = passingSymbols.length >= 3 && passersWithNw.length === 0
+    ? `WARNING: NW R:R is null for all ${passingSymbols.length} passing symbols. ` +
+      `getStudyValues() may not be finding the NW Envelope study (check indicator is visible on chart). ` +
+      `decision-classify.mjs will route these to ready_norr instead of ready — confirm R:R manually before entry.`
+    : undefined;
+
   return {
     success: true,
     instrument_type,
@@ -692,6 +715,7 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D',
     restore_debug: restoreResult,
     nw_pass_symbols: passingSymbols.length,
     nw_pass_error: nwPassError || undefined,
+    nw_data_warning: nwDataWarning,
     table: isThematic ? buildThematicTable(sorted) : buildMarkdownTable(sorted),
     top_candidates: topCandidates.map(r => r.symbol),
     top_section: topSection,

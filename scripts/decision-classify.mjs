@@ -31,7 +31,10 @@ function failReason(s) {
 
 function qualify(s) {
   if (s.nw_position === 'inside' && typeof s.rr === 'number' && s.rr >= 2.0) return 'ready';
+  if (s.nw_position === 'inside' && typeof s.rr !== 'number') return 'ready_norr';
   if (s.nw_position === 'inside') return 'watch_low_rr';
+  // Trend continuation: extended but high-conviction score — valid entry at 50% size
+  if (s.nw_position === 'extended' && typeof s.score === 'number' && s.score >= 4) return 'extended_continuation';
   if (s.nw_position === 'extended') return 'watch_extended';
   if (s.nw_position === 'early') return 'watch_early';
   return 'watch_unknown';
@@ -51,26 +54,45 @@ passers.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
 
 const buckets = {
   ready: passers.filter(p => p.qualification === 'ready'),
+  ready_norr: passers.filter(p => p.qualification === 'ready_norr'),
+  extended_continuation: passers.filter(p => p.qualification === 'extended_continuation'),
   watch_extended: passers.filter(p => p.qualification === 'watch_extended'),
   watch_early: passers.filter(p => p.qualification === 'watch_early'),
   watch_low_rr: passers.filter(p => p.qualification === 'watch_low_rr'),
   watch_unknown: passers.filter(p => p.qualification === 'watch_unknown'),
 };
 
+const actionable = buckets.ready.length + buckets.ready_norr.length + buckets.extended_continuation.length;
+
 const out = {
   instrument_type: d.instrument_type,
   symbol_count: d.symbol_count,
   passer_count: passers.length,
   ready_count: buckets.ready.length,
-  watch_count: passers.length - buckets.ready.length,
+  ready_norr_count: buckets.ready_norr.length,
+  extended_continuation_count: buckets.extended_continuation.length,
+  actionable_count: actionable,
+  watch_count: passers.length - actionable,
   fail_count: fails.length,
   buckets,
   fails,
 };
 
+// Sanity check: if many passers exist but none are actionable and all rr are null,
+// the NW data pipeline is likely broken — warn loudly rather than silently producing all-watch output.
+const allRrNull = passers.every(p => p.rr == null);
+if (passers.length >= 3 && actionable === 0 && allRrNull) {
+  console.warn(
+    `WARNING [${d.instrument_type}]: ${passers.length} passers but 0 actionable and rr=null on all. ` +
+    `NW band data is missing — check that Nadaraya-Watson Envelope is visible on the chart and ` +
+    `getStudyValues() is returning its plot values. These passers landed in ready_norr (inside, no R:R).`
+  );
+}
+
 writeFileSync(outFile, JSON.stringify(out, null, 2));
 console.log(
   `${d.instrument_type}: ${d.symbol_count} scanned, ${passers.length} passed, ` +
-  `${buckets.ready.length} ready, ${passers.length - buckets.ready.length} watch, ${fails.length} failed ` +
-  `-> ${outFile}`
+  `${buckets.ready.length} ready, ${buckets.ready_norr.length} ready-norr, ` +
+  `${buckets.extended_continuation.length} ext-continuation, ` +
+  `${out.watch_count} watch, ${fails.length} failed -> ${outFile}`
 );

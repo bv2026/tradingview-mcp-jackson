@@ -50,6 +50,8 @@ const TABLE = 'border-collapse:collapse;width:100%;font-size:13px';
 function noteFor(e, isFail) {
   if (isFail) return e.reason;
   if (e.qualification === 'ready') return 'Pass — Ready';
+  if (e.qualification === 'ready_norr') return 'Pass — NW inside (confirm R:R)';
+  if (e.qualification === 'extended_continuation') return 'Pass — Trend continuation (50% size)';
   if (e.qualification === 'watch_extended') return 'Pass — Extended';
   if (e.qualification === 'watch_early') return 'Pass — Early';
   if (e.qualification === 'watch_low_rr') return 'Pass — Low R:R';
@@ -58,6 +60,8 @@ function noteFor(e, isFail) {
 function rowColor(e, isFail) {
   if (isFail) return '';
   if (e.qualification === 'ready') return 'background:#e8f5e9';
+  if (e.qualification === 'ready_norr') return 'background:#e3f2fd';
+  if (e.qualification === 'extended_continuation') return 'background:#e8eaf6';
   if (e.qualification === 'watch_extended') return 'background:#fff8e1';
   if (e.qualification === 'watch_early') return 'background:#fce4ec';
   return '';
@@ -65,7 +69,7 @@ function rowColor(e, isFail) {
 function watchReasonText(e) {
   if (e.qualification === 'watch_extended') return 'NW extended — wait for pullback';
   if (e.qualification === 'watch_early') return 'NW early — base-build, wait for re-entry into band';
-  if (e.qualification === 'watch_low_rr') return `low R:R (${e.rr})`;
+  if (e.qualification === 'watch_low_rr') return `low R:R (${e.rr ?? 'n/a'})`;
   return 'NW position unclear';
 }
 function convictionNote(e) {
@@ -79,17 +83,33 @@ function convictionNote(e) {
   return notes.length ? ` (${notes.join(', ')})` : '';
 }
 
-const allPassers = [...d.buckets.ready, ...d.buckets.watch_extended, ...d.buckets.watch_early, ...d.buckets.watch_low_rr, ...d.buckets.watch_unknown];
+const allPassers = [
+  ...d.buckets.ready,
+  ...(d.buckets.ready_norr || []),
+  ...(d.buckets.extended_continuation || []),
+  ...d.buckets.watch_extended,
+  ...d.buckets.watch_early,
+  ...d.buckets.watch_low_rr,
+  ...d.buckets.watch_unknown,
+];
 allPassers.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
 
-const bannerHtml = d.buckets.ready.length
-  ? `<div style="background:#e8f5e9;padding:10px;border-radius:4px;margin-bottom:12px"><strong>${d.buckets.ready.length} symbol(s) READY TO ENTER this cycle.</strong></div>`
-  : `<div style="background:#fff3e0;padding:10px;border-radius:4px;margin-bottom:12px"><strong>0 symbols READY TO ENTER this cycle.</strong> R:R data was unavailable from this week's scan (nw_upper/nw_lower/rr all null), so no symbol could clear the rr ≥ 2.0 gate regardless of NW position. ${allPassers.length} hard-filter passer(s) are listed in Watch below.</div>`;
+const actionableCount = d.actionable_count ?? d.buckets.ready.length;
+const bannerParts = [];
+if (d.buckets.ready.length) bannerParts.push(`${d.buckets.ready.length} READY (R:R confirmed)`);
+if ((d.buckets.ready_norr || []).length) bannerParts.push(`${d.buckets.ready_norr.length} READY — NW inside, confirm R:R before entry`);
+if ((d.buckets.extended_continuation || []).length) bannerParts.push(`${d.buckets.extended_continuation.length} TREND CONTINUATION — extended, score ≥ 4, enter at 50% size`);
+const bannerHtml = actionableCount
+  ? `<div style="background:#e8f5e9;padding:10px;border-radius:4px;margin-bottom:12px"><strong>${bannerParts.join(' · ')}</strong></div>`
+  : `<div style="background:#fff3e0;padding:10px;border-radius:4px;margin-bottom:12px"><strong>0 actionable setups this cycle.</strong> ${allPassers.length} hard-filter passer(s) listed in Watch below.</div>`;
 
 function topSetupsTable(list, cols, extraCol) {
-  if (!list.length) return '<p><em>No symbols met full entry criteria (hard filter + NW inside + R:R ≥ 2.0) this cycle.</em></p>';
+  if (!list.length) return '<p><em>No actionable setups this cycle.</em></p>';
   const header = `<tr><th style="${TH}">RANK</th><th style="${TH}">SYMBOL</th><th style="${TH}">S&O RATING</th><th style="${TH}">SIGNAL</th><th style="${TH}">PAC</th><th style="${TH}">OSC DIV</th><th style="${TH}">NW</th><th style="${TH}">R:R</th><th style="${TH}">SCORE</th><th style="${TH}">STOP</th><th style="${TH}">TP1</th>${extraCol ? `<th style="${TH}">${extraCol}</th>` : ''}<th style="${TH}">ACTION</th></tr>`;
-  const rows = list.map((e, i) => `<tr style="${rowColor(e, false)}"><td style="${TD}">${i + 1}</td><td style="${TD}">${e.symbol}</td><td style="${TD}">${e.so?.RATING ?? '—'}</td><td style="${TD}">${e.so?.SIGNAL ?? '—'}</td><td style="${TD}">${e.pac?.STRUCTURE ?? '—'}</td><td style="${TD}">${e.osc?.DIVERGENCES ?? '—'}</td><td style="${TD}">${e.nw_position ?? '—'}</td><td style="${TD}">${e.rr ?? '—'}</td><td style="${TD}">${e.score}</td><td style="${TD}">${e.nw_lower ?? '—'}</td><td style="${TD}">${e.nw_upper ?? '—'}</td>${extraCol ? `<td style="${TD}">${clusterOf(e.symbol) ?? '—'}</td>` : ''}<td style="${TD}">Enter long</td></tr>`).join('\n');
+  const rows = list.map((e, i) => {
+    const action = e.qualification === 'extended_continuation' ? 'Trend cont. — 50% size' : e.qualification === 'ready_norr' ? 'Enter long — confirm R:R' : 'Enter long';
+    return `<tr style="${rowColor(e, false)}"><td style="${TD}">${i + 1}</td><td style="${TD}">${e.symbol}</td><td style="${TD}">${e.so?.RATING ?? '—'}</td><td style="${TD}">${e.so?.SIGNAL ?? '—'}</td><td style="${TD}">${e.pac?.STRUCTURE ?? '—'}</td><td style="${TD}">${e.osc?.DIVERGENCES ?? '—'}</td><td style="${TD}">${e.nw_position ?? '—'}</td><td style="${TD}">${e.rr ?? '—'}</td><td style="${TD}">${e.score}</td><td style="${TD}">${e.nw_lower ?? '—'}</td><td style="${TD}">${e.nw_upper ?? '—'}</td>${extraCol ? `<td style="${TD}">${clusterOf(e.symbol) ?? '—'}</td>` : ''}<td style="${TD}">${action}</td></tr>`;
+  }).join('\n');
   return `<table style="${TABLE}">${header}${rows}</table>`;
 }
 
@@ -106,15 +126,18 @@ function allSymbolsTable(passers, fails) {
 }
 
 function scanSummaryBullets(extra) {
+  const actionable = d.actionable_count ?? d.buckets.ready.length;
   return `<ul>
 <li>Total scanned: ${d.symbol_count}</li>
 <li>Hard-filter passers: ${d.passer_count}</li>
-<li>Ready to enter: ${d.buckets.ready.length}</li>
+<li>Ready to enter (R:R ≥ 2.0): ${d.buckets.ready.length}</li>
+${(d.buckets.ready_norr || []).length ? `<li>Ready — NW inside, R:R unconfirmed: ${d.buckets.ready_norr.length}</li>` : ''}
+${(d.buckets.extended_continuation || []).length ? `<li>Trend continuation (extended, score ≥ 4): ${d.buckets.extended_continuation.length}</li>` : ''}
 <li>Watch — NW extended: ${d.buckets.watch_extended.length}</li>
 <li>Watch — NW early: ${d.buckets.watch_early.length}</li>
 <li>Hard-filter fails: ${d.fail_count}</li>
 ${extra ? `<li>${extra}</li>` : ''}
-<li>Overall posture: ${d.buckets.ready.length ? 'Actionable setups present.' : d.passer_count > 0 ? 'No immediate entries — extended/early names dominate the passer list, consistent with a market that has already run without a fresh pullback.' : 'Very few names clearing the hard filter this cycle — broad weakness or consolidation.'}</li>
+<li>Overall posture: ${actionable ? 'Actionable setups present.' : d.passer_count > 0 ? 'No immediate entries — extended/early names dominate the passer list, consistent with a market that has already run without a fresh pullback.' : 'Very few names clearing the hard filter this cycle — broad weakness or consolidation.'}</li>
 </ul>`;
 }
 
@@ -130,12 +153,17 @@ function standardEmail(withCluster) {
   const clusterNote = withCluster && Object.values(clusterCounts).some(v => v > 1)
     ? `<p><em>Cluster conflict: ${Object.entries(clusterCounts).filter(([, v]) => v > 1).map(([c, v]) => `${c} (${v} names)`).join(', ')} — keep only the single best-scoring name per cluster.</em></p>`
     : '';
+  const actionableList = [
+    ...d.buckets.ready,
+    ...(d.buckets.ready_norr || []),
+    ...(d.buckets.extended_continuation || []),
+  ].sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
   return `<h2>Top Setups</h2>
 ${bannerHtml}
-${topSetupsTable(d.buckets.ready, null, rank)}
+${topSetupsTable(actionableList, null, rank)}
 ${clusterNote}
 <h2>Watch List</h2>
-${watchListHtml(allPassers.filter(e => e.qualification !== 'ready'))}
+${watchListHtml(allPassers.filter(e => !['ready', 'ready_norr', 'extended_continuation'].includes(e.qualification)))}
 <h2>Scan Summary</h2>
 ${scanSummaryBullets()}
 <h2>All Symbols — Hard Filter Results</h2>
@@ -221,7 +249,9 @@ const signals = {
   scan_date: SCAN_DATE,
   generated_at: new Date().toISOString(),
   ready_to_enter: d.buckets.ready.map(e => ({ symbol: e.symbol, score: e.score, price: e.price, nw_upper: e.nw_upper, nw_lower: e.nw_lower, rr: e.rr })),
-  watch: allPassers.filter(e => e.qualification !== 'ready').map(e => ({ symbol: e.symbol, nw_position: e.nw_position, score: e.score, reason: watchReasonText(e) })),
+  ready_confirm_rr: (d.buckets.ready_norr || []).map(e => ({ symbol: e.symbol, score: e.score, price: e.price, note: 'NW inside — verify R:R before entry' })),
+  trend_continuation: (d.buckets.extended_continuation || []).map(e => ({ symbol: e.symbol, score: e.score, price: e.price, note: 'NW extended, high score — 50% size trend continuation' })),
+  watch: allPassers.filter(e => !['ready', 'ready_norr', 'extended_continuation'].includes(e.qualification)).map(e => ({ symbol: e.symbol, nw_position: e.nw_position, score: e.score, reason: watchReasonText(e) })),
 };
 writeFileSync(SIGNALS_OUT, JSON.stringify(signals, null, 2));
 

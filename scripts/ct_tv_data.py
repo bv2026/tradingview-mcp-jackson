@@ -107,41 +107,60 @@ def parse_tv_brief(path: Path) -> tuple[dict, str, str]:
                 si = col_idx["#"] + 1
             if si < 0 or si >= len(parts):
                 continue
-            sym    = parts[si]
+            raw_sym = parts[si]
+            # Strip exchange prefix (new format: "CME_MINI:ES1!" → "ES1!")
+            sym = raw_sym.split(":")[-1] if ":" in raw_sym else raw_sym
             bias   = parts[col_idx["BIAS"]]   if "BIAS"   in col_idx and col_idx["BIAS"]   < len(parts) else ""
             signal = parts[col_idx["SIGNAL"]] if "SIGNAL" in col_idx and col_idx["SIGNAL"] < len(parts) else ""
             watch  = parts[col_idx["WATCH"]]  if "WATCH"  in col_idx and col_idx["WATCH"]  < len(parts) else ""
             if not sym or sym == "SYMBOL" or sym == "#":
                 continue
-            # Try explicit "gap X" first, then compute from TWB hist/sig
+            # Try explicit "gap X" first (old compact format)
             gap_match = re.search(r"(?:TWB )?gap ([+-]?\d[\d,]*\.?\d*)", signal)
             if gap_match:
                 twb_gap = float(gap_match.group(1).replace(",", ""))
             else:
+                # Old format: "TWB hist/sig" e.g. "TWB -29.06/-35"
                 twb_match = re.search(r"TWB ([+-]?[\d,]+\.?\d*)/([+-]?[\d,]+\.?\d*)", signal)
-                if twb_match:
+                # New format: "Hist +174.83 ... sig 293.58" or "Hist -326.5 ... sig -496.2"
+                hist_sig_match = re.search(r"Hist\s+([+-]?[\d,]+\.?\d*)[^|]*?sig\s+([+-]?[\d,]+\.?\d*)", signal, re.IGNORECASE) if not twb_match else None
+                m = twb_match or hist_sig_match
+                if m:
                     try:
-                        hist = float(twb_match.group(1).replace(",", ""))
-                        sig  = float(twb_match.group(2).replace(",", ""))
+                        hist = float(m.group(1).replace(",", ""))
+                        sig  = float(m.group(2).replace(",", ""))
                         twb_gap = round(hist - sig, 4)
                     except ValueError:
                         twb_gap = None
                 else:
                     twb_gap = None
-            if "NW-early" in watch or "NW-early" in signal:
+            # NW parsing — handle both old hyphenated and new space-separated forms
+            combined = (watch + " " + signal).lower()
+            if "nw-early" in combined or "nw early" in combined:
                 nw = "early"
-            elif "NW-extended" in watch or "Already NW-extended" in watch or "NW-extended" in signal:
+            elif "nw-extended" in combined or "nw extended" in combined or "already nw-extended" in combined:
                 nw = "extended"
             elif twb_gap is not None:
                 nw = "inside"  # futures brief doesn't surface NW explicitly; default to inside
             else:
                 nw = None
+            # Regime — old format had explicit tags; new format: derive from bias/signal text
             regime_match = re.search(r"(TRENDING_LONG|TRENDING_SHORT|MEAN_REVERTING)", signal)
+            if regime_match:
+                regime = regime_match.group(1)
+            else:
+                bias_lower = bias.lower()
+                if "bullish" in bias_lower or ("long" in bias_lower and "disagrees" not in bias_lower):
+                    regime = "TRENDING_LONG"
+                elif "bearish" in bias_lower or ("short" in bias_lower and "disagrees" not in bias_lower):
+                    regime = "TRENDING_SHORT"
+                else:
+                    regime = "MEAN_REVERTING"
             symbols[sym] = {
                 "bias": bias,
                 "twb_gap": twb_gap,
                 "nw": nw,
-                "regime": regime_match.group(1) if regime_match else "",
+                "regime": regime,
                 "watch": watch,
             }
         elif in_table and not line.startswith("|"):
@@ -267,11 +286,28 @@ def main(post_date_str: str | None = None) -> None:
             "tv_watch": tv.get("watch", ""),
         })
 
+    # Validation gate — fail loudly if TV data parsing is broken.
+    # Cotton (CTE) has no TV mapping so is excluded from the check.
+    tv_mapped = [m for m in combined if m["tv_symbol"] is not None]
+    null_gap_count = sum(1 for m in tv_mapped if m["tv_gap"] is None)
+    if tv_mapped and null_gap_count / len(tv_mapped) > 0.5:
+        sys.stderr.write(
+            f"ERROR: CT/TV data pipeline failure — {null_gap_count}/{len(tv_mapped)} TV-mapped markets "
+            f"have null tv_gap. futures.md format may have changed and parse_tv_brief() needs updating.\n"
+            f"Do NOT save this output. Fix ct_tv_data.py before proceeding.\n"
+        )
+        sys.exit(2)
+
     sys.stdout.buffer.write(json.dumps({
         "date": post_date_str,
         "macro": macro_text,
         "theme": theme_text,
         "markets": combined,
+        "_validation": {
+            "tv_mapped_count": len(tv_mapped),
+            "null_gap_count": null_gap_count,
+            "tv_symbols_parsed": len(tv_symbols),
+        },
     }, ensure_ascii=False).encode("utf-8"))
     sys.stdout.buffer.write(b"\n")
 
