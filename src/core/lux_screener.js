@@ -701,8 +701,10 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D',
   const passersWithNw = passingSymbols.filter(r => r.rr != null);
   const nwDataWarning = passingSymbols.length >= 3 && passersWithNw.length === 0
     ? `WARNING: NW R:R is null for all ${passingSymbols.length} passing symbols. ` +
-      `getStudyValues() may not be finding the NW Envelope study (check indicator is visible on chart). ` +
-      `decision-classify.mjs will route these to ready_norr instead of ready — confirm R:R manually before entry.`
+      `NW Envelope band levels are not exposed in the Data Window (expected — it is a price overlay, not an oscillator). ` +
+      `R:R can only be computed when both bands are available via label crossings; ` +
+      `inside symbols have no crossing label and therefore no band data. ` +
+      `decision-classify.mjs routes these to ready_norr — confirm R:R manually before entry.`
     : undefined;
 
   return {
