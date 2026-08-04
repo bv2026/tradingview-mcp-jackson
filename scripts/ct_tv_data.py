@@ -134,6 +134,32 @@ def parse_tv_brief(path: Path) -> tuple[dict, str, str]:
                         twb_gap = None
                 else:
                     twb_gap = None
+
+            # Fallback: SIGNAL cell has no literal numbers (qualitative-only phrasing,
+            # e.g. "hist+ but decelerating hard, NW extended"). Recover a sign-only
+            # approximation rather than losing the symbol entirely — see
+            # ct-tv-data-format-dependency memory note. Real numbers are still required
+            # by CLAUDE.md's futures formatting convention; this is a graceful-degrade path.
+            twb_gap_approx = False
+            if twb_gap is None:
+                # Priority: explicit sig comparison > BIAS text (the brief's own gap-aware
+                # classification — may carry a "(gap)" tag that CONTRADICTS raw hist sign,
+                # e.g. "bearish (gap)" while SIGNAL still reads "hist+ decelerating") >
+                # raw hist sign as the weakest last resort.
+                bias_lower = bias.lower()
+                if re.search(r"above\s+sig(?:nal)?\b", signal, re.IGNORECASE):
+                    twb_gap, twb_gap_approx = 0.01, True
+                elif re.search(r"below\s+sig(?:nal)?\b", signal, re.IGNORECASE):
+                    twb_gap, twb_gap_approx = -0.01, True
+                elif "bullish" in bias_lower:
+                    twb_gap, twb_gap_approx = 0.01, True
+                elif "bearish" in bias_lower:
+                    twb_gap, twb_gap_approx = -0.01, True
+                else:
+                    hist_sign_match = re.search(r"hist\s*([+−-])", signal, re.IGNORECASE)
+                    if hist_sign_match:
+                        twb_gap = 0.01 if hist_sign_match.group(1) == "+" else -0.01
+                        twb_gap_approx = True
             # NW parsing — handle both old hyphenated and new space-separated forms
             combined = (watch + " " + signal).lower()
             if "nw-early" in combined or "nw early" in combined:
@@ -159,6 +185,7 @@ def parse_tv_brief(path: Path) -> tuple[dict, str, str]:
             symbols[sym] = {
                 "bias": bias,
                 "twb_gap": twb_gap,
+                "twb_gap_approx": twb_gap_approx,
                 "nw": nw,
                 "regime": regime,
                 "watch": watch,
@@ -281,6 +308,7 @@ def main(post_date_str: str | None = None) -> None:
             "commentary": m["commentary"],
             "tv_nw": tv.get("nw"),
             "tv_gap": tv.get("twb_gap"),
+            "tv_gap_approx": tv.get("twb_gap_approx", False),
             "tv_bias": tv.get("bias", ""),
             "tv_regime": tv.get("regime", ""),
             "tv_watch": tv.get("watch", ""),
@@ -290,6 +318,7 @@ def main(post_date_str: str | None = None) -> None:
     # Cotton (CTE) has no TV mapping so is excluded from the check.
     tv_mapped = [m for m in combined if m["tv_symbol"] is not None]
     null_gap_count = sum(1 for m in tv_mapped if m["tv_gap"] is None)
+    approx_gap_count = sum(1 for m in tv_mapped if m["tv_gap_approx"])
     if tv_mapped and null_gap_count / len(tv_mapped) > 0.5:
         sys.stderr.write(
             f"ERROR: CT/TV data pipeline failure — {null_gap_count}/{len(tv_mapped)} TV-mapped markets "
@@ -306,6 +335,7 @@ def main(post_date_str: str | None = None) -> None:
         "_validation": {
             "tv_mapped_count": len(tv_mapped),
             "null_gap_count": null_gap_count,
+            "approx_gap_count": approx_gap_count,
             "tv_symbols_parsed": len(tv_symbols),
         },
     }, ensure_ascii=False).encode("utf-8"))
