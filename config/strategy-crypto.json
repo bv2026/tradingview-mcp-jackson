@@ -46,7 +46,7 @@
   ],
   "asset_notes": "Coinbase spot — USD pairs only (COINBASE:BTCUSD, not BINANCE:BTCUSDT). Each symbol is evaluated on its own TWB + NW + S/R reading. Use BTC's reading as session context when evaluating alts.",
   "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\CRYPTO.csv",
-  "watchlist_generated": "2026-08-01",
+  "watchlist_generated": "2026-08-04",
   "watchlist": [
     "COINBASE:LINKUSD",
     "COINBASE:ZECUSD",
