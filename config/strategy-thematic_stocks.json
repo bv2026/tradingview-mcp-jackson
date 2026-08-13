@@ -1,7 +1,7 @@
 {
   "instrument_type": "thematic_stocks",
   "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\Watchlist_Stocks.csv",
-  "watchlist_generated": "2026-08-04",
+  "watchlist_generated": "2026-08-13",
   "default_timeframe": "D",
   "screener_name": null,
   "max_symbols": 117,

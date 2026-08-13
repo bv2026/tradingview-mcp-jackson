@@ -286,7 +286,8 @@ const THEMATIC_INSTRUMENTS = [];
 export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, offset, max_symbols } = {}) {
   const instrument = instrument_type || 'momentum_stocks';
 
-  // "all" mode — instruct Claude to call morning_brief for each type sequentially
+  // "all" mode — route large equity universes through the established Lux batch path;
+  // direct morning_brief callers remain unchanged below.
   if (instrument === 'all') {
     return {
       success: true,
@@ -297,7 +298,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
       instruction: [
         `Run morning_brief sequentially for each of these instrument types IN ORDER: ${ALL_INSTRUMENTS.join(', ')}.`,
         `For each instrument_type:`,
-        `1. Call morning_brief with that instrument_type. momentum_stocks and momentum_etf each source from a ~100-symbol screener and are capped at max_symbols=50 per call to avoid the tool timeout — for THESE TWO ONLY, call morning_brief twice (offset=0, then offset=50, both with max_symbols=50), and merge both calls' symbols_scanned arrays into one combined list before writing the report. crypto, crypto_perps, futures, sp_ndx, and r2k are small enough to scan in a single call — call with no offset/max_symbols.`,
+        `1. For momentum_stocks, call lux_screener_scan instrument_type="momentum_stocks" timeframe="1W" twice: offset=0,max_symbols=50 then offset=50; merge the returned symbols_raw arrays using the established Lux merge rule, preserve all raw-evidence/provenance fields, and use that result as the Momentum Stocks report input. For momentum_etf, do the same with lux_screener_scan timeframe="1W" using offset=0,max_symbols=30 then offset=30. Do not call morning_brief for either of these two in all-mode. For crypto, crypto_perps, futures, sp_ndx, and r2k, call morning_brief once with no offset/max_symbols.`,
         `2. Apply the returned bias_criteria and instruction to the (merged, if applicable) symbols_scanned data.`,
         `3. Write the full analysis (symbol table, top 3 setups, overall market read) under a markdown header: ## MOMENTUM STOCKS / ## CRYPTO / ## CRYPTO PERPS / ## FUTURES / etc.`,
         `4. Call session_save once with your full combined analysis text and the matching instrument_type.`,

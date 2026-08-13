@@ -251,5 +251,5 @@
     "Sentiment ≥ 80% = crowded — reduce size or skip"
   ],
   "asset_notes": "Large-cap (S&P 500 + Nasdaq 100) momentum names rebuilt weekly from CSV exports. The wtd/sentiment/watchers/chatter fields are retail-attention context — crowding caution when extreme (≥80%), weak-support flag when low (<40%). LuxAlgo 3 screeners (BOS + Bullish rating + ▲ signal) are the primary filter. NW Envelope is the extension check. BOS count in PAC indicates trend strength.",
-  "watchlist_generated": "2026-08-08"
+  "watchlist_generated": "2026-08-13"
 }

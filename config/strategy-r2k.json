@@ -186,5 +186,5 @@
     "Sentiment ≥ 80% in small-caps = crowded pump risk — skip or half-size"
   ],
   "asset_notes": "Small-cap (Russell 2000) momentum names rebuilt weekly from CSV. Benchmarked to IWM. Pipeline: LuxAlgo 3 screeners (BOS + Bullish rating + ▲ signal) → NW Envelope extension check. In small-caps, high sentiment + high chatter (Overheated annotation) warrants extra sizing caution. Many names are low-priced and gap-prone — liquidity matters more than in large-cap book.",
-  "watchlist_generated": "2026-08-08"
+  "watchlist_generated": "2026-08-13"
 }

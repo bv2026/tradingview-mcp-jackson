@@ -77,6 +77,7 @@ Use a specific study filter when you know the indicator name:
 
 ### Thematic Scans
 - `Run lux_screener_scan instrument_type="thematic_stocks" and give me the grouped-by-theme report plus a summary of top picks and avoid names.`
+- In `morning_brief instrument_type="all"`, momentum_stocks and momentum_etf use the established Lux split path: stocks `offset=0,max_symbols=50` then `offset=50`; ETFs `offset=0,max_symbols=30` then `offset=30`. Direct morning_brief calls remain supported.
 - `Run morning_brief instrument_type="thematic_etfs_1" then "thematic_etfs_2" and give me a combined ETF rotation summary across both halves.`
 
 ### Weekly Review

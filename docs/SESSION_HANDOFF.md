@@ -131,6 +131,16 @@ NW ENVELOPE BAND DATA:
   - Reads via getStudyValues() (Data Window, works with plot() overlays)
   - Falls back to label price for extended/early positions
   - ready_norr bucket catches inside symbols when band data unavailable
+
+ALL-MORNING-BRIEF ROUTING:
+  momentum_stocks / momentum_etf -> lux_screener_scan split batches
+  other core types              -> direct morning_brief path
+
+NW CLOSE-OUT STATUS:
+  NW is a location/timing overlay only. PAC/S&O/OSC are sufficient for the immediate
+  workflow; band values may be null because the normal Data Window does not expose
+  the NW Envelope bands. Defer separate NW-indicator engineering until a controlled
+  comparison demonstrates incremental entry-timing value.
 ```
 
 **Key files:**

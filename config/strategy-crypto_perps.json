@@ -86,7 +86,7 @@
   "tradeable_note": "The generated PERPS.csv watchlist is the source of truth. Verify any non-crypto or non-Coinbase row before trading; no runtime blocklist or exchange filter is applied.",
   "asset_notes": "Coinbase perp universe is USDC-settled and regulated. Perps allow both sides — the TWB signal on BTC tells you which side the market favors today. For shorts, the ideal entry is a retrace back up into the lower NW band after an initial breakdown — not chasing the drop. Funding rate and open interest are NOT available in TradingView — check them manually on Coinbase before entry. Prefer entries during US session (9:30am-4pm ET) or Asia open (8pm-midnight ET) — avoid low-liquidity gaps in between.",
   "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\PERPS.csv",
-  "watchlist_generated": "2026-08-04",
+  "watchlist_generated": "2026-08-13",
   "watchlist": [
     "COINBASE:1000PEPEUSDC.P",
     "COINBASE:1000SHIBUSDC.P",

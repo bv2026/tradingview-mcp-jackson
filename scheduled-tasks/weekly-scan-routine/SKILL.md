@@ -29,7 +29,7 @@ Create the folder if it does not exist.
 
 ## STEP 2: RUN ALL 7 SCANS IN SEQUENCE
 
-Run each lux_screener_scan call one at a time. Wait for each to complete before starting the next.
+Run each lux_screener_scan call one at a time. Wait for each to complete before starting the next. The same Lux path is used by the all-morning workflow for momentum_stocks and momentum_etf; direct morning_brief callers remain backward-compatible.
 
 **MERGE RULE (applies to all split scans):**
 After both halves return, combine their symbols_raw arrays, deduplicate by symbol, re-sort by score descending. Save ONLY these three fields — do NOT include table, top_candidates, avoid_list, chatter_section or any other field from the raw result (those fields are per-half artifacts and are meaningless or broken after merging):

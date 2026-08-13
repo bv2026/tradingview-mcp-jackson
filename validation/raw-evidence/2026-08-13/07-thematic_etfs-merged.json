@@ -1,0 +1,1 @@
+{"derived_from": ["07a-thematic_etfs-offset0.raw.json", "07b-thematic_etfs-offset50.raw.json"], "merge_rule": "split artifacts preserved independently; review merge is the ordered concatenation of both raw response envelopes"}

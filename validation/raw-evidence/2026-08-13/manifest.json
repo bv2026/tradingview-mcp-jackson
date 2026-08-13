@@ -1,0 +1,52 @@
+{
+  "generated_at": "2026-08-13T22:15:53.278842+00:00",
+  "local_root": "C:\\work\\tradingview-mcp-jackson\\validation\\raw-evidence\\2026-08-13",
+  "drive_root": "G:\\My Drive\\Trading Platform Architecture\\Jackson Platform Workspace\\validation\\raw-evidence\\2026-08-13",
+  "files": [
+    {
+      "file": "01-momentum_stocks.raw.json",
+      "size_bytes": 91166,
+      "sha256": "abb95d80ff2301aa1264b583ce9450cf8e5586224040223358f9e6fd4eb58c2b"
+    },
+    {
+      "file": "02-momentum_etf.raw.json",
+      "size_bytes": 91699,
+      "sha256": "ca8136696577410944d8976a08cd38957ceabdc206a74e57dc3b084afdc07ab9"
+    },
+    {
+      "file": "03-momentum_ark.raw.json",
+      "size_bytes": 233807,
+      "sha256": "6fcfcfff049fbd957fccbc27ced32bb554cd39af029e0cb23a67da668b75774d"
+    },
+    {
+      "file": "04-sp_ndx.raw.json",
+      "size_bytes": 75584,
+      "sha256": "52fa82f907437bfecbb00049918d8089f67a3f8d25e9367fdf305d0fb5b6dee5"
+    },
+    {
+      "file": "05-r2k.raw.json",
+      "size_bytes": 24974,
+      "sha256": "13bfffc0f0a53ecd27d665001d72bb83366a76d3fbc63054a73cf57996ec3468"
+    },
+    {
+      "file": "06-thematic_stocks.raw.json",
+      "size_bytes": 207641,
+      "sha256": "dd5020b9a8c0a5ec8bb9b594221653bcc4b92bc50e1d36cb8c797d3dd5eaaebc"
+    },
+    {
+      "file": "07a-thematic_etfs-offset0.raw.json",
+      "size_bytes": 94344,
+      "sha256": "9c4b5e40f8d2269d6f7e1e9d8c9bbeac740afd20d8cb2441627fb26c7807951b"
+    },
+    {
+      "file": "07b-thematic_etfs-offset50.raw.json",
+      "size_bytes": 52142,
+      "sha256": "58b41b7bfc164edc41b7e7754037cccc8fa55714489724a117206c99955adcf5"
+    },
+    {
+      "file": "07-thematic_etfs-merged.json",
+      "size_bytes": 226,
+      "sha256": "daabdaf84b02e6e9953a988cbc2c616928f909d5295ae7b6608ba4e6f08e4f56"
+    }
+  ]
+}

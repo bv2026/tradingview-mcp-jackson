@@ -18,7 +18,7 @@ Quick reference for the daily/weekly trading workflow. Prompts are what you type
 | Read back a saved brief | `get the momentum_stocks brief` (or any type) |
 | Read today's daily summary | `get the daily summary` |
 
-> `all` covers the core morning briefs plus the watchlist/thematic reports via `lux_screener_scan`: `momentum_ark`, `thematic_stocks`, `thematic_etfs`, and a final `daily-summary.md`.
+> `all` covers the core morning briefs plus the watchlist/thematic reports via `lux_screener_scan`: `momentum_stocks`, `momentum_etf`, `momentum_ark`, `thematic_stocks`, `thematic_etfs`, and a final `daily-summary.md`. Momentum stocks and ETFs use the Lux path in all-mode; direct morning briefs remain available for compatibility.
 >
 > Large screeners (momentum_stocks/momentum_etf, ~100 symbols each) can exceed the tool's ~60-70s timeout on a plain call — batch with `offset`/`max_symbols` (e.g. `offset=0 max_symbols=50` then `offset=50 max_symbols=50`) if a call times out. The `all` workflow instruction batches these two automatically.
 
@@ -105,7 +105,7 @@ Close with:
 | Source | Live TradingView MOMENTUM screeners | Static CSV watchlists → lux_screener_scan |
 | Refresh | Live, every run | Weekly (Saturday script) |
 | Types | momentum_stocks, momentum_etf, crypto, crypto_perps, futures | momentum_ark, sp_ndx, r2k, thematic_stocks, thematic_etfs |
-| Entry point | `morning_brief` | `lux_screener_scan` |
+| Entry point | `morning_brief` for direct calls; `lux_screener_scan` in all-mode | `lux_screener_scan` |
 | In `all` run? | ✅ Yes | ✅ Yes |
 | Extra signal | — | LuxAlgo S&O+PAC+OSC scores; chatter annotations (sp_ndx/r2k); ARK clusters |
 | Summary file? | — | ✅ `thematic_stocks-summary.md`, `thematic_etfs-summary.md` |
