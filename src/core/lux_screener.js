@@ -35,8 +35,11 @@ function bareSymbol(symbol) {
 // Screener results already carry the correct exchange prefix; static watchlist
 // entries get BATS: which TradingView resolves to the primary listing.
 function resolveWatchlistEntry(e) {
-  const symbol = bareSymbol(e.symbol);
-  const full_symbol = e.full_symbol || (e.exchange ? `${e.exchange}:${symbol}` : `BATS:${symbol}`);
+  const sourceSymbol = String(e.symbol || '');
+  const symbol = bareSymbol(sourceSymbol);
+  const full_symbol = e.full_symbol || (sourceSymbol.includes(':')
+    ? sourceSymbol
+    : (e.exchange ? `${e.exchange}:${symbol}` : `BATS:${symbol}`));
   return { ...e, symbol, full_symbol };
 }
 
@@ -520,11 +523,34 @@ async function readNwEnvelope() {
       rr = risk > 0 ? Math.round((reward / risk) * 10) / 10 : null;
     }
 
-    return { nw_position, nw_upper, nw_lower, price, rr };
+    return {
+      nw_position,
+      nw_upper,
+      nw_lower,
+      price,
+      rr,
+      // Preserve the provider's original Data Window property names/values.
+      // This is intentionally separate from the compatibility reduction above.
+      nw_raw_values: nwStudy?.values ?? null,
+    };
   } catch {
-    return { nw_position: 'unknown', nw_upper: null, nw_lower: null, price: null, rr: null };
+    return {
+      nw_position: 'unknown', nw_upper: null, nw_lower: null, price: null, rr: null,
+      nw_raw_values: null,
+    };
   }
 }
+
+function studyAvailability(map, tableRows, symbol) {
+  if (!Array.isArray(tableRows)) return 'UNVERIFIED';
+  return Object.prototype.hasOwnProperty.call(map, symbol) ? 'PRESENT' : 'ABSENT';
+}
+
+export const luxScreenerTestHelpers = {
+  parseTableRows,
+  resolveWatchlistEntry,
+  studyAvailability,
+};
 
 export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D', offset = 0, max_symbols = 0 } = {}) {
   // Map user-facing TF labels to Pine-valid resolution strings
@@ -595,6 +621,7 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D',
     // Poll until the S&O table shows at least one expected ticker (or timeout)
     const expectedTickers = new Set(batch);
     let soMap = {}, pacMap = {}, oscMap = {};
+    let soRows = null, pacRows = null, oscRows = null;
 
     for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt++) {
       await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
@@ -605,21 +632,27 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D',
         data.getPineTables({ study_filter: 'OSC' }),
       ]);
 
-      soMap  = parseTableRows(soResult.studies?.[0]?.tables?.[0]?.rows);
-      pacMap = parseTableRows(pacResult.studies?.[0]?.tables?.[0]?.rows);
-      oscMap = parseTableRows(oscResult.studies?.[0]?.tables?.[0]?.rows);
+      soRows  = soResult.studies?.[0]?.tables?.[0]?.rows;
+      pacRows = pacResult.studies?.[0]?.tables?.[0]?.rows;
+      oscRows = oscResult.studies?.[0]?.tables?.[0]?.rows;
+      soMap  = parseTableRows(soRows);
+      pacMap = parseTableRows(pacRows);
+      oscMap = parseTableRows(oscRows);
 
       // Use PAC as readiness indicator (most reliable — S&O/OSC may load slower)
       const loaded = Object.keys(pacMap).filter(t => expectedTickers.has(t) && pacMap[t]['STRUCTURE']);
       if (loaded.length > 0) break;
     }
 
+    const capturedAt = new Date().toISOString();
     for (const sym of batch) {
       const so  = fixSoColumnShift({ ...(soMap[sym]  || {}) });
       const pac = pacMap[sym] || {};
       const osc = oscMap[sym] || {};
       allRows[sym] = {
         symbol:    sym,
+        full_symbol: metaMap[sym]?.full_symbol ?? null,
+        captured_at: capturedAt,
         wtd:       metaMap[sym]?.wtd ?? null,
         sentiment: metaMap[sym]?.sentiment ?? null,
         watchers:  metaMap[sym]?.watchers ?? null,
@@ -629,6 +662,9 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D',
         so,
         pac,
         osc,
+        so_status:  studyAvailability(soMap, soRows, sym),
+        pac_status: studyAvailability(pacMap, pacRows, sym),
+        osc_status: studyAvailability(oscMap, oscRows, sym),
         score: scoreSymbol(so, pac, osc),
       };
     }
@@ -662,6 +698,7 @@ export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D',
             row.nw_lower    = nw.nw_lower;
             row.price       = nw.price;
             row.rr          = nw.rr;
+            row.nw_raw_values = nw.nw_raw_values;
           }
         })(),
         timeoutReject(50000),
