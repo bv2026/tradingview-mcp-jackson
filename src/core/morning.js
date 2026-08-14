@@ -28,6 +28,7 @@ import { switchTab } from './tab.js';
 import { persistRawEvidence } from './raw-evidence.js';
 import { cannonEvidence, cannonEvidenceForSymbol } from './external-evidence/cannon.js';
 import { scoreCryptoEvidence } from './crypto-evidence-scoring.js';
+import { attachCoinbaseWeeklyToRows, loadCoinbaseWeeklyLatest } from './external-evidence/coinbase-weekly.js';
 
 const SESSIONS_DIR = join(homedir(), '.tradingview-mcp', 'sessions');
 
@@ -472,6 +473,14 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
       const composite = btcTrend && cannonTrend ? (btcTrend === cannonTrend ? `AGREEMENT_${btcTrend}` : 'CONFLICT') : btcTrend || cannonTrend ? 'ONE_SOURCE' : 'UNKNOWN';
       for (const row of classifiedResults) if (row.perp_evidence_state) row.perp_evidence_state.session_context = { btc_perp_trend: btcTrend, btc_cannon_direction: cannonTrend, broad_crypto_context: composite, note: 'Composite context dimension; BTC observations are not independently point-stacked' };
     }
+  }
+
+  // Observational Coinbase Weekly context is attached only after scoring. It cannot
+  // influence score, setup, eligibility, Cannon, or session_context semantics.
+  if (instrument === 'crypto' || instrument === 'crypto_perps') {
+    const coinbaseLatest = loadCoinbaseWeeklyLatest();
+    const attached = attachCoinbaseWeeklyToRows(classifiedResults, { instrumentType: instrument, latest: coinbaseLatest });
+    classifiedResults.splice(0, classifiedResults.length, ...attached);
   }
 
   const freshCount = classifiedResults.filter(r => r.fresh).length;
