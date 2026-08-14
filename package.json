@@ -17,7 +17,6 @@
     "report:all-strategies": "node scripts/all-strategies-report.mjs reports/all-strategies-decision.md",
     "publish:all-strategies": "node scripts/publish-all-strategies.mjs",
     "build:llm-input": "node scripts/build-all-strategies-llm-input.mjs",
-    "hydrate:llm-watch": "node scripts/hydrate-all-strategies-watch.mjs",
     "run:llm-decisions": "node scripts/run-all-strategies-llm.mjs",
     "ingest:llm-decision": "node scripts/ingest-llm-decision.mjs",
     "test": "node --test tests",
