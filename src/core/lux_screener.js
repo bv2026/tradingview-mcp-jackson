@@ -16,6 +16,7 @@ import * as chart from './chart.js';
 import * as indicators from './indicators.js';
 import * as data from './data.js';
 import { evaluate } from '../connection.js';
+import { persistRawEvidence } from './raw-evidence.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../../');
@@ -769,7 +770,7 @@ async function runScanInternal({ instrument_type = 'stwits_lg', timeframe = '1D'
       `decision-classify.mjs routes these to ready_norr — confirm R:R manually before entry.`
     : undefined;
 
-  return {
+  const output = {
     success: true,
     instrument_type,
     timeframe,
@@ -788,4 +789,11 @@ async function runScanInternal({ instrument_type = 'stwits_lg', timeframe = '1D'
     chatter_section: chatterSection,
     symbols_raw: Object.values(allRows),
   };
+  output.raw_evidence = persistRawEvidence(output, {
+    instrumentType: instrument_type,
+    sourceTool: 'lux_screener_scan',
+    timeframe,
+    complete: sliceEnd >= totalSymbols,
+  });
+  return output;
 }

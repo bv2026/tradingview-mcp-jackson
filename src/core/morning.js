@@ -24,6 +24,7 @@ import {
   weekFolderName,
 } from './report_paths.js';
 import { switchTab } from './tab.js';
+import { persistRawEvidence } from './raw-evidence.js';
 
 const SESSIONS_DIR = join(homedir(), '.tradingview-mcp', 'sessions');
 
@@ -528,6 +529,12 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
       `After writing your analysis, call session_save with your complete output text and instrument_type="${instrument}". Do not wait for the user to ask.`,
     ].filter(Boolean).join(' '),
   };
+
+  output.raw_evidence = persistRawEvidence(output, {
+    instrumentType: instrument,
+    sourceTool: 'morning_brief',
+    timeframe,
+  });
 
   // Auto-save raw scan data with date + instrument stamp. Merge with any
   // existing same-day file instead of overwriting — a batched "all" run
