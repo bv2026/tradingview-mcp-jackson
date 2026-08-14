@@ -19,6 +19,7 @@
     "build:llm-input": "node scripts/build-all-strategies-llm-input.mjs",
     "hydrate:llm-watch": "node scripts/hydrate-all-strategies-watch.mjs",
     "run:llm-decisions": "node scripts/run-all-strategies-llm.mjs",
+    "ingest:llm-decision": "node scripts/ingest-llm-decision.mjs",
     "test": "node --test tests",
     "test:sanity": "node --test tests/sanity.test.js",
     "sync:tool-count": "node scripts/sync-tool-count.mjs"
