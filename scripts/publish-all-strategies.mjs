@@ -81,6 +81,7 @@ for (const family of families) {
 
 const allReport = join(outDir, 'all-strategies-decision.md');
 process.env.TRADINGVIEW_ROOT = root;
+execFileSync(process.execPath, [join(root, 'scripts', 'build-all-strategies-llm-input.mjs')], { cwd: root, stdio: 'inherit', env: process.env });
 // Invoke the existing presentation report after compatibility inputs are published.
 execFileSync(process.execPath, [join(root, 'scripts', 'all-strategies-report.mjs'), allReport], { cwd: root, stdio: 'inherit', env: process.env });
 const published = families.filter(f => existsSync(join(outDir, `scan-${f}.json`)));

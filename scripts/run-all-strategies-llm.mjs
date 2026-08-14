@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path'; import { createHash } from 'node:crypto';
+const root=process.env.TRADINGVIEW_ROOT||process.cwd(), input=join(root,'evidence/latest/all-strategies-llm-input.json');
+const families=['momentum_stocks','momentum_etf','momentum_ark','sp_ndx','r2k','thematic_stocks','thematic_etfs','futures','crypto','crypto_perps'];
+if(!existsSync(input)) throw new Error('Canonical package missing; run build:llm-input first'); const pkg=JSON.parse(readFileSync(input,'utf8'));
+const hash=createHash('sha256').update(readFileSync(input)).digest('hex'); const date=new Date().toISOString().slice(0,10), out=join(root,'reports',date,'llm-decisions'); mkdirSync(out,{recursive:true});
+const manifest={generated_at:new Date().toISOString(),input_package_hash:hash,provider:process.env.LLM_DECISION_ADAPTER||null,decisions:[]};
+for(const strategy of families){ const stale=pkg.freshness?.per_strategy?.[strategy]?.status==='STALE'; const valid=Array.isArray(pkg.candidates_by_strategy?.[strategy])&&pkg.strategy_contexts?.[strategy]; const request={strategy,strategy_context_version:pkg.strategy_contexts?.[strategy]?.strategy_context_version, strategy_context:pkg.strategy_contexts?.[strategy], candidates:pkg.candidates_by_strategy?.[strategy]||[], decision_contract:pkg.decision_contract}; const file=join(out,`${strategy}.request.json`); writeFileSync(file,JSON.stringify(request,null,2)+'\n'); manifest.decisions.push({strategy,input_package_hash:hash,context_version:request.strategy_context_version,request_artifact:file.replace(root+'\\','').replaceAll('\\','/'),decision_artifact:null,status:stale?'PENDING_STALE':(!valid?'INSUFFICIENT':'PENDING_PROVIDER'),timestamp:new Date().toISOString(),validation:null}); }
+writeFileSync(join(out,'manifest.json'),JSON.stringify(manifest,null,2)+'\n'); console.log(JSON.stringify({strategies:families.length,provider:process.env.LLM_DECISION_ADAPTER||'NONE — provider-neutral request artifacts only',manifest:join(out,'manifest.json')},null,2));
