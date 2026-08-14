@@ -12,3 +12,7 @@ __pycache__/
 *.pyc
 evidence/
 validation/raw-evidence/
+evidence/latest/.*.staging
+evidence/latest/*.tmp-*
+work/
+tmp/

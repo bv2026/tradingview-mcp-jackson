@@ -7,6 +7,7 @@
  * Usage: node scan-verify.mjs <file1> [file2 ...]
  */
 import { readFileSync, existsSync } from 'node:fs';
+import { validateLuxScanPayload } from '../src/core/lux-scan-contract.js';
 
 const files = process.argv.slice(2);
 
@@ -28,6 +29,8 @@ for (const f of files) {
       console.log(`${f}: ERROR - ${d.error}`);
       allOk = false;
     } else {
+      const contract = validateLuxScanPayload(d, d.instrument_type);
+      if (!contract.valid) { console.log(`${f}: ERROR - ${contract.errors.slice(0, 3).join('; ')}`); allOk = false; continue; }
       const count = d.symbols_raw ? d.symbols_raw.length : d.symbol_count;
       console.log(`${f}: OK, symbols=${count}`);
     }

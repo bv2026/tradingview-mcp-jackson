@@ -81,6 +81,14 @@ If a scan call errors or times out, save { "instrument_type": "...", "error": "<
 
 ## STEP 3: VERIFY ALL 7 FILES THEN TRIGGER DECISION ROUTINE
 
+Before any decision routine is triggered, validate every file against the Lux
+capture contract. Each Lux equity row must contain `symbols_raw`, `so`, `pac`,
+`osc`, numeric `score`, `eligibility`, and AVAILABLE `so_status`, `pac_status`,
+and `osc_status`. A `morning_brief`-shaped payload is invalid even when it has
+symbols; fail loudly and do not schedule the decision routine. The repository
+enforces this contract in `scripts/scan-verify.mjs`, `decision-classify.mjs`,
+and the `lux_screener_scan` persistence boundary.
+
 Check that all 7 of these files exist in today's reports folder AND do not contain a top-level "error" key:
   scan-momentum_stocks.json
   scan-momentum_etf.json

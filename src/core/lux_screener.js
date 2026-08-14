@@ -18,6 +18,7 @@ import * as data from './data.js';
 import { evaluate } from '../connection.js';
 import { persistRawEvidence } from './raw-evidence.js';
 import { scoreEvidenceState } from './evidence-scoring.js';
+import { assertLuxScanPayload } from './lux-scan-contract.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../../');
@@ -792,6 +793,7 @@ async function runScanInternal({ instrument_type = 'stwits_lg', timeframe = '1D'
     chatter_section: chatterSection,
     symbols_raw: Object.values(allRows),
   };
+  assertLuxScanPayload(output, instrument_type);
   output.raw_evidence = persistRawEvidence(output, {
     instrumentType: instrument_type,
     sourceTool: 'lux_screener_scan',

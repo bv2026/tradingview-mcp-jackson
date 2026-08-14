@@ -9,6 +9,7 @@
  * Usage: node decision-classify.mjs <scanFile> <outFile>
  */
 import { readFileSync, writeFileSync } from 'node:fs';
+import { assertLuxScanPayload } from '../src/core/lux-scan-contract.js';
 
 const [, , scanFile, outFile] = process.argv;
 
@@ -18,6 +19,7 @@ if (!scanFile || !outFile) {
 }
 
 const d = JSON.parse(readFileSync(scanFile, 'utf-8'));
+assertLuxScanPayload(d, d.instrument_type);
 
 function failReason(s) {
   const rating = s.so?.RATING || '';
