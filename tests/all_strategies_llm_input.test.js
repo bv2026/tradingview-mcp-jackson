@@ -48,3 +48,15 @@ test('decision contract is ten independent analyses with strategy-local context 
   assert.ok(!('best_overall' in pkg));
   assert.ok(!('global_score' in pkg));
 });
+
+test('canonical transport retains every valid row and has no rank/status coverage limiter', () => {
+  assert.equal('LLM_WATCH_LIMIT' in pkg.retrieval_policy, false);
+  assert.equal(pkg.retrieval_policy.omitted, 0);
+  for (const family of families) {
+    const selection = pkg.strategy_summaries[family];
+    const rows = pkg.candidates_by_strategy[family];
+    assert.equal(rows.length, selection.total_scanned, family);
+    assert.ok(rows.some(r => ['REVIEW', 'WATCH', 'REJECT', 'INSUFFICIENT'].includes(r.status)), family);
+    assert.ok(rows.every(r => r.strategy === family), family);
+  }
+});
