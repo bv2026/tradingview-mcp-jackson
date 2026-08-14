@@ -13,6 +13,7 @@ import * as chart from './chart.js';
 import * as data from './data.js';
 import * as screener from './screener.js';
 import { classifyResults } from './classify.js';
+import { applyFuturesEvidenceScoring } from './futures-evidence-scoring.js';
 import {
   PROJECT_ROOT,
   REPORTS_DIR,
@@ -451,6 +452,8 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
     for (const row of classifiedResults) {
       row.external_evidence = { ...(row.external_evidence || {}), cannon: cannonEvidence(row.symbol, { timeframe, captureDate: new Date().toISOString().slice(0, 10) }) };
     }
+    const scoredResults = applyFuturesEvidenceScoring(classifiedResults);
+    classifiedResults.splice(0, classifiedResults.length, ...scoredResults);
   }
 
   const freshCount = classifiedResults.filter(r => r.fresh).length;
