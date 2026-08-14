@@ -196,10 +196,10 @@ WEEKLY DECISION ENGINE:
 
 NW ENVELOPE BAND DATA:
   - Position (extended/early/inside): getPineLabels() — ▲/▼ crossing labels
-  - Band levels (nw_upper/nw_lower for R:R): getStudyValues() — works for plot() overlays
+  - Band levels (nw_upper/nw_lower for R:R): not reliably available through getStudyValues(); use labels/derived position where available
   - Falls back to label price for extended/early positions
   - ready_norr bucket catches inside symbols when band levels unavailable
-  - NW Envelope does NOT appear in getStudyValues() (CLAUDE.md confirmed) — label position only
+  - NW Envelope bands are not reliably exposed by getStudyValues(); labels/derived position are used where available, and automated R:R often remains unavailable, so manual confirmation is required
 
 SCORING (V1 evidence-scoring, as of ~2026-08-01):
   evidence-scoring.js → setup_quality (A/B/C/D/U/F) + entry_quality + eligibility + rank_score

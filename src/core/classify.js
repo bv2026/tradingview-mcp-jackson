@@ -44,7 +44,10 @@ function findSrStudy(indicators) {
 // Most-recent NW Envelope label ("▲" = price crossed above a band, "▼" = below).
 // Callers should request max_labels: 1 from getPineLabels since only labels[0] is ever used.
 function nwPositionFrom(nwSignals) {
-  const label = nwSignals?.studies?.[0]?.labels?.[0]?.text;
+  const nwStudy = nwSignals?.studies?.[0];
+  // Empty labels are valid inside evidence; a missing study is unavailable.
+  if (!nwStudy) return 'n/a';
+  const label = nwStudy.labels?.[0]?.text;
   if (label === '▲') return 'extended';
   if (label === '▼') return 'early';
   return 'inside';
