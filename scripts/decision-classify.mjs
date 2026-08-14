@@ -29,12 +29,16 @@ function failReason(s) {
   return 'Fail — hard filter';
 }
 
+function qualifiesSetup(s) {
+  return ['A', 'B'].includes(s.setup_quality) && ['FAVORABLE', 'ACCEPTABLE'].includes(s.entry_quality);
+}
+
 function qualify(s) {
-  if (s.nw_position === 'inside' && typeof s.rr === 'number' && s.rr >= 2.0) return 'ready';
-  if (s.nw_position === 'inside' && typeof s.rr !== 'number') return 'ready_norr';
-  if (s.nw_position === 'inside') return 'watch_low_rr';
-  // Trend continuation: extended but high-conviction score — valid entry at 50% size
-  if (s.nw_position === 'extended' && typeof s.score === 'number' && s.score >= 4) return 'extended_continuation';
+  if (s.eligibility === 'REJECT') return 'reject';
+  if (qualifiesSetup(s) && s.nw_position === 'inside' && typeof s.rr === 'number' && s.rr >= 2.0) return 'ready';
+  if (qualifiesSetup(s) && s.nw_position === 'inside' && typeof s.rr !== 'number') return 'ready_norr';
+  if (qualifiesSetup(s) && s.nw_position === 'inside') return 'watch_low_rr';
+  if (s.nw_position === 'extended' && s.setup_quality === 'A' && ['LATE', 'EXTENDED'].includes(s.entry_quality) && ['STRONG', 'HEALTHY'].includes(s.evidence_state?.momentum_quality)) return 'extended_continuation';
   if (s.nw_position === 'extended') return 'watch_extended';
   if (s.nw_position === 'early') return 'watch_early';
   return 'watch_unknown';
@@ -43,14 +47,14 @@ function qualify(s) {
 const passers = [];
 const fails = [];
 for (const s of d.symbols_raw) {
-  if (s.score > -99) {
+  if (s.eligibility !== 'REJECT') {
     passers.push({ ...s, qualification: qualify(s) });
   } else {
     fails.push({ ...s, reason: failReason(s) });
   }
 }
 
-passers.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
+passers.sort((a, b) => (b.rank_score ?? b.score ?? -Infinity) - (a.rank_score ?? a.score ?? -Infinity) || (b.score ?? -Infinity) - (a.score ?? -Infinity));
 
 const buckets = {
   ready: passers.filter(p => p.qualification === 'ready'),

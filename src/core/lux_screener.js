@@ -17,6 +17,7 @@ import * as indicators from './indicators.js';
 import * as data from './data.js';
 import { evaluate } from '../connection.js';
 import { persistRawEvidence } from './raw-evidence.js';
+import { scoreEvidenceState } from './evidence-scoring.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../../');
@@ -285,8 +286,10 @@ function parseTableRows(rows) {
  *
  * Symbols that fail any hard filter get score = -99 (sorted to bottom).
  */
-function scoreSymbol(so, pac, osc) {
-  const soRating = so['RATING'] || '';
+function scoreSymbol(so, pac, osc, statuses = {}) {
+  // score: scoreSymbol compatibility integration now returns the V1 state bundle.
+  return scoreEvidenceState({ so, pac, osc, ...statuses });
+  /* const soRating = so['RATING'] || '';
   const signal   = so['SIGNAL'] || '';
   const struct   = pac['STRUCTURE'] || '';
 
@@ -315,7 +318,7 @@ function scoreSymbol(so, pac, osc) {
   const div = osc['DIVERGENCES'] || '';
   if (div.includes('Bullish')) score += 1;
 
-  return score;
+  return score; */
 }
 
 function fmtPrice(p) {
@@ -691,7 +694,7 @@ async function runScanInternal({ instrument_type = 'stwits_lg', timeframe = '1D'
         so_status:  studyAvailability(soMap, soRows, sym),
         pac_status: studyAvailability(pacMap, pacRows, sym),
         osc_status: studyAvailability(oscMap, oscRows, sym),
-        score: scoreSymbol(so, pac, osc),
+        ...scoreSymbol(so, pac, osc, { so_status: studyAvailability(soMap, soRows, sym), pac_status: studyAvailability(pacMap, pacRows, sym), osc_status: studyAvailability(oscMap, oscRows, sym) }),
       };
     }
   }
@@ -704,8 +707,8 @@ async function runScanInternal({ instrument_type = 'stwits_lg', timeframe = '1D'
   // 6. NW Envelope L3 check — passing symbols only (score > -99)
   // Switches to main chart tab, sets to 1W, reads NW for each passer.
   const passingSymbols = Object.values(allRows)
-    .filter(r => r.score > -99)
-    .sort((a, b) => b.score - a.score)
+    .filter(r => r.eligibility === 'REVIEW')
+    .sort((a, b) => (b.rank_score - a.rank_score) || (b.score - a.score))
     .slice(0, 30);
   let nwPassError = null;
   if (passingSymbols.length > 0) {
@@ -735,10 +738,10 @@ async function runScanInternal({ instrument_type = 'stwits_lg', timeframe = '1D'
   }
 
   // 7. Sort by score descending
-  const sorted = Object.values(allRows).sort((a, b) => b.score - a.score);
+  const sorted = Object.values(allRows).sort((a, b) => (b.rank_score - a.rank_score) || (b.score - a.score));
 
-  const topCandidates = sorted.slice(0, 10);
-  const avoidList     = sorted.slice(-10).reverse();
+  const topCandidates = sorted.filter(r => r.eligibility === 'REVIEW').slice(0, 10);
+  const avoidList     = sorted.filter(r => r.eligibility === 'REJECT').slice(0, 10);
 
   const topSection = topCandidates.length
     ? topCandidates.map(r => {

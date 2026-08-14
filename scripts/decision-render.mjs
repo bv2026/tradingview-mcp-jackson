@@ -182,7 +182,7 @@ function thematicStocksEmail() {
     const header = `<tr><th style="${TH}">SYMBOL</th><th style="${TH}">SUB-GROUP</th><th style="${TH}">S&O RATING</th><th style="${TH}">SIGNAL</th><th style="${TH}">PAC STRUCTURE</th><th style="${TH}">OSC DIV</th><th style="${TH}">NW</th><th style="${TH}">SCORE</th><th style="${TH}">ACTION</th></tr>`;
     const sorted = [...items].sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
     const rows = sorted.map(e => {
-      const isFail = e.score <= -99;
+      const isFail = e.eligibility === 'REJECT';
       const action = isFail ? '—' : (e.qualification === 'ready' ? 'Enter long' : 'Watch');
       return `<tr style="${rowColor(e, isFail)}"><td style="${TD}">${e.symbol}</td><td style="${TD}">${e.sub_group ?? '—'}</td><td style="${TD}">${e.so?.RATING ?? '—'}</td><td style="${TD}">${e.so?.SIGNAL ?? '—'}</td><td style="${TD}">${e.pac?.STRUCTURE ?? '—'}</td><td style="${TD}">${e.osc?.DIVERGENCES ?? '—'}</td><td style="${TD}">${e.nw_position ?? '—'}</td><td style="${TD}">${e.score}</td><td style="${TD}">${action}</td></tr>`;
     }).join('\n');
@@ -208,8 +208,8 @@ function thematicEtfsEmail() {
   }
   const rotationRows = Object.entries(byTheme).map(([theme, items]) => {
     const sorted = [...items].sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
-    const leading = sorted.filter(i => i.score > -99).slice(0, 3).map(i => i.symbol).join(', ') || '—';
-    const fading = sorted.filter(i => i.score <= -99).slice(0, 3).map(i => i.symbol).join(', ') || '—';
+    const leading = sorted.filter(i => i.eligibility !== 'REJECT').slice(0, 3).map(i => i.symbol).join(', ') || '—';
+    const fading = sorted.filter(i => i.eligibility === 'REJECT').slice(0, 3).map(i => i.symbol).join(', ') || '—';
     const bullCount = items.filter(i => i.so?.RATING?.includes('Bullish')).length;
     const bias = bullCount > items.length / 2 ? 'Bullish tilt' : 'Mixed/bearish tilt';
     return `<tr><td style="${TD}">${theme}</td><td style="${TD}">${bias}</td><td style="${TD}">${leading}</td><td style="${TD}">${fading}</td></tr>`;
