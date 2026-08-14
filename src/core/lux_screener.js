@@ -552,7 +552,32 @@ export const luxScreenerTestHelpers = {
   studyAvailability,
 };
 
-export async function runScan({ instrument_type = 'stwits_lg', timeframe = '1D', offset = 0, max_symbols = 0 } = {}) {
+// Serialize all scans onto a single chain: the LUXALGO_SCREENERS tab's S&O/PAC/OSC
+// studies are shared mutable state (one set of indicator objects on one chart tab),
+// and an MCP client timing out a call does not cancel the in-flight server-side
+// runScanInternal() execution. Without this queue, a retried or overlapping call can
+// race a still-running one and clobber its ticker inputs mid-poll, producing blank
+// S&O/OSC tables for the other (2026-08-13 r2k incident: momentum_etf timed out 3x,
+// r2k started immediately after and came back with S&O/OSC UNVERIFIED for its whole run).
+let scanChain = Promise.resolve();
+let scanInFlight = false;
+
+export function runScan(opts) {
+  if (scanInFlight) {
+    console.error(
+      `lux_screener_scan: queuing instrument_type=${opts?.instrument_type} offset=${opts?.offset} ` +
+      `behind a scan already in progress — avoids racing shared S&O/PAC/OSC indicator state.`
+    );
+  }
+  const run = scanChain.then(() => {
+    scanInFlight = true;
+    return runScanInternal(opts).finally(() => { scanInFlight = false; });
+  });
+  scanChain = run.catch(() => {}); // keep the chain alive even if this call fails
+  return run;
+}
+
+async function runScanInternal({ instrument_type = 'stwits_lg', timeframe = '1D', offset = 0, max_symbols = 0 } = {}) {
   // Map user-facing TF labels to Pine-valid resolution strings
   const TF_MAP = { '1D': 'D', '1W': 'W', '4H': '240' };
   const chartTf = TF_MAP[timeframe] || 'D';
