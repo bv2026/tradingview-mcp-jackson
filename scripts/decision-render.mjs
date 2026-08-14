@@ -92,7 +92,7 @@ const allPassers = [
   ...d.buckets.watch_low_rr,
   ...d.buckets.watch_unknown,
 ];
-allPassers.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
+allPassers.sort((a, b) => (b.rank_score ?? b.score ?? -Infinity) - (a.rank_score ?? a.score ?? -Infinity));
 
 const actionableCount = d.actionable_count ?? d.buckets.ready.length;
 const bannerParts = [];
@@ -183,19 +183,29 @@ function thematicStocksEmail() {
     const sorted = [...items].sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
     const rows = sorted.map(e => {
       const isFail = e.eligibility === 'REJECT';
-      const action = isFail ? '—' : (e.qualification === 'ready' ? 'Enter long' : 'Watch');
+      const action = isFail ? '—'
+        : e.qualification === 'ready' ? 'Enter long'
+        : e.qualification === 'ready_norr' ? 'Enter long — confirm R:R'
+        : e.qualification === 'extended_continuation' ? 'Trend cont. — 50% size'
+        : 'Watch';
       return `<tr style="${rowColor(e, isFail)}"><td style="${TD}">${e.symbol}</td><td style="${TD}">${e.sub_group ?? '—'}</td><td style="${TD}">${e.so?.RATING ?? '—'}</td><td style="${TD}">${e.so?.SIGNAL ?? '—'}</td><td style="${TD}">${e.pac?.STRUCTURE ?? '—'}</td><td style="${TD}">${e.osc?.DIVERGENCES ?? '—'}</td><td style="${TD}">${e.nw_position ?? '—'}</td><td style="${TD}">${e.score}</td><td style="${TD}">${action}</td></tr>`;
     }).join('\n');
     return `<h3>${theme} — ${bull} bullish / ${bear} bearish / ${items.length} total</h3><table style="${TABLE}">${header}${rows}</table>`;
   }).join('\n');
 
+  const thematicActionable = [
+    ...d.buckets.ready,
+    ...(d.buckets.ready_norr || []),
+    ...(d.buckets.extended_continuation || []),
+  ].sort((a, b) => (b.rank_score ?? b.score ?? -Infinity) - (a.rank_score ?? a.score ?? -Infinity));
+  const thematicWatch = allPassers.filter(e => !['ready', 'ready_norr', 'extended_continuation'].includes(e.qualification));
   return `<h2>Top Picks Across All Themes</h2>
 ${bannerHtml}
-${topSetupsTable(d.buckets.ready.map(e => ({ ...e })), null, null).replace('<th style="' + TH + '">SYMBOL</th>', `<th style="${TH}">SYMBOL</th><th style="${TH}">THEME</th>`)}
+${topSetupsTable(thematicActionable, null, null).replace('<th style="' + TH + '">SYMBOL</th>', `<th style="${TH}">SYMBOL</th><th style="${TH}">THEME</th>`)}
 <h2>Theme Breakdown</h2>
 ${themeBlocks}
 <h2>Watch List</h2>
-${watchListHtml(allPassers.filter(e => e.qualification !== 'ready'))}
+${watchListHtml(thematicWatch)}
 <h2>Scan Summary</h2>
 ${scanSummaryBullets()}`;
 }
@@ -218,13 +228,19 @@ function thematicEtfsEmail() {
   const avoidList = [...d.fails].slice(0, 10);
   const avoidRows = avoidList.map(e => `<tr><td style="${TD}">${e.symbol}</td><td style="${TD}">${e.theme ?? '—'}</td><td style="${TD}">${e.reason}</td></tr>`).join('\n');
 
+  const etfActionable = [
+    ...d.buckets.ready,
+    ...(d.buckets.ready_norr || []),
+    ...(d.buckets.extended_continuation || []),
+  ].sort((a, b) => (b.rank_score ?? b.score ?? -Infinity) - (a.rank_score ?? a.score ?? -Infinity));
+  const etfWatch = allPassers.filter(e => !['ready', 'ready_norr', 'extended_continuation'].includes(e.qualification));
   return `<h2>ETF Rotation Summary</h2>
 ${bannerHtml}
 <table style="${TABLE}"><tr><th style="${TH}">ETF Theme</th><th style="${TH}">Bias</th><th style="${TH}">Leading ETFs</th><th style="${TH}">Lagging ETFs</th></tr>${rotationRows}</table>
 <h2>Top ETF Picks</h2>
-${topSetupsTable(d.buckets.ready, null, null)}
+${topSetupsTable(etfActionable, null, null)}
 <h2>Watch List</h2>
-${watchListHtml(allPassers.filter(e => e.qualification !== 'ready'))}
+${watchListHtml(etfWatch)}
 <h2>Avoid</h2>
 <table style="${TABLE}"><tr><th style="${TH}">SYMBOL</th><th style="${TH}">THEME</th><th style="${TH}">REASON</th></tr>${avoidRows}</table>
 <h2>Scan Summary + Cross-Theme Read</h2>

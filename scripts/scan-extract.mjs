@@ -45,8 +45,20 @@ const data = Array.isArray(parsed) && parsed[0]?.text
 // signals JSON, so.RATING/SIGNAL/SQUEEZE, pac.STRUCTURE/"P&D ZONES",
 // osc.DIVERGENCES/"MONEY FLOW" for the per-symbol decision + conviction notes,
 // theme/sub_group for thematic scans.
+// V1 evidence-scoring fields required by lux-scan-contract + decision-classify:
+// eligibility, so_status, pac_status, osc_status, rank_score, setup_quality,
+// entry_quality, evidence_state, rejection_reasons.
 function trimSymbol(s) {
   const out = { symbol: s.symbol, score: s.score };
+  if (s.rank_score != null) out.rank_score = s.rank_score;
+  if (s.eligibility != null) out.eligibility = s.eligibility;
+  if (s.setup_quality != null) out.setup_quality = s.setup_quality;
+  if (s.entry_quality != null) out.entry_quality = s.entry_quality;
+  if (s.evidence_state != null) out.evidence_state = s.evidence_state;
+  if (s.rejection_reasons != null) out.rejection_reasons = s.rejection_reasons;
+  if (s.so_status != null) out.so_status = s.so_status;
+  if (s.pac_status != null) out.pac_status = s.pac_status;
+  if (s.osc_status != null) out.osc_status = s.osc_status;
   if (s.theme != null) out.theme = s.theme;
   if (s.sub_group != null) out.sub_group = s.sub_group;
   if (s.nw_position != null) out.nw_position = s.nw_position;

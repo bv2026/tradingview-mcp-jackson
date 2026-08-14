@@ -47,7 +47,7 @@ function nwPositionFrom(nwSignals) {
   const label = nwSignals?.studies?.[0]?.labels?.[0]?.text;
   if (label === '▲') return 'extended';
   if (label === '▼') return 'early';
-  return 'n/a';
+  return 'inside';
 }
 
 // Mutates nothing — returns the fields to merge onto a scanSymbol() reading.

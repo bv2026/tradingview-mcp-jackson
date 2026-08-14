@@ -56,6 +56,9 @@
       "Bash(rm /c/Windows/Temp/*)",
       "Bash(rm -f /c/Windows/Temp/*)",
       "Bash(rm -fv /c/Windows/Temp/*)",
+      "Bash(rm C:/Windows/Temp/*)",
+      "Bash(rm -f C:/Windows/Temp/*)",
+      "Bash(rm -fv C:/Windows/Temp/*)",
       "Bash(ls /c/work/tradingview-mcp-jackson/reports/**)",
       "Bash(find /c/work/tradingview-mcp-jackson *)",
       "Bash(find /c/Windows/Temp *)"
