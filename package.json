@@ -14,6 +14,8 @@
   "scripts": {
     "start": "node src/server.js",
     "tv": "node src/cli/index.js",
+    "report:all-strategies": "node scripts/all-strategies-report.mjs reports/all-strategies-decision.md",
+    "publish:all-strategies": "node scripts/publish-all-strategies.mjs",
     "test": "node --test tests",
     "test:sanity": "node --test tests/sanity.test.js",
     "sync:tool-count": "node scripts/sync-tool-count.mjs"
