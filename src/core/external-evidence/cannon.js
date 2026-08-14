@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { PROJECT_ROOT } from '../report_paths.js';
-import { cannonMarketRegistry } from './cannon-market-family.js';
+import { cannonMarketRegistry, resolveCannonMarketFamily } from './cannon-market-family.js';
 
 const DB = process.env.CANNONEDGE_DB || 'C:\\work\\canontrading-scrape\\data\\cannonedge.db';
 const MAP = Object.fromEntries(Object.values(cannonMarketRegistry.families).flatMap(f => f.direct_symbols.map(s => [s, f.cannon_market_code])));
@@ -47,5 +47,11 @@ export function cannonEvidence(tvSymbol, { captureDate = new Date().toISOString(
   const age=tradingAge(raw.snapshot_date, captureDate); const short=raw.short_up==='UP'?'UP':raw.short_down==='DOWN'?'DOWN':''; const long=raw.long_up==='UP'?'UP':raw.long_down==='DOWN'?'DOWN':'';
   const bias=short===long&&short?short:long||short||'NEUTRAL'; const status=age===0?'FRESH':age===1?'AGING':'STALE';
   return { provider:'CannonTrading', available:true, status:'AVAILABLE', reason:null, market_code:market, tv_symbol:tvSymbol, capture_date:captureDate, snapshot_date:raw.snapshot_date, levels_date:raw.levels_date||null, timeframe:'1D', timeframe_relation:timeframe==='D'||timeframe==='1D'?'same_daily_context':'higher_timeframe_context', close:raw.close, change_pct:raw.change_pct, short:{down:raw.short_down,up:raw.short_up,derived:short}, long:{down:raw.long_down,up:raw.long_up,derived:long}, bias, levels:Object.fromEntries(LEVELS.map(k=>[k,raw.levels?.[k]??null])), reaction_zones:{high_30d:raw.high_30d??null,low_30d:raw.low_30d??null,high_52w:raw.high_52wk??null,low_52w:raw.low_52wk??null}, commentary:raw.commentary??null, freshness:{age_days:age,status}, source:{database:dbPath,provider:'CannonTrading',attribution:'CannonEdge SQLite authoritative source'} };
+}
+export function cannonEvidenceForSymbol(tvSymbol, { instrumentType = 'futures', captureDate, timeframe = 'D', dbPath = DB } = {}) {
+  const resolution = resolveCannonMarketFamily(tvSymbol, { instrumentType });
+  const querySymbol = resolution.cannon_reference_symbol || tvSymbol;
+  const evidence = cannonEvidence(querySymbol, { captureDate, timeframe, dbPath });
+  return { ...evidence, relationship: resolution.relationship, family: resolution.family, family_name: resolution.family_name, reference_symbol: resolution.cannon_reference_symbol };
 }
 export const cannonMapping = MAP;

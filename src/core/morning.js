@@ -26,7 +26,8 @@ import {
 } from './report_paths.js';
 import { switchTab } from './tab.js';
 import { persistRawEvidence } from './raw-evidence.js';
-import { cannonEvidence } from './external-evidence/cannon.js';
+import { cannonEvidence, cannonEvidenceForSymbol } from './external-evidence/cannon.js';
+import { scoreCryptoEvidence } from './crypto-evidence-scoring.js';
 
 const SESSIONS_DIR = join(homedir(), '.tradingview-mcp', 'sessions');
 
@@ -454,6 +455,23 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
     }
     const scoredResults = applyFuturesEvidenceScoring(classifiedResults);
     classifiedResults.splice(0, classifiedResults.length, ...scoredResults);
+  }
+  if (instrument === 'crypto' || instrument === 'crypto_perps') {
+    const cannonBySymbol = new Map();
+    for (const row of classifiedResults) {
+      if (row.error || row.stale) continue;
+      const cannon = cannonEvidenceForSymbol(row.symbol, { instrumentType: instrument, timeframe, captureDate: new Date().toISOString().slice(0, 10) });
+      cannonBySymbol.set(row.symbol, cannon);
+      Object.assign(row, scoreCryptoEvidence(row, { instrumentType: instrument, cannonEvidence: cannon }));
+    }
+    if (instrument === 'crypto_perps') {
+      const btc = classifiedResults.find(r => /BTC(?:USD|USDC)/i.test(String(r.symbol)));
+      const btcCannon = btc ? cannonBySymbol.get(btc.symbol) : null;
+      const btcTrend = btc?.bias === 'bullish' ? 'LONG' : btc?.bias === 'bearish' ? 'SHORT' : null;
+      const cannonTrend = btcCannon?.bias === 'UP' ? 'LONG' : btcCannon?.bias === 'DOWN' ? 'SHORT' : null;
+      const composite = btcTrend && cannonTrend ? (btcTrend === cannonTrend ? `AGREEMENT_${btcTrend}` : 'CONFLICT') : btcTrend || cannonTrend ? 'ONE_SOURCE' : 'UNKNOWN';
+      for (const row of classifiedResults) if (row.perp_evidence_state) row.perp_evidence_state.session_context = { btc_perp_trend: btcTrend, btc_cannon_direction: cannonTrend, broad_crypto_context: composite, note: 'Composite context dimension; BTC observations are not independently point-stacked' };
+    }
   }
 
   const freshCount = classifiedResults.filter(r => r.fresh).length;

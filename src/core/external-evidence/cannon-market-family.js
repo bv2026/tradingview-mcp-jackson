@@ -25,5 +25,5 @@ export function resolveCannonMarketFamily(symbol, { instrumentType = 'futures' }
 export function portableCannonContext(cannon, resolution) {
   if (resolution.relationship === 'DIRECT') return cannon;
   if (resolution.relationship === 'NONE') return null;
-  return { provider: cannon?.provider, available: cannon?.available, status: cannon?.status, reason: cannon?.reason, market_code: resolution.cannon_market_code, bias: cannon?.bias, short: cannon?.short, long: cannon?.long, freshness: cannon?.freshness, relationship: 'REFERENCE', levels_portable: false, reference_symbol: resolution.cannon_reference_symbol };
+  return { provider: cannon?.provider, available: cannon?.available, status: cannon?.status, reason: cannon?.reason, market_code: resolution.cannon_market_code, bias: cannon?.bias, short: cannon?.short, long: cannon?.long, freshness: cannon?.freshness, relationship: 'REFERENCE', levels_portable: false, reference_symbol: resolution.cannon_reference_symbol, family: resolution.family, family_name: resolution.family_name };
 }

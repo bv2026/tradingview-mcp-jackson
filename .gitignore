@@ -6,6 +6,7 @@ temp_*
 discovery-log.json
 reports/
 CSV/
+Emails/
 desktop.ini
 __pycache__/
 *.pyc
