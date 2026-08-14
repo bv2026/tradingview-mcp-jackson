@@ -2,6 +2,7 @@
 /** Build one user-facing report from the newest available scan/brief artifacts. */
 import { existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { validateLuxScanPayload } from '../src/core/lux-scan-contract.js';
 
 const root = process.env.TRADINGVIEW_ROOT || process.cwd();
 const outFile = process.argv[2] || join(root, 'reports', 'all-strategies-decision.md');
@@ -39,6 +40,14 @@ function newestScan(type) {
   const files = dirs.flatMap(d => { try { return readdirSync(d).filter(f=>f === `scan-${type}.json`).map(f=>join(d,f)); } catch { return []; } });
   return files.sort().at(-1);
 }
+function newestInvalid(type) {
+  const dirs = [];
+  const base = join(root, 'reports');
+  for (const week of readdirSync(base, { withFileTypes:true }).filter(x=>x.isDirectory() && /^\d{4}-Wk\d+$/.test(x.name)))
+    for (const day of readdirSync(join(base,week.name), {withFileTypes:true}).filter(x=>x.isDirectory())) dirs.push(join(base,week.name,day.name));
+  const files = dirs.flatMap(d => { try { return readdirSync(d).filter(f => f === `scan-${type}.invalid.json`).map(f=>join(d,f)); } catch { return []; } });
+  return files.sort().at(-1);
+}
 function signalFor(scan, type) {
   const p = scan.replace(`scan-${type}.json`, `${type}-signals.json`);
   if (!existsSync(p)) return new Map();
@@ -57,10 +66,18 @@ function brief(type) {
 const sections=[]; const top=[]; const missing=[];
 for (const type of families) {
   const scan = newestScan(type);
+  const invalid = newestInvalid(type);
   if (scan) {
-    const d=JSON.parse(readFileSync(scan,'utf8')); const signalMap=signalFor(scan,type); const rows=[...(d.symbols_raw||[])].map(r=>({...r,...(signalMap.get(r.symbol)||{})})).sort((a,b)=>(score(b)==='N/A'?-Infinity:score(b))-(score(a)==='N/A'?-Infinity:score(a))).slice(0,10);
+    const d=JSON.parse(readFileSync(scan,'utf8'));
+    const contract = validateLuxScanPayload(d, d.instrument_type);
+    if (!contract.valid) { missing.push(`${type} (INVALID)`); sections.push(`## ${title(type)} — INVALID / SKIPPED\n\nSource artifact failed the Lux scan contract and was not presented as actionable output.\n\nValidation: ${esc(contract.errors.slice(0, 3).join('; '))}`); continue; }
+    const signalMap=signalFor(scan,type); const rows=[...(d.symbols_raw||[])].map(r=>({...r,...(signalMap.get(r.symbol)||{})})).sort((a,b)=>(score(b)==='N/A'?-Infinity:score(b))-(score(a)==='N/A'?-Infinity:score(a))).slice(0,10);
     sections.push(`## ${title(type)}\n\nSource: \`${scan.replace(root+'\\','')}\`\n\n| Rank | Symbol | Score | Direction | Setup | Entry | Status | Why | Recommendation |\n|---:|---|---:|---|---|---|---|---|---|\n${rows.map((r,i)=>`| ${i+1} | ${esc(r.symbol)} | ${score(r)} | ${esc(direction(r))} | ${esc(setup(r))} | ${esc(entry(r))} | ${esc(status(r))} | ${esc(why(r))} | ${recommendation(r,type)} |`).join('\n')}\n\nFull scanned rows remain available in the source JSON.`);
     top.push(...rows.filter(r=>['REVIEW','READY'].includes(String(status(r)).toUpperCase())).slice(0,2).map(r=>`${type}: ${r.symbol} (${score(r)})`));
+  } else if (invalid) {
+    let reason = 'Publisher validation failed; no actionable family output was published.';
+    try { reason = JSON.parse(readFileSync(invalid,'utf8')).errors?.join('; ') || reason; } catch {}
+    missing.push(`${type} (INVALID)`); sections.push(`## ${title(type)} — INVALID / SKIPPED\n\nSource artifact failed the Lux scan contract and was not presented as actionable output.\n\nValidation: ${esc(reason)}`);
   } else if (['crypto','crypto_perps','futures'].includes(type) && brief(type)) {
     const p=brief(type), text=readFileSync(p,'utf8'); const lines=text.split('\n').filter(x=>/^\d+\. \*\*/.test(x)).slice(0,3);
     sections.push(`## ${title(type)}\n\nSource: \`${p.replace(root+'\\','')}\`\n\nNumeric score: **N/A** — current brief artifact does not expose a row-level score. Direction and recommendation are preserved from the strategy’s accepted analysis.\n\n| Rank | Symbol | Score | Direction | Setup | Entry | Status | Analysis / location | Recommendation |\n|---:|---|---:|---|---|---|---|---|---|\n${lines.map((x,i)=>{const m=x.match(/^\d+\. \*\*([^*]+)\*\* ?[—-] ?(.*)/);return m?`| ${i+1} | ${m[1]} | N/A | SEE BRIEF | N/A | N/A | ${type==='crypto'?'WATCH':'REVIEW'} | ${esc(m[2])} | ${type==='crypto'?'WATCH (spot long-only)':'REVIEW'} |`:''}).filter(Boolean).join('\n')}\n\nManual check required: confirm current chart, location, stop, target, and live provider freshness before action.`);

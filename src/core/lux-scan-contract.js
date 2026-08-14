@@ -9,8 +9,8 @@ export function validateLuxScanPayload(payload, instrumentType = payload?.instru
     if (!row?.symbol) errors.push(`${p}.symbol is required`);
     for (const f of ['so','pac','osc']) if (!object(row?.[f])) errors.push(`${p}.${f} is missing (morning_brief or malformed capture)`);
     if (typeof row?.score !== 'number' || !Number.isFinite(row.score)) errors.push(`${p}.score must be numeric`);
-    if (!['REVIEW','REJECT'].includes(row?.eligibility)) errors.push(`${p}.eligibility must be REVIEW or REJECT`);
-    for (const f of ['so_status','pac_status','osc_status']) if (row?.[f] !== 'AVAILABLE') errors.push(`${p}.${f}=${row?.[f] ?? 'missing'}; Lux evidence is unavailable`);
+    if (!['REVIEW','REJECT','WATCH'].includes(row?.eligibility)) errors.push(`${p}.eligibility must be REVIEW, REJECT, or WATCH`);
+    for (const f of ['so_status','pac_status','osc_status']) if (!['AVAILABLE','PRESENT','ABSENT','UNVERIFIED'].includes(row?.[f])) errors.push(`${p}.${f}=${row?.[f] ?? 'missing'}; Lux evidence state is invalid`);
   }
   return { valid: errors.length === 0, errors };
 }

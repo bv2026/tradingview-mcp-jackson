@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /** Publish a complete dated bundle from canonical evidence without inventing LLM decisions. */
-import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, mkdirSync, writeFileSync, unlinkSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { reportDirFor } from '../src/core/report_paths.js';
+import { validateLuxScanPayload } from '../src/core/lux-scan-contract.js';
 
 const root = process.env.TRADINGVIEW_ROOT || process.cwd();
 const evidenceDir = join(root, 'evidence', 'latest');
@@ -40,8 +41,20 @@ for (const family of families) {
   const source = join(evidenceDir, `${family}.raw.json`);
   if (!existsSync(source)) continue;
   const data = JSON.parse(readFileSync(source, 'utf8'));
+  const contract = validateLuxScanPayload(data, data.instrument_type);
+  const scanPath = join(outDir, `scan-${family}.json`);
+  const invalidPath = join(outDir, `scan-${family}.invalid.json`);
+  if (!contract.valid) {
+    if (existsSync(scanPath)) unlinkSync(scanPath);
+    writeFileSync(invalidPath, JSON.stringify({ family, status: 'INVALID', errors: contract.errors }, null, 2));
+    const invalidBody = `# ${family.replaceAll('_', ' ').toUpperCase()} — INVALID / SKIPPED\n\nThe source artifact failed the Lux scan contract and was not published as actionable current-family output.\n\nValidation errors:\n${contract.errors.map(e => `- ${e}`).join('\n')}\n`;
+    writeFileSync(join(outDir, family === 'momentum_ark' ? 'momentum_ark.md' : `${family}.md`), invalidBody);
+    writeFileSync(join(outDir, family === 'momentum_ark' ? 'ark-decision.html' : family === 'crypto_perps' ? 'crypto-perps-decision.html' : `${family}-decision.html`), `<h1>${family} — INVALID / SKIPPED</h1><p>Lux scan contract validation failed. No actionable output was published.</p><pre>${esc(contract.errors.join('\n'))}</pre>`);
+    continue;
+  }
+  if (existsSync(invalidPath)) unlinkSync(invalidPath);
   // scan-*.json is the compatibility input consumed by all-strategies-report.mjs.
-  writeFileSync(join(outDir, `scan-${family}.json`), JSON.stringify(data, null, 2));
+  writeFileSync(scanPath, JSON.stringify(data, null, 2));
   const rows = rowsOf(data);
   const body = [
     `# ${family.replaceAll('_', ' ').toUpperCase()} Model Evidence`,
@@ -70,4 +83,8 @@ const allReport = join(outDir, 'all-strategies-decision.md');
 process.env.TRADINGVIEW_ROOT = root;
 // Invoke the existing presentation report after compatibility inputs are published.
 execFileSync(process.execPath, [join(root, 'scripts', 'all-strategies-report.mjs'), allReport], { cwd: root, stdio: 'inherit', env: process.env });
+const published = families.filter(f => existsSync(join(outDir, `scan-${f}.json`)));
+const invalid = families.filter(f => existsSync(join(outDir, `scan-${f}.invalid.json`)));
+const runLog = join(outDir, '_run-log.txt');
+appendFileSync(runLog, `${new Date().toISOString()} PUBLISH COMPLETE — status=${invalid.length ? 'COMPLETED_WITH_INVALID_FAMILIES' : 'COMPLETED'}; source=evidence/latest validated; published=${published.join(',') || 'none'}; skipped_invalid=${invalid.join(',') || 'none'}; outputs=${outDir}; all-strategies=${allReport}\n`);
 console.log(outDir);
