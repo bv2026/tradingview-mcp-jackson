@@ -109,3 +109,6 @@ Report to the user:
 - How many had TV data
 - How many Top Setups vs Watch List
 - Confirm the Gmail draft was created
+### CannonEdge supplemental evidence
+
+`external_evidence.cannon` is independently sourced CannonTrading/CannonEdge daily context attached to futures rows. Preserve explicit agreement or conflict with TradingView TWB/NW/SR. Missing, unavailable, or stale Cannon is never a rejection or classification change. On intraday scans, Cannon remains daily higher-timeframe context.

@@ -22,17 +22,8 @@ from pathlib import Path
 CT_DB = Path(r"C:\work\canontrading-scrape\data\cannonedge.db")
 TV_REPORTS = Path(__file__).parent.parent / "reports"
 
-TV_TO_CT_MARKET: dict[str, str | None] = {
-    "ES1!": "EP", "NQ1!": "ENQ", "YM1!": None, "RTY1!": None,
-    "CL1!": "CLE", "NG1!": "NGE", "BZ1!": None,
-    "GC1!": "GCE", "SI1!": "SIE", "HG1!": "CPE",
-    "6E1!": "EU6", "6B1!": None, "6J1!": None, "DX1!": None,
-    "ZB1!": "USA", "ZN1!": None,
-    "BTC1!": "BTC", "ETH1!": None,
-    "ZC1!": "ZCE", "ZW1!": "ZWA", "ZS1!": "ZSE",
-    "LE1!": "GLE", "HE1!": "HE", "GF1!": None, "VX1!": None,
-    "KC1!": "KCE", "SB1!": "SBE", "CC1!": "CCE",
-}
+_shared_map = json.loads((Path(__file__).parent.parent / "config" / "cannon-futures-map.json").read_text(encoding="utf-8"))
+TV_TO_CT_MARKET: dict[str, str | None] = {symbol.split(":")[-1]: market for symbol, market in _shared_map.items()}
 
 MARKET_TO_LEVEL_INSTRUMENT: dict[str, str] = {
     "EP": "ES", "ENQ": "NQ", "USA": "ZB", "BTC": "BRTI",

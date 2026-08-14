@@ -25,6 +25,7 @@ import {
 } from './report_paths.js';
 import { switchTab } from './tab.js';
 import { persistRawEvidence } from './raw-evidence.js';
+import { cannonEvidence } from './external-evidence/cannon.js';
 
 const SESSIONS_DIR = join(homedir(), '.tradingview-mcp', 'sessions');
 
@@ -446,6 +447,11 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
   const classifiedResults = classifyResults(results, instrument, {
     correlationClusters: strategy.asset_notes?.correlation_clusters,
   });
+  if (instrument === 'futures') {
+    for (const row of classifiedResults) {
+      row.external_evidence = { ...(row.external_evidence || {}), cannon: cannonEvidence(row.symbol, { timeframe, captureDate: new Date().toISOString().slice(0, 10) }) };
+    }
+  }
 
   const freshCount = classifiedResults.filter(r => r.fresh).length;
   const staleCount = classifiedResults.length - freshCount;

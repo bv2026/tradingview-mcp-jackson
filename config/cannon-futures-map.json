@@ -1,0 +1,20 @@
+{
+  "CME_MINI:ES1!": "EP",
+  "CME_MINI:NQ1!": "ENQ",
+  "CBOT:ZB1!": "USA",
+  "COMEX:GC1!": "GCE",
+  "COMEX:SI1!": "SIE",
+  "COMEX:HG1!": "CPE",
+  "NYMEX:CL1!": "CLE",
+  "NYMEX:NG1!": "NGE",
+  "CME:6E1!": "EU6",
+  "CME:BTC1!": "BTC",
+  "CBOT:ZS1!": "ZSE",
+  "CBOT:ZW1!": "ZWA",
+  "CBOT:ZC1!": "ZCE",
+  "ICEUS:KC1!": "KCE",
+  "ICEUS:SB1!": "SBE",
+  "ICEUS:CC1!": "CCE",
+  "CME:LE1!": "GLE",
+  "CME:HE1!": "HE"
+}
