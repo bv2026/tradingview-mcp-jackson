@@ -14,7 +14,7 @@ try:
   con=sqlite3.connect('file:'+db+'?mode=ro', uri=True); con.row_factory=sqlite3.Row
   snap=con.execute("SELECT * FROM snapshot_rows WHERE market_code=? AND post_date<=? ORDER BY post_date DESC,row_order DESC LIMIT 1",(market,requested)).fetchone()
   if not snap: out['reason']='SNAPSHOT_UNAVAILABLE'; print(json.dumps(out)); raise SystemExit
-  sd=snap['post_date']; out.update({'snapshot_date':sd,'description':snap['description'],'close':snap['close'],'change_pct':snap['today_change_pct'],'short_down':snap['short_down'],'short_up':snap['short_up'],'long_down':snap['long_down'],'long_up':snap['long_up']})
+  sd=snap['post_date']; out.update({'snapshot_date':sd,'description':snap['description'],'close':snap['close'],'change_pct':snap['today_change_pct'],'high_30d':snap['high_30d'],'low_30d':snap['low_30d'],'high_52wk':snap['high_52wk'],'low_52wk':snap['low_52wk'],'short_down':snap['short_down'],'short_up':snap['short_up'],'long_down':snap['long_down'],'long_up':snap['long_up']})
   inst={'EP':'ES','ENQ':'NQ','USA':'ZB','BTC':'BRTI','CLE':'CL','GCE':'GC','SIE':'SI','NGE':'NG','KCE':'KC','SBE':'SB','CCE':'CC','EU6':'EURO','ZCE':'ZC','ZSE':'ZS','ZWA':'ZW','GLE':'LE','HE':'HE'}.get(market)
   if inst:
     lr=con.execute("SELECT MAX(dlt.levels_date) ld FROM daily_level_tables dlt JOIN daily_level_rows dlr ON dlr.daily_level_table_id=dlt.id WHERE dlt.levels_date<=? AND dlr.instrument=?",(sd,inst)).fetchone()
@@ -31,7 +31,7 @@ function unavailable(tv, reason, captureDate) {
     tv_symbol: tv, capture_date: captureDate, snapshot_date: null, levels_date: null, timeframe: '1D',
     timeframe_relation: tv && captureDate ? 'same_daily_context' : null, close: null, change_pct: null,
     short: { down: null, up: null, derived: null }, long: { down: null, up: null, derived: null }, bias: null,
-    levels: Object.fromEntries(LEVELS.map(k => [k, null])), commentary: null, freshness: { age_days: null, status: 'UNAVAILABLE' },
+    levels: Object.fromEntries(LEVELS.map(k => [k, null])), reaction_zones: { high_30d: null, low_30d: null, high_52w: null, low_52w: null }, commentary: null, freshness: { age_days: null, status: 'UNAVAILABLE' },
     source: { database: DB, provider: 'CannonTrading', attribution: 'CannonEdge SQLite authoritative source' } };
 }
 
@@ -45,6 +45,6 @@ export function cannonEvidence(tvSymbol, { captureDate = new Date().toISOString(
   if (raw.reason) return unavailable(tvSymbol, raw.reason, captureDate);
   const age=tradingAge(raw.snapshot_date, captureDate); const short=raw.short_up==='UP'?'UP':raw.short_down==='DOWN'?'DOWN':''; const long=raw.long_up==='UP'?'UP':raw.long_down==='DOWN'?'DOWN':'';
   const bias=short===long&&short?short:long||short||'NEUTRAL'; const status=age===0?'FRESH':age===1?'AGING':'STALE';
-  return { provider:'CannonTrading', available:true, status:'AVAILABLE', reason:null, market_code:market, tv_symbol:tvSymbol, capture_date:captureDate, snapshot_date:raw.snapshot_date, levels_date:raw.levels_date||null, timeframe:'1D', timeframe_relation:timeframe==='D'||timeframe==='1D'?'same_daily_context':'higher_timeframe_context', close:raw.close, change_pct:raw.change_pct, short:{down:raw.short_down,up:raw.short_up,derived:short}, long:{down:raw.long_down,up:raw.long_up,derived:long}, bias, levels:Object.fromEntries(LEVELS.map(k=>[k,raw.levels?.[k]??null])), commentary:raw.commentary??null, freshness:{age_days:age,status}, source:{database:dbPath,provider:'CannonTrading',attribution:'CannonEdge SQLite authoritative source'} };
+  return { provider:'CannonTrading', available:true, status:'AVAILABLE', reason:null, market_code:market, tv_symbol:tvSymbol, capture_date:captureDate, snapshot_date:raw.snapshot_date, levels_date:raw.levels_date||null, timeframe:'1D', timeframe_relation:timeframe==='D'||timeframe==='1D'?'same_daily_context':'higher_timeframe_context', close:raw.close, change_pct:raw.change_pct, short:{down:raw.short_down,up:raw.short_up,derived:short}, long:{down:raw.long_down,up:raw.long_up,derived:long}, bias, levels:Object.fromEntries(LEVELS.map(k=>[k,raw.levels?.[k]??null])), reaction_zones:{high_30d:raw.high_30d??null,low_30d:raw.low_30d??null,high_52w:raw.high_52wk??null,low_52w:raw.low_52wk??null}, commentary:raw.commentary??null, freshness:{age_days:age,status}, source:{database:dbPath,provider:'CannonTrading',attribution:'CannonEdge SQLite authoritative source'} };
 }
 export const cannonMapping = MAP;
