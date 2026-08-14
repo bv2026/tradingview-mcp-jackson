@@ -63,7 +63,7 @@ export function scoreFuturesEvidence(row) {
   const momentum = cross === 'CONFLICT' ? 'MIXED' : tvDir && change != null && ((tvDir === 'LONG' && change < -(adverse || Infinity)) || (tvDir === 'SHORT' && change > (adverse || Infinity))) ? 'DIVERGENT' : cross.includes('AGREEMENT') ? 'STRONG_CONFIRMATION' : tvDir ? 'CONFIRMED' : tv === 'NEUTRAL' ? 'NEUTRAL' : 'UNKNOWN';
   const freshTv = row.fresh === true && !row.stale, cannonUsable = c.available === true && ['FRESH', 'AGING'].includes(c.freshness?.status);
   const dataConfidence = !freshTv && !cannonUsable ? 'INSUFFICIENT' : freshTv && cannonUsable && native.rule !== 'NO_SIGNAL' ? 'HIGH' : freshTv ? 'MEDIUM' : 'LOW';
-  const setup = cannonDir || tvDir || 'UNKNOWN';
+  const setup = cross === 'CONFLICT' ? 'MIXED' : cannonDir || tvDir || 'UNKNOWN';
   let quality = dataConfidence === 'INSUFFICIENT' ? 'U' : native.rule === 'MANUAL_REVIEW' ? 'F' : cross === 'CONFLICT' || native.rule.startsWith('CONFLICT_') || (native.rule === 'NO_SIGNAL' && tvDir) ? 'D' : (cross.startsWith('AGREEMENT_') && native.bucket === 'A_SETUP' && momentum !== 'DIVERGENT') ? 'A' : (cross.startsWith('PARTIAL_') || (cross.startsWith('AGREEMENT_') && native.confidence !== 'HIGH')) ? 'B' : setup !== 'UNKNOWN' ? 'C' : 'U';
   const structuralAdverse = locationData.structural_state.startsWith('NEAR_') && ((setup === 'LONG' && /HIGH/.test(locationData.nearest_structural_zone)) || (setup === 'SHORT' && /LOW/.test(locationData.nearest_structural_zone)));
   const caution = locationData.tactical_state === 'HEADWIND' || structuralAdverse || momentum === 'DIVERGENT' || cross === 'CONFLICT';

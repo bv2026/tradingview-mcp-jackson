@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "scope": ["futures", "crypto_perps", "crypto"],
+  "families": {
+    "sp500": {"name":"S&P 500", "cannon_market_code":"EP", "cannon_reference_symbol":"CME_MINI:ES1!", "members":["ES","MES"], "direct_symbols":["CME_MINI:ES1!"]},
+    "nasdaq100": {"name":"Nasdaq-100", "cannon_market_code":"ENQ", "cannon_reference_symbol":"CME_MINI:NQ1!", "members":["NQ","MNQ"], "direct_symbols":["CME_MINI:NQ1!"]},
+    "us_long_bond": {"name":"US long bond", "cannon_market_code":"USA", "cannon_reference_symbol":"CBOT:ZB1!", "members":[], "direct_symbols":["CBOT:ZB1!"]},
+    "gold": {"name":"Gold", "cannon_market_code":"GCE", "cannon_reference_symbol":"COMEX:GC1!", "members":["GC","MGC","1OZ"], "direct_symbols":["COMEX:GC1!"]},
+    "silver": {"name":"Silver", "cannon_market_code":"SIE", "cannon_reference_symbol":"COMEX:SI1!", "members":["SI","SIL","SIC"], "direct_symbols":["COMEX:SI1!"]},
+    "copper": {"name":"Copper", "cannon_market_code":"CPE", "cannon_reference_symbol":"COMEX:HG1!", "members":["HG","MHG"], "direct_symbols":["COMEX:HG1!"]},
+    "crude_oil": {"name":"Crude Oil", "cannon_market_code":"CLE", "cannon_reference_symbol":"NYMEX:CL1!", "members":["CL","MCL"], "direct_symbols":["NYMEX:CL1!"]},
+    "natural_gas": {"name":"Natural Gas", "cannon_market_code":"NGE", "cannon_reference_symbol":"NYMEX:NG1!", "members":["NG","MNG"], "direct_symbols":["NYMEX:NG1!"]},
+    "euro_fx": {"name":"Euro FX", "cannon_market_code":"EU6", "cannon_reference_symbol":"CME:6E1!", "members":["6E","M6E"], "direct_symbols":["CME:6E1!"]},
+    "bitcoin": {"name":"Bitcoin", "cannon_market_code":"BTC", "cannon_reference_symbol":"CME:BTC1!", "members":[], "direct_symbols":["CME:BTC1!"]},
+    "soybeans": {"name":"Soybeans", "cannon_market_code":"ZSE", "cannon_reference_symbol":"CBOT:ZS1!", "members":[], "direct_symbols":["CBOT:ZS1!"]},
+    "wheat": {"name":"Wheat", "cannon_market_code":"ZWA", "cannon_reference_symbol":"CBOT:ZW1!", "members":[], "direct_symbols":["CBOT:ZW1!"]},
+    "corn": {"name":"Corn", "cannon_market_code":"ZCE", "cannon_reference_symbol":"CBOT:ZC1!", "members":[], "direct_symbols":["CBOT:ZC1!"]},
+    "coffee": {"name":"Coffee", "cannon_market_code":"KCE", "cannon_reference_symbol":"ICEUS:KC1!", "members":[], "direct_symbols":["ICEUS:KC1!"]},
+    "sugar": {"name":"Sugar", "cannon_market_code":"SBE", "cannon_reference_symbol":"ICEUS:SB1!", "members":[], "direct_symbols":["ICEUS:SB1!"]},
+    "cocoa": {"name":"Cocoa", "cannon_market_code":"CCE", "cannon_reference_symbol":"ICEUS:CC1!", "members":[], "direct_symbols":["ICEUS:CC1!"]},
+    "live_cattle": {"name":"Live Cattle", "cannon_market_code":"GLE", "cannon_reference_symbol":"CME:LE1!", "members":[], "direct_symbols":["CME:LE1!"]},
+    "lean_hogs": {"name":"Lean Hogs", "cannon_market_code":"HE", "cannon_reference_symbol":"CME:HE1!", "members":[], "direct_symbols":["CME:HE1!"]}
+  },
+  "aliases": {
+    "RTY":{"relationship":"NONE"},"M2K":{"relationship":"NONE"},"YM":{"relationship":"NONE"},"MYM":{"relationship":"NONE"},"RB":{"relationship":"NONE"},"CHN":{"relationship":"NONE"},
+    "6C":{"relationship":"NONE"},"MCD":{"relationship":"NONE"},"6A":{"relationship":"NONE"},"M6A":{"relationship":"NONE"},"6J":{"relationship":"NONE"},"6B":{"relationship":"NONE"},"M6B":{"relationship":"NONE"},"6N":{"relationship":"NONE"},"6S":{"relationship":"NONE"},"MSF":{"relationship":"NONE"},"PLAT":{"relationship":"NONE"},"AUDD-USDC":{"relationship":"NONE"},"TGBP-USDC":{"relationship":"NONE"},"XSGD-USDC":{"relationship":"NONE"},"CHNZ2030":{"relationship":"NONE"}
+  },
+  "references": {
+    "COINBASE:PAXGUSD":"gold","COINBASE:PAXGUSDC.P":"gold","COINBASE:TEKZ2030":"nasdaq100","COINBASE:DEFZ2030":"sp500","OIL":"crude_oil","SLVR":"silver","GLD":"gold","PAXG-USD":"gold","COPR":"copper","EURC-USDC":"euro_fx"
+  },
+  "policy": {"ordinary_crypto_reference_family":"bitcoin","ordinary_crypto_levels_portable":false}
+}

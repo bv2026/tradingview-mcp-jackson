@@ -2,9 +2,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { PROJECT_ROOT } from '../report_paths.js';
+import { cannonMarketRegistry } from './cannon-market-family.js';
 
 const DB = process.env.CANNONEDGE_DB || 'C:\\work\\canontrading-scrape\\data\\cannonedge.db';
-const MAP = JSON.parse(readFileSync(join(PROJECT_ROOT, 'config', 'cannon-futures-map.json'), 'utf8'));
+const MAP = Object.fromEntries(Object.values(cannonMarketRegistry.families).flatMap(f => f.direct_symbols.map(s => [s, f.cannon_market_code])));
 const LEVELS = ['R3', 'R2', 'R1', 'Pivot', 'S1', 'S2', 'S3'];
 const PY = String.raw`import json, sqlite3, sys
 from datetime import date, datetime
