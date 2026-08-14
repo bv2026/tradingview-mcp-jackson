@@ -9,3 +9,5 @@ CSV/
 desktop.ini
 __pycache__/
 *.pyc
+evidence/
+validation/raw-evidence/
