@@ -1,5 +1,5 @@
 # Session Handoff — TradingView MCP Jackson
-**Date:** 2026-08-01  
+**Date:** 2026-08-14  
 **Handoff to:** Codex (Claude Code)  
 **Project root:** `C:\work\tradingview-mcp-jackson`
 
@@ -7,9 +7,73 @@
 
 ## Current State
 
-All watchlist scans healthy and trusted for daily use. All 3 daily decision emails (crypto, perps, futures) now generating correctly with full data. No remaining blockers.
+All watchlist scans healthy and trusted for daily use. All 3 daily decision emails (crypto, perps, futures) generating correctly. Weekly decision pipeline V1 evidence-scoring gaps patched — all 7 instrument types should now produce correct actionable buckets.
 
 **Perps watchlist:** 33 symbols (added TECH/CHN/DFNSE on 2026-08-01)
+
+---
+
+## What Was Done This Session (2026-08-14)
+
+### Comprehensive Review + V1 Scoring Pipeline Bug Fixes
+
+Full codebase audit after the V1 evidence-scoring redesign. Found and fixed 8 issues. All 145 tests pass. Committed as `1d7720c`.
+
+#### C-1 (Critical): `scan-extract.mjs` — stripped fields broke all split-scan types
+
+`trimSymbol()` was keeping only the old score/NW/so/pac/osc fields and silently dropping the 9 V1 evidence-scoring fields required by `lux-scan-contract.js` and `decision-classify.mjs`:
+- `eligibility`, `so_status`, `pac_status`, `osc_status`
+- `rank_score`, `setup_quality`, `entry_quality`, `evidence_state`, `rejection_reasons`
+
+Impact: `assertLuxScanPayload()` threw on every split-scan type (momentum_stocks, momentum_etf, momentum_ark, thematic_stocks, thematic_etfs) → classify aborted → zero actionable decisions for all 5 types. Only sp_ndx and r2k (which use `--full`) were unaffected.
+
+**Fix:** `trimSymbol()` now preserves all 9 V1 fields alongside the existing ones.
+
+#### H-1 (High): `decision-render.mjs` thematic layouts ignored new buckets
+
+`thematicStocksEmail()` and `thematicEtfsEmail()` built Top Picks from `d.buckets.ready` only — `ready_norr` and `extended_continuation` were invisible in thematic emails. Additionally, the watch-list filter (`e.qualification !== 'ready'`) let `ready_norr`/`extended_continuation` appear in both Top Picks and Watch simultaneously.
+
+**Fix:** Both thematic functions now build `thematicActionable`/`etfActionable` from all 3 buckets (same as `standardEmail`). Watch filter updated to exclude all 3. Per-row action labels in theme breakdown table updated to distinguish all 3 qualification types.
+
+#### H-2 (High): `decision-render.mjs` sort mismatch
+
+`allPassers.sort()` used `score` but `decision-classify.mjs` sorts by `rank_score`. Currently identical values, but fragile.
+
+**Fix:** Sort now uses `rank_score ?? score` fallback — matches the classify step.
+
+#### H-3 (High): `classify.js` returned `'n/a'` for no-label NW case
+
+`nwPositionFrom()` returned `'n/a'` when no crossing label existed. `lux_screener.js` returns `'inside'` for the same case. `decision-classify.mjs` qualifies only `=== 'inside'` — `'n/a'` would land in `watch_unknown`.
+
+**Fix:** `classify.js` now returns `'inside'` (price between bands = valid entry zone, semantically correct).
+
+#### M-1 (Medium): Dead `'WATCH'` eligibility in `lux-scan-contract.js`
+
+`evidence-scoring.js` never produces `'WATCH'` — only `REVIEW`, `REJECT`, `INSUFFICIENT`.
+
+**Fix:** Removed from the valid-values enum.
+
+#### M-3 (Medium): `futures-morning-routine` SKILL missing format constraints
+
+The SKILL's STEP 3 didn't document the strict futures.md format contract that `ct_tv_data.py` depends on.
+
+**Fix:** Added explicit format contract block to STEP 3 (bare ticker, ASCII `-`, literal `**Benchmark:**`/`**Theme:**` headers) with pointer to check first when STEP 4 exits code 2.
+
+#### L-1 (Low): `weekly-decision-routine` SKILL had stale scoring description
+
+STEP 4 described the old `score > -99` hard-filter logic. The actual classifier now uses V1 evidence-scoring (`setup_quality`, `entry_quality`, `eligibility`).
+
+**Fix:** STEP 4 rewritten to accurately describe the current V1 classification buckets and logic.
+
+#### M-4 (Medium): `income-etf-monthly-review-routine` SKILL had duplicate frontmatter
+
+**Fix:** Removed the duplicate YAML block.
+
+#### L-2 (Low): `settings.json` rm allowlist missing Windows-path forms
+
+`rm -f` cleanup entries existed for POSIX paths only (`/c/Windows/Temp/*`). The weekly-decision-routine SKILL instructs agents using Windows paths.
+
+**Fix:** Added `C:/Windows/Temp/*` forms alongside the POSIX forms.
 
 ---
 
@@ -123,34 +187,38 @@ DAILY DECISION ENGINE:
   futures          → morning_brief → ct_tv_data.py → futures-decision.html → Gmail draft
 
 WEEKLY DECISION ENGINE:
-  7 equity types   → lux_screener_scan → scan-{type}.json
+  7 equity types   → lux_screener_scan → auto-save file
+                   → scan-extract.mjs (--full for sp_ndx/r2k; default for split types)
+                   → scan-merge.mjs (split types only)
+                   → scan-verify.mjs (contract validation)
                    → decision-classify.mjs → buckets (ready/ready_norr/extended_continuation/watch_*)
-                   → decision-render.mjs → {type}-decision.html → Gmail draft
+                   → decision-render.mjs → {type}-decision.html + {type}-signals.json → Gmail send
 
 NW ENVELOPE BAND DATA:
-  - Reads via getStudyValues() (Data Window, works with plot() overlays)
+  - Position (extended/early/inside): getPineLabels() — ▲/▼ crossing labels
+  - Band levels (nw_upper/nw_lower for R:R): getStudyValues() — works for plot() overlays
   - Falls back to label price for extended/early positions
-  - ready_norr bucket catches inside symbols when band data unavailable
+  - ready_norr bucket catches inside symbols when band levels unavailable
+  - NW Envelope does NOT appear in getStudyValues() (CLAUDE.md confirmed) — label position only
 
-ALL-MORNING-BRIEF ROUTING:
-  momentum_stocks / momentum_etf -> lux_screener_scan split batches
-  other core types              -> direct morning_brief path
-
-NW CLOSE-OUT STATUS:
-  NW is a location/timing overlay only. PAC/S&O/OSC are sufficient for the immediate
-  workflow; band values may be null because the normal Data Window does not expose
-  the NW Envelope bands. Defer separate NW-indicator engineering until a controlled
-  comparison demonstrates incremental entry-timing value.
+SCORING (V1 evidence-scoring, as of ~2026-08-01):
+  evidence-scoring.js → setup_quality (A/B/C/D/U/F) + entry_quality + eligibility + rank_score
+  lux-scan-contract.js validates: eligibility ∈ {REVIEW, REJECT, INSUFFICIENT}
+  decision-classify.mjs gates: setup_quality ∈ {A,B} + entry_quality ∈ {FAVORABLE,ACCEPTABLE}
 ```
 
 **Key files:**
 
 | What | Where |
 |---|---|
-| CT+TV data fetcher (with validation gate) | `scripts/ct_tv_data.py` |
+| V1 evidence scorer | `src/core/evidence-scoring.js` |
+| Scan field extractor (split scans) | `scripts/scan-extract.mjs` |
+| Scan contract validator | `src/core/lux-scan-contract.js` |
 | Equity decision classifier | `scripts/decision-classify.mjs` |
 | Equity decision renderer | `scripts/decision-render.mjs` |
 | NW envelope reader | `src/core/lux_screener.js` → `readNwEnvelope()` |
+| Morning brief classifier | `src/core/classify.js` → `nwPositionFrom()` |
+| CT+TV data fetcher (with validation gate) | `scripts/ct_tv_data.py` |
 | Perps watchlist (gitignored) | `CSV/PERPS.csv` (33 symbols) |
 | Perps strategy config | `config/strategy-crypto_perps.json` |
 | Futures morning routine skill | `~/.claude/scheduled-tasks/futures-morning-routine/SKILL.md` |
@@ -160,12 +228,14 @@ NW CLOSE-OUT STATUS:
 
 ## Known Gaps / Next Session
 
-- **`ready_norr` validation pending**: The `getStudyValues()` fix for NW band data is code-complete but untested on a live scan. First Monday scan (2026-08-04) will show whether NW Envelope values actually appear in Data Window. If `nw_data_warning` fires in scan output, NW Envelope may not be visible on the chart at scan time.
+- **`ready_norr` first live scan pending**: The `getStudyValues()` fix for NW band data hasn't been validated on a post-2026-08-14 live scan yet. If `nw_data_warning` fires in scan output, verify NW Envelope is visible on chart at scan time.
 - **CT data mapping gaps**: 9-10 futures symbols have `tv_symbol: null` in `TV_TO_CT_MARKET` (YM1!, RTY1!, BZ1!, ZN1!, ETH1!, 6B1!, 6J1!, DX1!, GF1!) — no CT+TV agreement possible for these. Could add CT market codes if CannonEdge covers them.
-- **Futures indicator validation** due ~2026-08-03: re-check TWB/NW hit rate vs CannonEdge baseline (see memory).
+- **Futures indicator validation** was due ~2026-08-03: re-check TWB/NW hit rate vs CannonEdge baseline — not yet confirmed done. Update the `futures-indicator-validation` memory once verified.
+- **M-2 (ARK cluster drift)**: `decision-render.mjs` has a hardcoded `CLUSTERS` object that could drift from `strategy-momentum_ark.json`. Low urgency but worth reading clusters from the strategy JSON at runtime in a future session.
+- **L-3 (NW pass doesn't restore main chart symbol)**: After `lux_screener_scan`'s NW L3 pass, the main chart tab is pointed at the last scanned symbol. `morning.js` explicitly restores `originalSymbol`; `lux_screener.js` doesn't. Minor UX issue.
 
 ---
 
 ## Git State
 
-Branch: `main` — committed and pushed as of 2026-08-01.
+Branch: `main` — committed and pushed as of 2026-08-14.
