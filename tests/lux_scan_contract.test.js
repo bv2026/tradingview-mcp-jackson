@@ -8,6 +8,9 @@ const row = (x = {}) => ({ symbol:'NASDAQ:TEST', so:{RATING:'Bullish'}, pac:{STR
 test('rejects morning_brief-shaped Lux captures', () => { const r = validateLuxScanPayload({instrument_type:'sp_ndx',symbols_raw:[{symbol:'TEST',indicators:{},quote:{}}]}); assert.equal(r.valid,false); assert.match(r.errors.join(' '),/so is missing/); });
 test('rejects missing symbols_raw and undefined Lux output', () => { assert.equal(validateLuxScanPayload({instrument_type:'momentum_etf'}).valid,false); assert.equal(validateLuxScanPayload({instrument_type:'r2k',symbols_raw:[row({score:undefined})]}).valid,false); });
 test('accepts a complete Lux evidence-state capture', () => { assert.equal(validateLuxScanPayload({instrument_type:'sp_ndx',symbols_raw:[row()]}).valid,true); });
+test('accepts insufficient-evidence rows without treating them as actionable', () => {
+  assert.equal(validateLuxScanPayload({instrument_type:'r2k',symbols_raw:[row({ eligibility:'INSUFFICIENT', score:2 })]}).valid,true);
+});
 test('publisher report labels invalid Lux family without undefined rows', async () => {
   const d = mkdtempSync(join(tmpdir(), 'lux-report-'));
   try {
