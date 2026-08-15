@@ -1,224 +1,224 @@
 {
   "instrument_type": "sp_ndx",
-  "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\momentum-sp500-2026-08-07.csv + C:\\work\\tradingview-mcp-jackson\\CSV\\momentum-nasdaq100-2026-08-07.csv — IN symbols, S&P rank priority",
+  "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\momentum-sp500-2026-08-14.csv + C:\\work\\tradingview-mcp-jackson\\CSV\\momentum-nasdaq100-2026-08-14.csv — IN symbols, S&P rank priority",
   "default_timeframe": "W",
   "pipeline": "L1: sp_ndx watchlist (rebuilt Saturdays from S&P 500 + Nasdaq 100 CSVs) → L2: LuxAlgo 3 screeners on 1W (hard filter: BOS + Bullish/Strong Bullish S&O Rating + ▲/▲+ Signal) → L3: NW Envelope per-symbol check",
   "watchlist": [
     {
       "symbol": "SNDK",
-      "wtd": -0.2,
-      "sentiment": 84,
+      "wtd": 37.9,
+      "sentiment": 73,
       "watchers": "30.7k"
     },
     {
       "symbol": "DELL",
-      "wtd": 11.9,
-      "sentiment": 33,
+      "wtd": 8.2,
+      "sentiment": 73,
       "watchers": "29.0k"
     },
     {
-      "symbol": "MU",
-      "wtd": 6.6,
-      "sentiment": 56,
-      "watchers": "211.5k"
-    },
-    {
       "symbol": "STX",
-      "wtd": -5.1,
-      "sentiment": 42,
+      "wtd": 19.8,
+      "sentiment": 40,
       "watchers": "13.7k"
     },
     {
-      "symbol": "INTC",
-      "wtd": 12.7,
+      "symbol": "MU",
+      "wtd": 10.7,
       "sentiment": 44,
+      "watchers": "211.5k"
+    },
+    {
+      "symbol": "WDC",
+      "wtd": 17.2,
+      "sentiment": 60,
+      "watchers": "20.1k"
+    },
+    {
+      "symbol": "INTC",
+      "wtd": 0.8,
+      "sentiment": 42,
       "watchers": "206.3k"
     },
     {
       "symbol": "MRVL",
-      "wtd": 16.6,
-      "sentiment": 45,
+      "wtd": 1.5,
+      "sentiment": 48,
       "watchers": "49.6k"
     },
     {
-      "symbol": "WDC",
-      "wtd": -20.3,
-      "sentiment": 85,
-      "watchers": "20.1k"
-    },
-    {
       "symbol": "LITE",
-      "wtd": 24.7,
-      "sentiment": 64,
+      "wtd": 4,
+      "sentiment": 93,
       "watchers": "13.9k"
     },
     {
-      "symbol": "AMD",
-      "wtd": 1.5,
-      "sentiment": 80,
-      "watchers": "561.8k"
-    },
-    {
       "symbol": "HPE",
-      "wtd": 11.1,
-      "sentiment": 67,
+      "wtd": 10.3,
+      "sentiment": 72,
       "watchers": "12.4k"
     },
     {
-      "symbol": "AMAT",
-      "wtd": 6.2,
-      "sentiment": 40,
-      "watchers": "34.4k"
-    },
-    {
-      "symbol": "COHR",
-      "wtd": 44.2,
-      "sentiment": 83,
-      "watchers": "9.1k"
-    },
-    {
-      "symbol": "FTNT",
-      "wtd": -1.4,
-      "sentiment": 52,
-      "watchers": "12.6k"
-    },
-    {
-      "symbol": "MRNA",
-      "wtd": 7.9,
-      "sentiment": 63,
-      "watchers": "110.9k"
-    },
-    {
-      "symbol": "PANW",
-      "wtd": 9.7,
-      "sentiment": 39,
-      "watchers": "38.8k"
-    },
-    {
-      "symbol": "TER",
-      "wtd": 3.2,
-      "sentiment": 48,
-      "watchers": "8.0k"
-    },
-    {
-      "symbol": "GLW",
-      "wtd": 19.8,
-      "sentiment": 41,
-      "watchers": "15.3k"
+      "symbol": "AMD",
+      "wtd": 6.4,
+      "sentiment": 35,
+      "watchers": "561.8k"
     },
     {
       "symbol": "MPC",
-      "wtd": -5.8,
+      "wtd": 19.2,
       "sentiment": 68,
       "watchers": "8.0k"
     },
     {
+      "symbol": "TER",
+      "wtd": 10.4,
+      "sentiment": 54,
+      "watchers": "8.0k"
+    },
+    {
+      "symbol": "MRNA",
+      "wtd": 7,
+      "sentiment": 69,
+      "watchers": "110.9k"
+    },
+    {
       "symbol": "VLO",
-      "wtd": -4.7,
-      "sentiment": 34,
+      "wtd": 14.5,
+      "sentiment": 57,
       "watchers": "9.5k"
     },
     {
+      "symbol": "PANW",
+      "wtd": 5.6,
+      "sentiment": 66,
+      "watchers": "38.8k"
+    },
+    {
+      "symbol": "FTNT",
+      "wtd": 0.2,
+      "sentiment": 51,
+      "watchers": "12.6k"
+    },
+    {
+      "symbol": "AMAT",
+      "wtd": -5.9,
+      "sentiment": 88,
+      "watchers": "34.4k"
+    },
+    {
       "symbol": "LRCX",
-      "wtd": 6.3,
-      "sentiment": 38,
+      "wtd": 6.7,
+      "sentiment": 46,
       "watchers": "21.4k"
     },
     {
-      "symbol": "FIX",
-      "wtd": -2,
-      "sentiment": 43,
-      "watchers": "2.0k"
-    },
-    {
       "symbol": "NTAP",
-      "wtd": 6.2,
-      "sentiment": 70,
+      "wtd": 9.3,
+      "sentiment": 54,
       "watchers": "4.7k"
     },
     {
-      "symbol": "CIEN",
-      "wtd": 9.4,
-      "sentiment": 55,
-      "watchers": "6.8k"
+      "symbol": "FIX",
+      "wtd": 4.7,
+      "sentiment": 42,
+      "watchers": "2.0k"
+    },
+    {
+      "symbol": "GLW",
+      "wtd": 0.2,
+      "sentiment": 44,
+      "watchers": "15.3k"
     },
     {
       "symbol": "DDOG",
-      "wtd": -12.7,
-      "sentiment": 95,
+      "wtd": 9.2,
+      "sentiment": 55,
       "watchers": "25.5k"
     },
     {
-      "symbol": "Q",
-      "wtd": 5.2,
-      "sentiment": 63,
-      "watchers": "947"
+      "symbol": "CIEN",
+      "wtd": 4,
+      "sentiment": 76,
+      "watchers": "6.8k"
     },
     {
-      "symbol": "ARM",
-      "wtd": 17.9,
-      "sentiment": 44,
-      "watchers": "33.2k"
+      "symbol": "VRT",
+      "wtd": 10.4,
+      "sentiment": 38,
+      "watchers": "18.9k"
+    },
+    {
+      "symbol": "PSX",
+      "wtd": 10.4,
+      "sentiment": 60,
+      "watchers": "7.8k"
     },
     {
       "symbol": "NBIS",
-      "wtd": -1.3,
-      "sentiment": 57,
+      "wtd": 47.7,
+      "sentiment": 80,
       "watchers": "48.2k"
     },
     {
+      "symbol": "ARM",
+      "wtd": -1.1,
+      "sentiment": 35,
+      "watchers": "33.2k"
+    },
+    {
       "symbol": "ALAB",
-      "wtd": 7.4,
-      "sentiment": 86,
+      "wtd": -3.8,
+      "sentiment": 51,
       "watchers": "12.2k"
     },
     {
-      "symbol": "TXN",
-      "wtd": 3.7,
-      "sentiment": 39,
-      "watchers": "13.2k"
-    },
-    {
       "symbol": "ASML",
-      "wtd": 6.9,
-      "sentiment": 34,
+      "wtd": 6.2,
+      "sentiment": 35,
       "watchers": "31.7k"
     },
     {
-      "symbol": "CSCO",
-      "wtd": 4.7,
-      "sentiment": 58,
-      "watchers": "61.2k"
+      "symbol": "TXN",
+      "wtd": -2.3,
+      "sentiment": 40,
+      "watchers": "13.2k"
     },
     {
       "symbol": "MPWR",
-      "wtd": -1.7,
-      "sentiment": 55,
+      "wtd": 0.1,
+      "sentiment": 54,
       "watchers": "2.5k"
     },
     {
+      "symbol": "CSCO",
+      "wtd": -8,
+      "sentiment": 94,
+      "watchers": "61.2k"
+    },
+    {
       "symbol": "ADI",
-      "wtd": 6.1,
-      "sentiment": 62,
+      "wtd": -0.1,
+      "sentiment": 71,
       "watchers": "4.8k"
     },
     {
-      "symbol": "ROST",
+      "symbol": "BKR",
       "wtd": 1.7,
-      "sentiment": 51,
-      "watchers": "4.6k"
+      "sentiment": 18,
+      "watchers": "4.4k"
     },
     {
       "symbol": "CSX",
-      "wtd": -0.3,
-      "sentiment": 38,
+      "wtd": -0.2,
+      "sentiment": 52,
       "watchers": "6.7k"
     },
     {
-      "symbol": "ODFL",
-      "wtd": 2,
-      "sentiment": 44,
-      "watchers": "1.8k"
+      "symbol": "CRWV",
+      "wtd": -0.7,
+      "sentiment": 84,
+      "watchers": null
     }
   ],
   "required_indicators": [
@@ -251,5 +251,5 @@
     "Sentiment ≥ 80% = crowded — reduce size or skip"
   ],
   "asset_notes": "Large-cap (S&P 500 + Nasdaq 100) momentum names rebuilt weekly from CSV exports. The wtd/sentiment/watchers/chatter fields are retail-attention context — crowding caution when extreme (≥80%), weak-support flag when low (<40%). LuxAlgo 3 screeners (BOS + Bullish rating + ▲ signal) are the primary filter. NW Envelope is the extension check. BOS count in PAC indicates trend strength.",
-  "watchlist_generated": "2026-08-13"
+  "watchlist_generated": "2026-08-15"
 }

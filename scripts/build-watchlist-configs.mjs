@@ -22,22 +22,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '..');
 
 const ARK_LUX_INVALID_SYMBOLS = new Set([
-  // Confirmed Lux-incompatible (crash or all-dashes)
-  'ANSS', 'BLSH', 'CBRS', 'CRCL', 'CRWD', 'CRWV',
-  'EXAS', 'LMT', 'OPENAI', 'PAGS', 'SPCX', 'XE',
-  // OTC / foreign-primary / stale — Lux has no usable data
-  'ADYEY',  // Euronext Amsterdam (ADYEN); no US ADR
-  'BYDDY',  // OTC pink sheets BYD ADR
-  'EVLO',   // OTC distressed/bankrupt
-  'SPCE',   // Virgin Galactic rebranded to MNTN (Aug 2023); ticker stale
-  // Recent IPOs / no Lux data — S&O Signal: Unavailable or full blank
-  'BGNE',   // BeiGene — full blank (Chinese biotech, dual-listed)
-  'CERS',   // No S&O data (small cap biotech)
-  'DFS',    // Discover Financial — acquired by COF (May 2025), delisted
-  'FIG',    // Figma IPO 2025; Signal: Unavailable
-  'LC',     // LendingClub — full blank across all indicators
-  'SPR',    // Spirit AeroSystems — full blank
-  'TOST',   // Toast IPO too recent for weekly S&O signal
+  // Confirmed Signal: Unavailable + NaN Trend Strength — S&O oscillator cannot compute.
+  // Identified via full 149-symbol lux_screener_scan on 2026-08-15.
+  'ALMR',  // Alamar Biosciences — IPO too recent / illiquid
+  'BLSH',  // Bullish — private-ish / insufficient weekly history
+  'CRWV',  // CoreWeave — IPO Mar 2025, Signal: Unavailable
+  'ETOR',  // eToro — IPO 2025, Signal: Unavailable + NaN
+  'FIG',   // Figma — IPO 2025, Signal: Unavailable
+  'HONA',  // Honeywell Aerospace spinoff — insufficient weekly history
+  'KLAR',  // Klarna — IPO 2025, Signal: Unavailable
+  'PAYP',  // PayPay Corp ADR — illiquid ADR
+  'SCTX',  // Scribe Therapeutics — no public listing history
+  'SECZ',  // Securitize — illiquid / no exchange listing
+  'SPCX',  // SpaceX — private company, Signal: Unavailable + NaN
+  'XE',    // X-Energy — SPAC / thinly traded
 ]);
 
 const THEMATIC_ETF_LUX_INVALID_SYMBOLS = new Set([
@@ -100,25 +98,39 @@ function writeConfig(relPath, patch) {
   return path;
 }
 
+function splitCsvLine(line) {
+  const cells = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === ',' && !inQ) { cells.push(cur.trim()); cur = ''; }
+    else { cur += ch; }
+  }
+  cells.push(cur.trim());
+  return cells;
+}
+
 function parseArkCsv(path) {
+  // Watchlist_ARK-1.csv: Symbol,Description,Sector,Industry,Allocation_Pct
   const lines = readFileSync(path, 'utf8').split('\n').filter(l => l.trim());
-  const headers = lines[0].split(',').map(h => h.trim());
-  const iTICKER  = headers.findIndex(h => h.toUpperCase() === 'TICKER');
-  const iNAME    = headers.findIndex(h => h.toUpperCase() === 'COMPANY');
-  const iSECTOR  = headers.findIndex(h => h.toUpperCase() === 'SECTOR');
-  const iWEIGHT  = headers.findIndex(h => h.toUpperCase().startsWith('COMBINED WEIGHT'));
+  const hdrs  = lines[0].split(',').map(h => h.trim().toLowerCase());
+  const iSym    = hdrs.findIndex(h => h === 'symbol' || h === 'ticker');
+  const iName   = hdrs.findIndex(h => h === 'description' || h === 'company');
+  const iSector = hdrs.findIndex(h => h === 'sector');
+  const iWeight = hdrs.findIndex(h => h === 'allocation_pct' || h.startsWith('combined weight'));
 
   const rows = [];
   for (const line of lines.slice(1)) {
-    const cells = line.split(',').map(c => c.trim());
-    const ticker = cells[iTICKER];
+    const cells = splitCsvLine(line);
+    const ticker = cells[iSym];
     if (!ticker) continue;
     if (ARK_LUX_INVALID_SYMBOLS.has(ticker)) continue;
     rows.push({
-      symbol:  ticker,
-      name:    cells[iNAME]   || '',
-      sector:  cells[iSECTOR] || '',
-      weight:  cells[iWEIGHT] || '0.00%',
+      symbol: ticker,
+      name:   (iName   >= 0 ? cells[iName]   : '') || '',
+      sector: (iSector >= 0 ? cells[iSector] : '') || '',
+      weight: (iWeight >= 0 ? cells[iWeight] : '') || '0.00%',
     });
   }
   return rows;
@@ -197,14 +209,15 @@ function main() {
   const csvDir = resolve(PROJECT_ROOT, process.argv[2] || 'CSV');
   const stocksCsv = join(csvDir, 'Watchlist_Stocks.csv');
   const etfsCsv   = join(csvDir, 'Watchlist_ETFs.csv');
-  const arkCsv    = join(csvDir, 'Watchlist_ARK.csv');
+  const arkCsv    = join(csvDir, 'Watchlist_ARK-1.csv');
+  const arkMetaCsv = join(csvDir, 'ARK Consolidated Watchlist - US.csv');
 
   if (!existsSync(stocksCsv)) throw new Error('Missing: ' + stocksCsv);
   if (!existsSync(etfsCsv))   throw new Error('Missing: ' + etfsCsv);
 
   const stocksRows = parseCsv(stocksCsv).filter(r => !THEMATIC_STOCK_LUX_INVALID_SYMBOLS.has(r.symbol));
   const etfsRows   = parseCsv(etfsCsv).filter(r => !THEMATIC_ETF_LUX_INVALID_SYMBOLS.has(r.symbol));
-  const arkRows    = existsSync(arkCsv) ? parseArkCsv(arkCsv) : null;
+  const arkRows    = existsSync(arkCsv) ? parseArkCsv(arkCsv, arkMetaCsv) : null;
   const generated  = new Date().toISOString().slice(0, 10);
 
   // Group counts for console summary
@@ -307,9 +320,9 @@ function main() {
     const arkOut = writeConfig('config/strategy-momentum_ark.json', {
       watchlist_source:    arkCsv,
       watchlist_generated: generated,
-      max_symbols:         arkRows.length,
       invalid_symbols_excluded: [...ARK_LUX_INVALID_SYMBOLS].sort(),
-      pipeline:            `L1: static CSV watchlist (Watchlist_ARK.csv, ${arkRows.length} symbols after Lux invalid-symbol exclusions) -> L2: lux_screener_scan 1W (hard filter: BOS + Bullish/Strong Bullish S&O Rating + up/up+ Signal) -> L3: NW Envelope per-symbol check on weekly (price inside bands = base coiling, price above upper = extended/already moved)`,
+      max_symbols:         arkRows.length,
+      pipeline:            `L1: static CSV watchlist (Watchlist_ARK-1.csv, ${arkRows.length} symbols after filtering ${ARK_LUX_INVALID_SYMBOLS.size} Lux-incompatible symbols) -> L2: lux_screener_scan 1W (hard filter: BOS + Bullish/Strong Bullish S&O Rating + up/up+ Signal) -> L3: NW Envelope per-symbol check on weekly (price inside bands = base coiling, price above upper = extended/already moved)`,
       watchlist:           arkRows,
     });
     console.log(`\nmomentum_ark:    ${arkRows.length} symbols → ${arkOut}`);

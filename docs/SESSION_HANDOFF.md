@@ -1,5 +1,5 @@
 # Session Handoff — TradingView MCP Jackson
-**Date:** 2026-08-14  
+**Date:** 2026-08-15  
 **Handoff to:** Codex (Claude Code)  
 **Project root:** `C:\work\tradingview-mcp-jackson`
 
@@ -10,6 +10,45 @@
 All watchlist scans healthy and trusted for daily use. All 3 daily decision emails (crypto, perps, futures) generating correctly. Weekly decision pipeline V1 evidence-scoring gaps patched — all 7 instrument types should now produce correct actionable buckets.
 
 **Perps watchlist:** 33 symbols (added TECH/CHN/DFNSE on 2026-08-01)
+
+---
+
+## What Was Done This Session (2026-08-15)
+
+### ARK Watchlist — Full Lux Scan, Invalid Symbol Rebuild, Morning Brief
+
+**Context:** Prior sessions had a speculative/guessed `ARK_LUX_INVALID_SYMBOLS` list (23 symbols). This session ran a full 149-symbol `lux_screener_scan` to identify the true Lux-incompatible symbols from evidence, then rebuilt the watchlist and ran the momentum_ark morning brief.
+
+**1. Full ARK Lux Scan (149 symbols)**
+- Ran all 8 batches of `lux_screener_scan instrument_type="momentum_ark" timeframe="1W" max_symbols=20, offset=0..140`
+- Two batches timed out at 20 symbols — fixed by splitting into 10-symbol sub-batches (resource contention, not bad symbols)
+- Confirmed: exactly 12 symbols produce `Signal: Unavailable` + NaN Trend Strength/Squeeze (true Lux-incompatible)
+
+**2. `ARK_LUX_INVALID_SYMBOLS` rebuilt in `scripts/build-watchlist-configs.mjs`**
+- Replaced old 23-symbol speculative list with 12 evidence-confirmed symbols:
+  `ALMR, BLSH, CRWV, ETOR, FIG, HONA, KLAR, PAYP, SCTX, SECZ, SPCX, XE`
+- Filter applied in `parseArkCsv()` — `if (ARK_LUX_INVALID_SYMBOLS.has(ticker)) continue`
+- `writeConfig` updated to emit `invalid_symbols_excluded` and updated pipeline description
+
+**3. `config/strategy-momentum_ark.json` rebuilt**
+- 149 → **137 symbols** (12 excluded)
+- `invalid_symbols_excluded` list now embedded in the config
+
+**4. `scripts/scheduled-tasks/weekly-scan-routine.md` updated**
+- ARK scan now uses `offset=0,20,40,60,80,100,120` (7 calls) to cover 137 symbols
+- Was: `offset=0,20,40,60,80,100` (~117 symbols estimate)
+
+**5. Full momentum_ark morning brief produced and saved**
+- Saved to `reports/2026-Wk33/2026-Aug-15/momentum_ark.md`
+- Top 20: BFLY(9), GTLB/MASS/SDGR(8), ILMN/NET/KALU/SLGL(7) + 12× score-6 Strong Bullish names
+- Genomics appeared 3× in top 20 → TWST is the single eligible pick (only early-NW genomics name)
+- Top 3 setups: MASS, GTLB, SLGL (all `nw=early`; no score-7+ name is inside NW bands)
+- Universe-level read: ARK breadth weak (54% passers), patient week — no fresh entries
+
+**Key files changed this session:**
+- `scripts/build-watchlist-configs.mjs` — ARK_LUX_INVALID_SYMBOLS rebuilt
+- `config/strategy-momentum_ark.json` — 137-symbol watchlist
+- `scripts/scheduled-tasks/weekly-scan-routine.md` — ARK offset list updated (→ sync to live)
 
 ---
 
@@ -232,10 +271,11 @@ SCORING (V1 evidence-scoring, as of ~2026-08-01):
 - **CT data mapping gaps**: 9-10 futures symbols have `tv_symbol: null` in `TV_TO_CT_MARKET` (YM1!, RTY1!, BZ1!, ZN1!, ETH1!, 6B1!, 6J1!, DX1!, GF1!) — no CT+TV agreement possible for these. Could add CT market codes if CannonEdge covers them.
 - **Futures indicator validation** was due ~2026-08-03: re-check TWB/NW hit rate vs CannonEdge baseline — not yet confirmed done. Update the `futures-indicator-validation` memory once verified.
 - **M-2 (ARK cluster drift)**: `decision-render.mjs` has a hardcoded `CLUSTERS` object that could drift from `strategy-momentum_ark.json`. Low urgency but worth reading clusters from the strategy JSON at runtime in a future session.
+- **ARK batch 3 (symbols 121–137) lux data**: these 17 symbols produced no Lux screener data (score=0/N/A) in the 2026-08-15 scan — thinly traded / recent listings. They showed NW position from chart labels only. Recheck periodically whether any mature enough for S&O to cover.
 - **L-3 (NW pass doesn't restore main chart symbol)**: After `lux_screener_scan`'s NW L3 pass, the main chart tab is pointed at the last scanned symbol. `morning.js` explicitly restores `originalSymbol`; `lux_screener.js` doesn't. Minor UX issue.
 
 ---
 
 ## Git State
 
-Branch: `main` — committed and pushed as of 2026-08-14.
+Branch: `main` — committed and pushed as of 2026-08-15.

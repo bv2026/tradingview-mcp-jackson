@@ -67,8 +67,8 @@ This reads the tool's own accumulated file directly — no scan-merge.mjs, no sc
   lux_screener_scan instrument_type="r2k" timeframe="1W"
   Extract to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-r2k.json
 
-**Scan 5 — momentum_ark (~117 symbols):**
-  Calls: lux_screener_scan instrument_type="momentum_ark" timeframe="1W" max_symbols=20, offset=0,20,40,60,80,100
+**Scan 5 — momentum_ark (137 symbols, updated 2026-08-15):**
+  Calls: lux_screener_scan instrument_type="momentum_ark" timeframe="1W" max_symbols=20, offset=0,20,40,60,80,100,120
   Extract to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-momentum_ark.json
 
 **Scan 6 — thematic_stocks (~117 symbols):**
