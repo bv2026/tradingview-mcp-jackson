@@ -1,6 +1,6 @@
 ---
 name: decision-email-routine
-description: Reads saved briefs and CT+TV data, produces 3 decision HTML files and 3 Gmail drafts
+description: Daily ~8:15am ET (45-min buffer after futures-morning-routine) — reads saved briefs + CT/TV data, produces 3 decision HTML files sent directly as 3 Gmail emails
 ---
 
 You are running the decision engine for the tradingview-mcp-jackson project at C:\work\tradingview-mcp-jackson.
@@ -45,26 +45,45 @@ Key rules to apply from strategy-crypto.json:
 - sr_break > 0 overrides NW extension for longs
 - Long only (spot)
 
-Render as complete HTML with inline styles only:
-<div style="font-family:Arial,Helvetica,sans-serif;color:#222;max-width:800px">
-  <h1>Crypto Decision Brief — {DATE}</h1>
-  <p style="font-size:12px;color:#666">TV only · Coinbase spot · Each symbol evaluated independently</p>
-  <h2>Trade Decisions</h2>
-  [Top Setups table — EVERY cell must be filled. Columns: Symbol | Side (Long) | Entry | Stop | TP1 | Notes. Green row background #e8f5e9 for longs. Never leave Symbol or Side blank.]
-  [Watch List as <ul> — include symbol name on each bullet]
-  [Overall Read as <ul>]
-  <h2>All Symbols Scanned</h2>
-  [Table: Symbol | TWB Gap | NW Position | S/R Break | Bias | Watch]
-</div>
-Table style: border-collapse:collapse;width:100%;font-size:13px. TH: border:1px solid #ccc;padding:4px 8px;background:#f5f5f5. TD: border:1px solid #ccc;padding:4px 8px.
+**Do NOT hand-write HTML.** Write your decisions as a small JSON file instead, then run the shared
+render script — it mechanically produces Gmail-safe HTML (plain `border`/`cellpadding`/`bgcolor`
+attributes, never CSS `background`, since Gmail's send pipeline strips `<style>` blocks, `class`
+attributes, and any inline `style="...background..."`). This is both cheaper (no more typing full
+`<tr>/<td>` boilerplate by hand every day) and immune to that bug by construction.
 
-Save the HTML to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/crypto-decision.html
-Read that file back and create a Gmail draft using mcp__18e26973-458f-4842-a655-687dfaf0ed6e__create_draft:
+Write to `C:\Windows\Temp\crypto_decisions.json` (scratch file, not the reports folder):
+```json
+{
+  "title": "Crypto Decision Brief",
+  "subtitle": "TV only · Coinbase spot · Each symbol evaluated independently",
+  "top_setups": [
+    { "symbol": "BTC-USD", "side": "Long", "entry": "...", "stop": "...", "tp1": "...", "notes": "..." }
+  ],
+  "watch_list": ["ETH-USD — reason...", "..."],
+  "overall_read": ["bullet 1", "bullet 2"],
+  "all_symbols_columns": ["Symbol", "TWB Gap", "NW Position", "S/R Break", "Bias", "Watch"],
+  "all_symbols": [
+    { "symbol": "BTC-USD", "col2": "...", "col3": "...", "col4": "...", "col5": "...", "col6": "..." }
+  ]
+}
+```
+Every symbol from crypto.md goes in `all_symbols` (col2..col6 map positionally to
+`all_symbols_columns[1..]`). `top_setups` is only the symbols that actually qualify as trade
+decisions — never leave `symbol` or `side` blank on a row that's included. Side is always "Long"
+for this type (spot, long only) — the script colors Long rows green automatically.
+
+Then run:
+  `node C:\work\tradingview-mcp-jackson\scripts\daily-decision-render.mjs C:\Windows\Temp\crypto_decisions.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/crypto-decision.html {DATE}`
+
+Read the generated `crypto-decision.html` back and use its exact contents as the email body — do
+not re-type or re-format it. Delete `C:\Windows\Temp\crypto_decisions.json` after the render succeeds.
+
+Send it as a Gmail email using mcp__18e26973-458f-4842-a655-687dfaf0ed6e__send_message (NOT create_draft — this sends immediately, no draft/review step):
   - to: ["bvajjala@gmail.com"]
   - subject: "Crypto Decision Brief — {DATE}"
   - htmlBody: exact file contents read from crypto-decision.html
 
-Wait for draft creation to complete before proceeding.
+Wait for the send to complete before proceeding.
 
 --- STEP 4: CRYPTO PERPS DECISION EMAIL ---
 Using ONLY the raw data from crypto_perps.md and the rules in strategy-crypto_perps.json, reason through each symbol and produce trade decisions.
@@ -75,26 +94,41 @@ Key rules to apply from strategy-crypto_perps.json:
 - Both long AND short setups based on each symbol's own TWB histogram direction
 - Commodity perps (SILVER, GOLD) evaluated on their own TWB + DXY direction
 
-Render as complete HTML with inline styles only:
-<div style="font-family:Arial,Helvetica,sans-serif;color:#222;max-width:800px">
-  <h1>Perps Decision Brief — {DATE}</h1>
-  <p style="font-size:12px;color:#666">TV only · Coinbase CDE · Both sides · Each symbol evaluated independently</p>
-  <h2>Trade Decisions</h2>
-  [Top Setups table — EVERY cell must be filled. Columns: Symbol | Side (Long/Short) | Entry | Stop | TP1 | Notes. Green row background #e8f5e9 for longs, red #fdecea for shorts. Never leave Symbol or Side blank.]
-  [Watch List as <ul> — include symbol name on each bullet]
-  [Overall Read as <ul>]
-  <h2>All Symbols Scanned</h2>
-  [Table: Symbol | TWB Gap | NW Position | Bias | Watch]
-</div>
-Table style: border-collapse:collapse;width:100%;font-size:13px. TH: border:1px solid #ccc;padding:4px 8px;background:#f5f5f5. TD: border:1px solid #ccc;padding:4px 8px.
+**Do NOT hand-write HTML.** Write your decisions as a small JSON file instead, then run the shared
+render script — same reasoning as STEP 3 (cheaper, and immune to the Gmail background-CSS bug by
+construction).
 
-Save the HTML to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/crypto-perps-decision.html
-Read that file back and create a Gmail draft using mcp__18e26973-458f-4842-a655-687dfaf0ed6e__create_draft:
+Write to `C:\Windows\Temp\crypto_perps_decisions.json`:
+```json
+{
+  "title": "Perps Decision Brief",
+  "subtitle": "TV only · Coinbase CDE · Both sides · Each symbol evaluated independently",
+  "top_setups": [
+    { "symbol": "BTC-PERP", "side": "Long", "entry": "...", "stop": "...", "tp1": "...", "notes": "..." }
+  ],
+  "watch_list": ["ETH-PERP — reason...", "..."],
+  "overall_read": ["bullet 1", "bullet 2"],
+  "all_symbols_columns": ["Symbol", "TWB Gap", "NW Position", "Bias", "Watch"],
+  "all_symbols": [
+    { "symbol": "BTC-PERP", "col2": "...", "col3": "...", "col4": "...", "col5": "..." }
+  ]
+}
+```
+`side` is "Long" or "Short" per symbol — the script colors Long rows green, Short rows red
+automatically. Never leave `symbol` or `side` blank on a row included in `top_setups`.
+
+Then run:
+  `node C:\work\tradingview-mcp-jackson\scripts\daily-decision-render.mjs C:\Windows\Temp\crypto_perps_decisions.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/crypto-perps-decision.html {DATE}`
+
+Read the generated `crypto-perps-decision.html` back and use its exact contents as the email body.
+Delete `C:\Windows\Temp\crypto_perps_decisions.json` after the render succeeds.
+
+Send it as a Gmail email using mcp__18e26973-458f-4842-a655-687dfaf0ed6e__send_message (NOT create_draft — this sends immediately, no draft/review step):
   - to: ["bvajjala@gmail.com"]
   - subject: "Perps Decision Brief — {DATE}"
   - htmlBody: exact file contents read from crypto-perps-decision.html
 
-Wait for draft creation to complete before proceeding.
+Wait for the send to complete before proceeding.
 
 --- STEP 5: FUTURES DECISION EMAIL ---
 Using the raw data from futures.md AND ct_tv_data.json combined, plus the rules in strategy-futures.json, reason through each market and produce trade decisions.
@@ -105,24 +139,40 @@ Key rules to apply from strategy-futures.json:
 - CT and TV must agree for a trade (both CT and TV bias aligned)
 - Sector concentration rules apply (max 1 energy position: CL/BZ/NG)
 
-Render as complete HTML with inline styles only:
-<div style="font-family:Arial,Helvetica,sans-serif;color:#222;max-width:800px">
-  <h1>Futures Decision Brief — {DATE}</h1>
-  <p style="font-size:12px;color:#666">CT primary · TV timing</p>
-  <h2>Trade Decisions</h2>
-  [Top Setups table — EVERY cell must be filled. Columns: Market (TV symbol e.g. GC1!) | Side (Long/Short) | Entry | Stop | TP1/TP2 | Notes. Green row background #e8f5e9 for longs, red #fdecea for shorts. Never leave Market or Side blank.]
-  [Watch List as <ul> — include symbol name on each bullet]
-  [Overall Read as <ul>]
-  <h2>Combined Data</h2>
-  [ALL markets from ct_tv_data.json: Market | CT Bias | ST | LT | Close | Pivot | R1 | TV NW | TV Gap | TV Watch]
-</div>
-Table style: border-collapse:collapse;width:100%;font-size:13px. TH: border:1px solid #ccc;padding:4px 8px;background:#f5f5f5. TD: border:1px solid #ccc;padding:4px 8px.
+**Do NOT hand-write HTML.** Write your decisions as a small JSON file instead, then run the shared
+render script — same reasoning as STEP 3/4.
 
-Save to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/futures-decision.html
-Read that file back and create a Gmail draft using mcp__18e26973-458f-4842-a655-687dfaf0ed6e__create_draft:
+Write to `C:\Windows\Temp\futures_decisions.json`:
+```json
+{
+  "title": "Futures Decision Brief",
+  "subtitle": "CT primary · TV timing",
+  "top_setups": [
+    { "market": "GC1!", "side": "Long", "entry": "...", "stop": "...", "tp1": "...", "tp2": "...", "notes": "..." }
+  ],
+  "watch_list": ["CL1! — reason...", "..."],
+  "overall_read": ["bullet 1", "bullet 2"],
+  "all_symbols_heading": "Combined Data",
+  "all_symbols_columns": ["Market", "CT Bias", "ST", "LT", "Close", "Pivot", "R1", "TV NW", "TV Gap", "TV Watch"],
+  "all_symbols": [
+    { "symbol": "GC1!", "col2": "...", "col3": "...", "col4": "...", "col5": "...", "col6": "...", "col7": "...", "col8": "...", "col9": "...", "col10": "..." }
+  ]
+}
+```
+`market` (or `symbol` — either key works) and `side` must never be blank on a `top_setups` row.
+Include EVERY market from ct_tv_data.json in `all_symbols`, not just the ones with trade decisions.
+`side` "Long"/"Short" drives row color automatically.
+
+Then run:
+  `node C:\work\tradingview-mcp-jackson\scripts\daily-decision-render.mjs C:\Windows\Temp\futures_decisions.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/futures-decision.html {DATE}`
+
+Read the generated `futures-decision.html` back and use its exact contents as the email body.
+Delete `C:\Windows\Temp\futures_decisions.json` after the render succeeds.
+
+Send it as a Gmail email using mcp__18e26973-458f-4842-a655-687dfaf0ed6e__send_message (NOT create_draft — this sends immediately, no draft/review step):
   - to: ["bvajjala@gmail.com"]
   - subject: "Futures Decision Brief — {DATE}"
   - htmlBody: exact file contents read from futures-decision.html
 
 --- DONE ---
-Report: crypto Top Setups count, perps Top Setups count, futures Top Setups vs Watch List count, confirm all 3 Gmail drafts created.
+Report: crypto Top Setups count, perps Top Setups count, futures Top Setups vs Watch List count, confirm all 3 Gmail emails sent.

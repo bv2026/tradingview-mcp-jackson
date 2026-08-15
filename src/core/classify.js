@@ -113,6 +113,16 @@ function classifyFutures(fields) {
   return fields.bias === 'bullish' ? 'TRENDING_LONG' : 'TRENDING_SHORT';
 }
 
+// Ranks by |gap| descending (TWB histogram-vs-signal separation) and returns the top N.
+// Useful for crypto/crypto_perps/futures where conviction tracks gap magnitude, not just sign.
+// Skips readings with no gap (bias 'n/a') rather than sorting them to the bottom with gap=0.
+export function topNByGap(results, n = 20) {
+  return results
+    .filter(r => r.gap != null)
+    .sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap))
+    .slice(0, n);
+}
+
 // Applies computeSymbolFields to every reading in-place-ish (returns new objects), then adds
 // an instrument-specific regime/status tag. correlationClusters comes from
 // strategy.asset_notes.correlation_clusters (momentum_ark only).

@@ -321,6 +321,19 @@ These tools can return large payloads. Follow these rules to avoid context bloat
 - OHLCV capped at 500 bars, trades at 20 per request
 - Pine labels capped at 50 per study by default (pass `max_labels` to override)
 
+## Scheduled Tasks
+
+8 scheduled tasks run this project unattended: `futures-morning-routine` (7:30am daily), `decision-email-routine` (8:15am daily), `weekly-scan-routine` (7:43pm weekdays), `weekly-decision-routine` (8:39pm weekdays), `tv-top-setups-report` (8pm weekdays), `tv-mcp-archive-old-reports` (Sun 3am), `income-etf-weekly-routine` (Sat 10am), `income-etf-monthly-review-routine` (1st Sun 11am). `weekly-decision-routine-oneshot` is a ninth, manual-trigger-only duplicate for forcing a re-run without waiting on the cron (e.g. to resend after a bug fix).
+
+**Version control:** the live SKILL.md a scheduler actually executes lives at `~/.claude/scheduled-tasks/<name>/SKILL.md`, outside this repo and outside git. This repo holds the canonical, version-controlled copy at `scripts/scheduled-tasks/<name>.md` — that copy is the source of truth. After editing one, run `scripts/scheduled-tasks/sync-to-claude.ps1` (PowerShell) to push it to the live location; the scheduler never reads the repo copy directly, so an edit made only here has no effect until the sync script runs. Symlinking instead of copying was tried and rejected — this machine requires admin/Developer Mode for `New-Item -ItemType SymbolicLink`.
+
+**Shared render scripts** (all emit Gmail-safe HTML — plain `border`/`cellpadding`/`bgcolor` attributes, never CSS `background`, since Gmail's send pipeline strips `<style>` blocks, `class` attributes, and any inline `style="...background..."`, confirmed 2026-08-15):
+- `scripts/decision-classify.mjs` + `scripts/decision-render.mjs` — the 7 weekly equity decision emails. Classification is fully mechanical (setup_quality/entry_quality/eligibility from scan JSON), so both steps are scripted.
+- `scripts/daily-decision-render.mjs` — the 3 daily crypto/crypto_perps/futures decision emails. Only the render step is scripted; classification stays with the LLM (strategy rules like crypto_perps' "consolidating near highs" pattern read are genuine judgment calls, not mechanical thresholds) — the LLM writes a small decisions JSON (see decision-email-routine's SKILL.md for the schema) instead of hand-typing HTML, and this script turns that into the email body.
+- `scripts/md-to-html.mjs` — generic markdown→HTML converter (headers, bold, bullets, pipe tables) for reports that are already pure markdown with no per-row color-coding need: `income-etf-weekly-routine` and `income-etf-monthly-review-routine` both save a `.md` report first, then run this to produce the email body.
+
+Retired: `ark-weekly-brief` and `weekly-equity-brief` (predecessors to the weekly-scan/decision-routine split, deleted 2026-08-15 — not on any cron, fully superseded).
+
 ## Architecture
 
 ```

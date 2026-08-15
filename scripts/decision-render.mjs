@@ -43,9 +43,28 @@ function clusterOf(symbol) {
   return null;
 }
 
-const TD = 'border:1px solid #ccc;padding:4px 8px';
-const TH = 'border:1px solid #ccc;padding:4px 8px;background:#f5f5f5';
-const TABLE = 'border-collapse:collapse;width:100%;font-size:13px';
+// Gmail's send pipeline strips <style> blocks, class attributes, and any
+// inline style="..." containing "background" entirely (confirmed empirically
+// 2026-08-15 — a <style>-block + class="rpt" version arrived with zero table
+// styling, no borders, no row colors). Plain HTML attributes (border,
+// cellpadding, bgcolor) are NOT CSS and survive Gmail's sanitizer, so table
+// structure/coloring is built entirely from attributes instead of style=.
+// This is also far more compact than repeating a style string on every cell.
+const TABLE_OPEN = '<table border="1" cellpadding="4" cellspacing="0" bordercolor="#cccccc" style="border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:13px">';
+function rowBg(e, isFail) {
+  if (isFail) return null;
+  if (e.qualification === 'ready') return '#e8f5e9';
+  if (e.qualification === 'ready_norr') return '#e3f2fd';
+  if (e.qualification === 'extended_continuation') return '#e8eaf6';
+  if (e.qualification === 'watch_extended') return '#fff8e1';
+  if (e.qualification === 'watch_early') return '#fce4ec';
+  return null;
+}
+function tr(e, isFail) {
+  const bg = rowBg(e, isFail);
+  return bg ? `<tr bgcolor="${bg}">` : '<tr>';
+}
+const HEADER_TR = '<tr bgcolor="#f5f5f5">';
 
 function noteFor(e, isFail) {
   if (isFail) return e.reason;
@@ -57,22 +76,21 @@ function noteFor(e, isFail) {
   if (e.qualification === 'watch_low_rr') return 'Pass — Low R:R';
   return 'Pass — Unclear NW';
 }
-function rowColor(e, isFail) {
-  if (isFail) return '';
-  if (e.qualification === 'ready') return 'background:#e8f5e9';
-  if (e.qualification === 'ready_norr') return 'background:#e3f2fd';
-  if (e.qualification === 'extended_continuation') return 'background:#e8eaf6';
-  if (e.qualification === 'watch_extended') return 'background:#fff8e1';
-  if (e.qualification === 'watch_early') return 'background:#fce4ec';
-  return '';
-}
 function watchReasonText(e) {
   if (e.qualification === 'watch_extended') return 'NW extended — wait for pullback';
   if (e.qualification === 'watch_early') return 'NW early — base-build, wait for re-entry into band';
   if (e.qualification === 'watch_low_rr') return `low R:R (${e.rr ?? 'n/a'})`;
   return 'NW position unclear';
 }
-function convictionNote(e) {
+// Short form of watchReasonText for table cells — full sentence lives once in the
+// legend above the table instead of being repeated on every row.
+function watchReasonShort(e) {
+  if (e.qualification === 'watch_extended') return 'Extended';
+  if (e.qualification === 'watch_early') return 'Early';
+  if (e.qualification === 'watch_low_rr') return `Low R:R (${e.rr ?? 'n/a'})`;
+  return 'Unclear';
+}
+function convictionTags(e) {
   const notes = [];
   if (e.osc?.DIVERGENCES === 'Bullish') notes.push('bullish OSC divergence');
   const mf = parseFloat(e.osc?.['MONEY FLOW']);
@@ -80,6 +98,10 @@ function convictionNote(e) {
   const sq = parseFloat(e.so?.SQUEEZE);
   if (!Number.isNaN(sq) && sq > 10) notes.push(`squeeze ${e.so.SQUEEZE}`);
   if (e.pac?.['P&D ZONES'] === 'Within Discount') notes.push('within discount zone');
+  return notes;
+}
+function convictionNote(e) {
+  const notes = convictionTags(e);
   return notes.length ? ` (${notes.join(', ')})` : '';
 }
 
@@ -105,24 +127,27 @@ const bannerHtml = actionableCount
 
 function topSetupsTable(list, cols, extraCol) {
   if (!list.length) return '<p><em>No actionable setups this cycle.</em></p>';
-  const header = `<tr><th style="${TH}">RANK</th><th style="${TH}">SYMBOL</th><th style="${TH}">S&O RATING</th><th style="${TH}">SIGNAL</th><th style="${TH}">PAC</th><th style="${TH}">OSC DIV</th><th style="${TH}">NW</th><th style="${TH}">R:R</th><th style="${TH}">SCORE</th><th style="${TH}">STOP</th><th style="${TH}">TP1</th>${extraCol ? `<th style="${TH}">${extraCol}</th>` : ''}<th style="${TH}">ACTION</th></tr>`;
+  const header = `${HEADER_TR}<th>RANK</th><th>SYMBOL</th><th>S&O RATING</th><th>SIGNAL</th><th>PAC</th><th>OSC DIV</th><th>NW</th><th>R:R</th><th>SCORE</th><th>STOP</th><th>TP1</th>${extraCol ? `<th>${extraCol}</th>` : ''}<th>ACTION</th></tr>`;
   const rows = list.map((e, i) => {
     const action = e.qualification === 'extended_continuation' ? 'Trend cont. — 50% size' : e.qualification === 'ready_norr' ? 'Enter long — confirm R:R' : 'Enter long';
-    return `<tr style="${rowColor(e, false)}"><td style="${TD}">${i + 1}</td><td style="${TD}">${e.symbol}</td><td style="${TD}">${e.so?.RATING ?? '—'}</td><td style="${TD}">${e.so?.SIGNAL ?? '—'}</td><td style="${TD}">${e.pac?.STRUCTURE ?? '—'}</td><td style="${TD}">${e.osc?.DIVERGENCES ?? '—'}</td><td style="${TD}">${e.nw_position ?? '—'}</td><td style="${TD}">${e.rr ?? '—'}</td><td style="${TD}">${e.score}</td><td style="${TD}">${e.nw_lower ?? '—'}</td><td style="${TD}">${e.nw_upper ?? '—'}</td>${extraCol ? `<td style="${TD}">${clusterOf(e.symbol) ?? '—'}</td>` : ''}<td style="${TD}">${action}</td></tr>`;
+    return `${tr(e, false)}<td>${i + 1}</td><td>${e.symbol}</td><td>${e.so?.RATING ?? '—'}</td><td>${e.so?.SIGNAL ?? '—'}</td><td>${e.pac?.STRUCTURE ?? '—'}</td><td>${e.osc?.DIVERGENCES ?? '—'}</td><td>${e.nw_position ?? '—'}</td><td>${e.rr ?? '—'}</td><td>${e.score}</td><td>${e.nw_lower ?? '—'}</td><td>${e.nw_upper ?? '—'}</td>${extraCol ? `<td>${clusterOf(e.symbol) ?? '—'}</td>` : ''}<td>${action}</td></tr>`;
   }).join('\n');
-  return `<table style="${TABLE}">${header}${rows}</table>`;
+  return `${TABLE_OPEN}${header}${rows}</table>`;
 }
 
+const WATCH_LEGEND = '<p style="font-size:12px;color:#666">Extended = NW above upper band, wait for pullback · Early = NW below lower band, base-building, wait for re-entry · Low R:R = qualifies but reward:risk is below the 2.0 threshold</p>';
 function watchListHtml(list) {
   if (!list.length) return '<p><em>No watch-list symbols.</em></p>';
-  return '<ul>' + list.map(e => `<li><strong>${e.symbol}</strong> — score ${e.score}, ${watchReasonText(e)}${convictionNote(e)}</li>`).join('\n') + '</ul>';
+  const header = `${HEADER_TR}<th>SYMBOL</th><th>SCORE</th><th>NW</th><th>STATUS</th><th>NOTES</th></tr>`;
+  const rows = list.map(e => `${tr(e, false)}<td><strong>${e.symbol}</strong></td><td>${e.score}</td><td>${e.nw_position ?? '—'}</td><td>${watchReasonShort(e)}</td><td>${convictionTags(e).join(', ') || '—'}</td></tr>`).join('\n');
+  return `${WATCH_LEGEND}${TABLE_OPEN}${header}${rows}</table>`;
 }
 
 function allSymbolsTable(passers, fails) {
-  const header = `<tr><th style="${TH}">SYMBOL</th><th style="${TH}">S&O RATING</th><th style="${TH}">SIGNAL</th><th style="${TH}">PAC STRUCTURE</th><th style="${TH}">NW</th><th style="${TH}">SCORE</th><th style="${TH}">NOTE</th></tr>`;
-  const passRows = passers.map(e => `<tr style="${rowColor(e, false)}"><td style="${TD}">${e.symbol}</td><td style="${TD}">${e.so?.RATING ?? '—'}</td><td style="${TD}">${e.so?.SIGNAL ?? '—'}</td><td style="${TD}">${e.pac?.STRUCTURE ?? '—'}</td><td style="${TD}">${e.nw_position ?? '—'}</td><td style="${TD}">${e.score}</td><td style="${TD}">${noteFor(e, false)}</td></tr>`);
-  const failRows = fails.map(e => `<tr><td style="${TD}">${e.symbol}</td><td style="${TD}">${e.so?.RATING ?? '—'}</td><td style="${TD}">${e.so?.SIGNAL ?? '—'}</td><td style="${TD}">${e.pac?.STRUCTURE ?? '—'}</td><td style="${TD}">—</td><td style="${TD}">${e.score}</td><td style="${TD}">${noteFor(e, true)}</td></tr>`);
-  return `<table style="${TABLE}">${header}${passRows.join('\n')}${failRows.join('\n')}</table>`;
+  const header = `${HEADER_TR}<th>SYMBOL</th><th>S&O RATING</th><th>SIGNAL</th><th>PAC STRUCTURE</th><th>NW</th><th>SCORE</th><th>NOTE</th></tr>`;
+  const passRows = passers.map(e => `${tr(e, false)}<td>${e.symbol}</td><td>${e.so?.RATING ?? '—'}</td><td>${e.so?.SIGNAL ?? '—'}</td><td>${e.pac?.STRUCTURE ?? '—'}</td><td>${e.nw_position ?? '—'}</td><td>${e.score}</td><td>${noteFor(e, false)}</td></tr>`);
+  const failRows = fails.map(e => `<tr><td>${e.symbol}</td><td>${e.so?.RATING ?? '—'}</td><td>${e.so?.SIGNAL ?? '—'}</td><td>${e.pac?.STRUCTURE ?? '—'}</td><td>—</td><td>${e.score}</td><td>${noteFor(e, true)}</td></tr>`);
+  return `${TABLE_OPEN}${header}${passRows.join('\n')}${failRows.join('\n')}</table>`;
 }
 
 function scanSummaryBullets(extra) {
@@ -179,7 +204,7 @@ function thematicStocksEmail() {
   const themeBlocks = Object.entries(byTheme).map(([theme, items]) => {
     const bull = items.filter(i => i.so?.RATING?.includes('Bullish')).length;
     const bear = items.filter(i => i.so?.RATING?.includes('Bearish')).length;
-    const header = `<tr><th style="${TH}">SYMBOL</th><th style="${TH}">SUB-GROUP</th><th style="${TH}">S&O RATING</th><th style="${TH}">SIGNAL</th><th style="${TH}">PAC STRUCTURE</th><th style="${TH}">OSC DIV</th><th style="${TH}">NW</th><th style="${TH}">SCORE</th><th style="${TH}">ACTION</th></tr>`;
+    const header = `${HEADER_TR}<th>SYMBOL</th><th>SUB-GROUP</th><th>S&O RATING</th><th>SIGNAL</th><th>PAC STRUCTURE</th><th>OSC DIV</th><th>NW</th><th>SCORE</th><th>ACTION</th></tr>`;
     const sorted = [...items].sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
     const rows = sorted.map(e => {
       const isFail = e.eligibility === 'REJECT';
@@ -188,9 +213,9 @@ function thematicStocksEmail() {
         : e.qualification === 'ready_norr' ? 'Enter long — confirm R:R'
         : e.qualification === 'extended_continuation' ? 'Trend cont. — 50% size'
         : 'Watch';
-      return `<tr style="${rowColor(e, isFail)}"><td style="${TD}">${e.symbol}</td><td style="${TD}">${e.sub_group ?? '—'}</td><td style="${TD}">${e.so?.RATING ?? '—'}</td><td style="${TD}">${e.so?.SIGNAL ?? '—'}</td><td style="${TD}">${e.pac?.STRUCTURE ?? '—'}</td><td style="${TD}">${e.osc?.DIVERGENCES ?? '—'}</td><td style="${TD}">${e.nw_position ?? '—'}</td><td style="${TD}">${e.score}</td><td style="${TD}">${action}</td></tr>`;
+      return `${tr(e, isFail)}<td>${e.symbol}</td><td>${e.sub_group ?? '—'}</td><td>${e.so?.RATING ?? '—'}</td><td>${e.so?.SIGNAL ?? '—'}</td><td>${e.pac?.STRUCTURE ?? '—'}</td><td>${e.osc?.DIVERGENCES ?? '—'}</td><td>${e.nw_position ?? '—'}</td><td>${e.score}</td><td>${action}</td></tr>`;
     }).join('\n');
-    return `<h3>${theme} — ${bull} bullish / ${bear} bearish / ${items.length} total</h3><table style="${TABLE}">${header}${rows}</table>`;
+    return `<h3>${theme} — ${bull} bullish / ${bear} bearish / ${items.length} total</h3>${TABLE_OPEN}${header}${rows}</table>`;
   }).join('\n');
 
   const thematicActionable = [
@@ -201,7 +226,7 @@ function thematicStocksEmail() {
   const thematicWatch = allPassers.filter(e => !['ready', 'ready_norr', 'extended_continuation'].includes(e.qualification));
   return `<h2>Top Picks Across All Themes</h2>
 ${bannerHtml}
-${topSetupsTable(thematicActionable, null, null).replace('<th style="' + TH + '">SYMBOL</th>', `<th style="${TH}">SYMBOL</th><th style="${TH}">THEME</th>`)}
+${topSetupsTable(thematicActionable, null, null).replace('<th>SYMBOL</th>', '<th>SYMBOL</th><th>THEME</th>')}
 <h2>Theme Breakdown</h2>
 ${themeBlocks}
 <h2>Watch List</h2>
@@ -222,11 +247,11 @@ function thematicEtfsEmail() {
     const fading = sorted.filter(i => i.eligibility === 'REJECT').slice(0, 3).map(i => i.symbol).join(', ') || '—';
     const bullCount = items.filter(i => i.so?.RATING?.includes('Bullish')).length;
     const bias = bullCount > items.length / 2 ? 'Bullish tilt' : 'Mixed/bearish tilt';
-    return `<tr><td style="${TD}">${theme}</td><td style="${TD}">${bias}</td><td style="${TD}">${leading}</td><td style="${TD}">${fading}</td></tr>`;
+    return `<tr><td>${theme}</td><td>${bias}</td><td>${leading}</td><td>${fading}</td></tr>`;
   }).join('\n');
 
   const avoidList = [...d.fails].slice(0, 10);
-  const avoidRows = avoidList.map(e => `<tr><td style="${TD}">${e.symbol}</td><td style="${TD}">${e.theme ?? '—'}</td><td style="${TD}">${e.reason}</td></tr>`).join('\n');
+  const avoidRows = avoidList.map(e => `<tr><td>${e.symbol}</td><td>${e.theme ?? '—'}</td><td>${e.reason}</td></tr>`).join('\n');
 
   const etfActionable = [
     ...d.buckets.ready,
@@ -236,13 +261,13 @@ function thematicEtfsEmail() {
   const etfWatch = allPassers.filter(e => !['ready', 'ready_norr', 'extended_continuation'].includes(e.qualification));
   return `<h2>ETF Rotation Summary</h2>
 ${bannerHtml}
-<table style="${TABLE}"><tr><th style="${TH}">ETF Theme</th><th style="${TH}">Bias</th><th style="${TH}">Leading ETFs</th><th style="${TH}">Lagging ETFs</th></tr>${rotationRows}</table>
+${TABLE_OPEN}${HEADER_TR}<th>ETF Theme</th><th>Bias</th><th>Leading ETFs</th><th>Lagging ETFs</th></tr>${rotationRows}</table>
 <h2>Top ETF Picks</h2>
 ${topSetupsTable(etfActionable, null, null)}
 <h2>Watch List</h2>
 ${watchListHtml(etfWatch)}
 <h2>Avoid</h2>
-<table style="${TABLE}"><tr><th style="${TH}">SYMBOL</th><th style="${TH}">THEME</th><th style="${TH}">REASON</th></tr>${avoidRows}</table>
+${TABLE_OPEN}${HEADER_TR}<th>SYMBOL</th><th>THEME</th><th>REASON</th></tr>${avoidRows}</table>
 <h2>Scan Summary + Cross-Theme Read</h2>
 ${scanSummaryBullets(`Themes covered: ${Object.keys(byTheme).length}`)}`;
 }
