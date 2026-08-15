@@ -244,6 +244,13 @@ function chunk(arr, size) {
  * TREND STRENGTH always renders as an emoji + percentage (e.g. "❄️  47.86%"),
  * so if that pattern lands in the TRACER slot we know the shift occurred.
  */
+// Extracted for unit testing — see the call site's comment (NW-check loop) for the
+// 2026-08-15 sp_ndx incident (flat 50000ms budget silently truncated NW checks past ~21
+// symbols) that motivated scaling this to the actual passing-symbol count.
+export function computeNwTimeoutMs(passingCount) {
+  return 3000 + passingCount * 3000;
+}
+
 function fixSoColumnShift(so) {
   const tracer = so['TRACER'] || '';
   if (tracer.includes('%')) {
@@ -255,20 +262,27 @@ function fixSoColumnShift(so) {
   return so;
 }
 
+// Returns { map, notFoundCount }. TradingView renders "str not found" in the ticker cell
+// when a pushed symbol can't be resolved (e.g. a typo'd ticker in the source watchlist) —
+// the placeholder text doesn't say which of the batch's tickers failed, only that one did,
+// so notFoundCount is a count, not a symbol list. Callers cross-reference it against
+// expectedTickers vs. what actually landed in the map to attribute the failure.
 function parseTableRows(rows) {
-  if (!rows || rows.length < 2) return {};
+  if (!rows || rows.length < 2) return { map: {}, notFoundCount: 0 };
   const headers = rows[0].split('|').map(h => h.trim());
   const map = {};
+  let notFoundCount = 0;
   for (const row of rows.slice(1)) {
     const cells = row.split('|').map(c => c.trim());
     // First cell is "TICKER • TF" e.g. "SNDK • D"
     const ticker = cells[0].split('•')[0].trim();
-    if (!ticker || ticker.toLowerCase().includes('not found')) continue;
+    if (!ticker) continue;
+    if (ticker.toLowerCase().includes('not found')) { notFoundCount++; continue; }
     const entry = {};
     headers.forEach((h, i) => { if (i > 0 && h) entry[h] = cells[i] || ''; });
     map[ticker] = entry;
   }
-  return map;
+  return { map, notFoundCount };
 }
 
 /**
@@ -625,6 +639,19 @@ async function runScanInternal({ instrument_type = 'stwits_lg', timeframe = '1D'
   // 5. Batch scan
   const batches = chunk(symbols, 10);
   const allRows = {};
+  // Symbols TradingView reported "str not found" for (see parseTableRows) — best-effort
+  // attribution via set-difference against expectedTickers, not a guarantee, but reliable
+  // when (as is typical) only one bad ticker is in a batch.
+  const unresolvedSymbols = new Set();
+  // Set once S&O/OSC enters TradingView's own error state mid-scan (indicators.js's
+  // setInputsFromInfo silently no-ops future ticker pushes to an indicator once
+  // study.hasError() is true, to avoid corrupting it further — but that means every batch
+  // after the one that triggered it never actually receives its real tickers, which looks
+  // identical to a data-availability gap unless surfaced explicitly). Confirmed 2026-08-15:
+  // a single unresolvable ticker (a typo'd symbol in the source watchlist CSV) in batch 1
+  // put S&O/OSC into this state, and batches 2-3 (all valid tickers) never recovered for
+  // the rest of the run even though PAC (no such guard) recovered immediately.
+  let indicatorErrorWarning = null;
 
   let restoreResult;
   try {
@@ -645,13 +672,22 @@ async function runScanInternal({ instrument_type = 'stwits_lg', timeframe = '1D'
     // Use setInputsFromInfo for S&O/OSC — it builds the input array from getInputsInfo()
     // defvals (safe) and applies only the ticker overrides.
     await indicators.setInputs({ entity_id: pacStudy.id, inputs: inputsStr });
-    await indicators.setInputsFromInfo({ entity_id: soStudy.id,  overrides: inputs });
-    await indicators.setInputsFromInfo({ entity_id: oscStudy.id, overrides: inputs });
+    const soPush  = await indicators.setInputsFromInfo({ entity_id: soStudy.id,  overrides: inputs });
+    const oscPush = await indicators.setInputsFromInfo({ entity_id: oscStudy.id, overrides: inputs });
+    if ((soPush?.skipped || oscPush?.skipped) && !indicatorErrorWarning) {
+      const which = [soPush?.skipped && 'S&O', oscPush?.skipped && 'OSC'].filter(Boolean).join('/');
+      indicatorErrorWarning =
+        `${which} entered an error state during batch ${bi + 1} (TradingView study.hasError() — ` +
+        `commonly triggered by an unresolvable ticker in the watchlist) and stopped accepting new ` +
+        `tickers for the rest of this scan. so_status/osc_status: UNVERIFIED from here on reflects ` +
+        `this, not a genuine data gap — re-add ${which} in TradingView and re-run to get real data.`;
+    }
 
     // Poll until the S&O table shows at least one expected ticker (or timeout)
     const expectedTickers = new Set(batch);
     let soMap = {}, pacMap = {}, oscMap = {};
     let soRows = null, pacRows = null, oscRows = null;
+    let soNotFound = 0, pacNotFound = 0, oscNotFound = 0;
 
     for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt++) {
       await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
@@ -665,13 +701,32 @@ async function runScanInternal({ instrument_type = 'stwits_lg', timeframe = '1D'
       soRows  = soResult.studies?.[0]?.tables?.[0]?.rows;
       pacRows = pacResult.studies?.[0]?.tables?.[0]?.rows;
       oscRows = oscResult.studies?.[0]?.tables?.[0]?.rows;
-      soMap  = parseTableRows(soRows);
-      pacMap = parseTableRows(pacRows);
-      oscMap = parseTableRows(oscRows);
+      ({ map: soMap,  notFoundCount: soNotFound }  = parseTableRows(soRows));
+      ({ map: pacMap, notFoundCount: pacNotFound } = parseTableRows(pacRows));
+      ({ map: oscMap, notFoundCount: oscNotFound } = parseTableRows(oscRows));
 
-      // Use PAC as readiness indicator (most reliable — S&O/OSC may load slower)
-      const loaded = Object.keys(pacMap).filter(t => expectedTickers.has(t) && pacMap[t]['STRUCTURE']);
-      if (loaded.length > 0) break;
+      // PAC populates first (most reliable/fastest study), but breaking as soon as PAC alone
+      // is ready races S&O/OSC — they reliably load slower, especially on a batch's first
+      // poll right after fresh tickers are pushed. Confirmed 2026-08-15: this produced
+      // so_status/osc_status UNVERIFIED for an entire r2k batch (the scan's first 10 symbols)
+      // while pac_status came back PRESENT — not a data-availability limit on those symbols,
+      // just the poll quitting before S&O/OSC finished. Require all three before breaking;
+      // POLL_MAX_ATTEMPTS*POLL_INTERVAL_MS (~12s) leaves ample headroom since PAC alone
+      // typically clears in 1 attempt.
+      const pacLoaded = Object.keys(pacMap).filter(t => expectedTickers.has(t) && pacMap[t]['STRUCTURE']);
+      const soLoaded  = Object.keys(soMap).filter(t => expectedTickers.has(t) && soMap[t]['RATING']);
+      const oscLoaded = Object.keys(oscMap).filter(t => expectedTickers.has(t) && oscMap[t]['RATING']);
+      if (pacLoaded.length > 0 && soLoaded.length > 0 && oscLoaded.length > 0) break;
+    }
+
+    // Attribute "str not found" rows to specific symbols via set-difference: whichever
+    // expected tickers never landed in PAC's map, when PAC itself did report >=1 not-found
+    // row, are the most likely culprits (PAC is the fastest/most-reliable study and has no
+    // error-state guard, so its map is the cleanest signal of which tickers actually resolved).
+    if (pacNotFound > 0) {
+      for (const sym of batch) {
+        if (!pacMap[sym]) unresolvedSymbols.add(sym);
+      }
     }
 
     const capturedAt = new Date().toISOString();
@@ -679,6 +734,7 @@ async function runScanInternal({ instrument_type = 'stwits_lg', timeframe = '1D'
       const so  = fixSoColumnShift({ ...(soMap[sym]  || {}) });
       const pac = pacMap[sym] || {};
       const osc = oscMap[sym] || {};
+      const notFound = unresolvedSymbols.has(sym);
       allRows[sym] = {
         symbol:    sym,
         full_symbol: metaMap[sym]?.full_symbol ?? null,
@@ -695,6 +751,11 @@ async function runScanInternal({ instrument_type = 'stwits_lg', timeframe = '1D'
         so_status:  studyAvailability(soMap, soRows, sym),
         pac_status: studyAvailability(pacMap, pacRows, sym),
         osc_status: studyAvailability(oscMap, oscRows, sym),
+        // Additive, not a replacement for the eligibility/status enums lux-scan-contract.js
+        // validates (so downstream consumers that don't know this field yet aren't broken) —
+        // but it's the reliable signal that this row's INSUFFICIENT/UNVERIFIED state means
+        // "TradingView couldn't resolve the ticker" specifically, not generic missing data.
+        ...(notFound ? { resolution_error: true, resolution_error_reason: 'TradingView reported "str not found" for this symbol — check the watchlist source for a typo\'d or delisted ticker.' } : {}),
         ...scoreSymbol(so, pac, osc, { so_status: studyAvailability(soMap, soRows, sym), pac_status: studyAvailability(pacMap, pacRows, sym), osc_status: studyAvailability(oscMap, oscRows, sym) }),
       };
     }
@@ -713,6 +774,15 @@ async function runScanInternal({ instrument_type = 'stwits_lg', timeframe = '1D'
     .slice(0, 30);
   let nwPassError = null;
   if (passingSymbols.length > 0) {
+    // Per-symbol cost here is chart.setSymbol() (includes its own waitForChartReady) + a
+    // fixed 800ms settle + readNwEnvelope() — observed 2026-08-15 (sp_ndx, 29 REVIEW symbols)
+    // at ~2.4s/symbol, meaning the old flat 50000ms budget silently truncated the NW check
+    // partway through any scan with ~21+ passers: symbols before the cutoff (sorted by
+    // rank_score) kept real nw_position data, everything after came back null — indistinguishable
+    // from a genuine per-symbol failure unless you compare against the sort order. Since
+    // passingSymbols is already capped at 30 (see .slice above), scale the budget to that
+    // worst case with real margin instead of using a number sized for a smaller run.
+    const nwTimeoutMs = computeNwTimeoutMs(passingSymbols.length);
     try {
       await Promise.race([
         (async () => {
@@ -731,7 +801,7 @@ async function runScanInternal({ instrument_type = 'stwits_lg', timeframe = '1D'
             row.nw_raw_values = nw.nw_raw_values;
           }
         })(),
-        timeoutReject(50000),
+        timeoutReject(nwTimeoutMs),
       ]);
     } catch (e) {
       nwPassError = e.message;
@@ -782,6 +852,8 @@ async function runScanInternal({ instrument_type = 'stwits_lg', timeframe = '1D'
     symbol_count: sorted.length,
     batch_count: batches.length,
     restore_debug: restoreResult,
+    unresolved_symbols: unresolvedSymbols.size ? [...unresolvedSymbols] : undefined,
+    indicator_error_warning: indicatorErrorWarning || undefined,
     nw_pass_symbols: passingSymbols.length,
     nw_pass_error: nwPassError || undefined,
     nw_data_warning: nwDataWarning,

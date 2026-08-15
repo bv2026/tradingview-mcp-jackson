@@ -96,7 +96,18 @@ Use `scripts/scan-verify.mjs` (already allowlisted in this project's `.claude/se
 hand-rolled `node -e` or PowerShell checks — those aren't allowlisted and will stall the run on an approval
 prompt nobody is there to answer:
   `node scripts/scan-verify.mjs reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-momentum_stocks.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-momentum_etf.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-sp_ndx.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-r2k.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-momentum_ark.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-thematic_stocks.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-thematic_etfs.json`
-It prints one OK/MISSING/ERROR line per file and exits non-zero if anything failed.
+
+Prints one line per file: `OK` (structurally and semantically healthy), `WARN` (a narrower/heuristic
+data-quality signal — e.g. a specific symbol TradingView couldn't resolve, or a batch-wipeout/NW-check-
+truncation pattern — printed but does NOT fail the exit code), `MISSING`, or `ERROR`. Exits non-zero only
+for MISSING/ERROR/structurally-invalid files or a confirmed `indicator_error_warning` (S&O/OSC entered
+TradingView's own error state mid-scan — the data downstream of that point is not real, not just
+incomplete). Added 2026-08-15 after an r2k scan shipped with 10 symbols' worth of blank so/pac/osc data
+that was initially misdiagnosed as an "illiquid small-cap quirk" — see `checkScanHealth()` in
+`src/core/lux-scan-contract.js` for the full incident writeup and detection logic. **Read every WARN line
+in the output, not just the exit code** — these are exactly the kind of silent-corruption signal that
+led to that incident, and decision-classify.mjs / the LLM's trade-decision reasoning downstream has no
+other way to know about them.
 
 Likewise, if a temp-file cleanup step needs confirming, use the already-allowlisted POSIX-style
 `Bash(rm -f /c/Windows/Temp/*)` form (paths starting `/c/...`), not a Windows-style `C:/Windows/Temp/...`

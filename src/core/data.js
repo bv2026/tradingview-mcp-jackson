@@ -2,6 +2,7 @@
  * Core data access logic.
  */
 import { evaluate, evaluateAsync, KNOWN_PATHS } from '../connection.js';
+import * as chart from './chart.js';
 
 const MAX_OHLCV_BARS = 500;
 const MAX_TRADES = 20;
@@ -242,12 +243,13 @@ export async function getEquity() {
   return { success: true, data_points: equity?.data?.length || 0, source: equity?.source, data: equity?.data || [], equity_summary: equity?.equity_summary, note: equity?.note, error: equity?.error };
 }
 
-export async function getQuote({ symbol } = {}) {
+// Reads whatever symbol is CURRENTLY loaded on the chart — does not switch anything.
+async function readCurrentQuote() {
   const data = await evaluate(`
     (function() {
       var api = ${CHART_API};
-      var sym = '${symbol || ''}';
-      if (!sym) { try { sym = api.symbol(); } catch(e) {} }
+      var sym = '';
+      try { sym = api.symbol(); } catch(e) {}
       if (!sym) { try { sym = api.symbolExt().symbol; } catch(e) {} }
       var ext = {};
       try { ext = api.symbolExt() || {}; } catch(e) {}
@@ -274,7 +276,36 @@ export async function getQuote({ symbol } = {}) {
     })()
   `);
   if (!data || (!data.last && !data.close)) throw new Error('Could not retrieve quote. The chart may still be loading.');
-  return { success: true, ...data };
+  return data;
+}
+
+const bareSymbol = (s) => String(s || '').includes(':') ? String(s).split(':').pop().toUpperCase() : String(s || '').toUpperCase();
+
+// Fixed 2026-08-15: this used to accept a `symbol` param but never actually switch the
+// chart to it — it silently read whatever was already loaded and just relabeled the
+// response's `symbol` field with the caller's input, so a mismatched request (e.g. calling
+// quote_get for a symbol other than the current chart) returned a plausible-looking but
+// entirely wrong quote (confirmed live: asking for MXL and AAPL both returned identical
+// stale Dell Technologies data with `symbol` echoing back whatever was requested). Now
+// actually switches when the requested symbol differs from the current one, reads the
+// quote, and switches back — read-only from the caller's perspective, at the cost of two
+// chart switches' worth of latency when `symbol` is provided and different.
+export async function getQuote({ symbol } = {}) {
+  if (!symbol) return { success: true, ...(await readCurrentQuote()) };
+
+  const before = await chart.getState();
+  const originalSymbol = before.symbol;
+  const needsSwitch = bareSymbol(symbol) !== bareSymbol(originalSymbol);
+
+  if (!needsSwitch) return { success: true, ...(await readCurrentQuote()) };
+
+  try {
+    await chart.setSymbol({ symbol });
+    const data = await readCurrentQuote();
+    return { success: true, ...data };
+  } finally {
+    if (originalSymbol) await chart.setSymbol({ symbol: originalSymbol }).catch(() => {});
+  }
 }
 
 export async function getDepth() {
