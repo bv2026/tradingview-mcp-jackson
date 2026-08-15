@@ -210,14 +210,13 @@ function main() {
   const stocksCsv = join(csvDir, 'Watchlist_Stocks.csv');
   const etfsCsv   = join(csvDir, 'Watchlist_ETFs.csv');
   const arkCsv    = join(csvDir, 'Watchlist_ARK-1.csv');
-  const arkMetaCsv = join(csvDir, 'ARK Consolidated Watchlist - US.csv');
 
   if (!existsSync(stocksCsv)) throw new Error('Missing: ' + stocksCsv);
   if (!existsSync(etfsCsv))   throw new Error('Missing: ' + etfsCsv);
 
   const stocksRows = parseCsv(stocksCsv).filter(r => !THEMATIC_STOCK_LUX_INVALID_SYMBOLS.has(r.symbol));
   const etfsRows   = parseCsv(etfsCsv).filter(r => !THEMATIC_ETF_LUX_INVALID_SYMBOLS.has(r.symbol));
-  const arkRows    = existsSync(arkCsv) ? parseArkCsv(arkCsv, arkMetaCsv) : null;
+  const arkRows    = existsSync(arkCsv) ? parseArkCsv(arkCsv) : null;
   const generated  = new Date().toISOString().slice(0, 10);
 
   // Group counts for console summary
