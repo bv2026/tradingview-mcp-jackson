@@ -59,7 +59,10 @@ Write to `C:\Windows\Temp\crypto_decisions.json` (scratch file, not the reports 
   "top_setups": [
     { "symbol": "BTC-USD", "side": "Long", "entry": "...", "stop": "...", "tp1": "...", "notes": "..." }
   ],
-  "watch_list": ["ETH-USD — reason...", "..."],
+  "watch_list_columns": ["Symbol", "NW Position", "Note"],
+  "watch_list": [
+    { "symbol": "ETH-USD", "bias": "bearish", "col2": "early", "col3": "..." }
+  ],
   "overall_read": ["bullet 1", "bullet 2"],
   "all_symbols_columns": ["Symbol", "TWB Gap", "NW Position", "S/R Break", "Bias", "Watch"],
   "all_symbols": [
@@ -70,11 +73,16 @@ Write to `C:\Windows\Temp\crypto_decisions.json` (scratch file, not the reports 
 Every symbol from crypto.md goes in `all_symbols` (col2..col6 map positionally to
 `all_symbols_columns[1..]`). `top_setups` is only the symbols that actually qualify as trade
 decisions — never leave `symbol` or `side` blank on a row that's included. Side is always "Long"
-for this type (spot, long only) — the script colors Long rows green automatically. Every
-`all_symbols` row must also carry a top-level `bias` field ("bullish"/"bearish"/"neutral", matching
+for this type (spot, long only) — the script colors Long rows green automatically. `watch_list` and
+`all_symbols` rows must both carry a top-level `bias` field ("bullish"/"bearish"/"neutral", matching
 the symbol's TWB bias) — this drives row shading (bullish = green, bearish = red) independently of
-whatever text appears in the visible Bias column, and is required, not optional — confirmed
-2026-08-15 that leaving it out renders a flat, uncolored table.
+whatever text appears in a visible column, and is required, not optional — confirmed 2026-08-15
+that leaving it out renders a flat, uncolored table. `watch_list` is a table now, not a bulleted
+list — keep each row's `col2`/`col3`/... short (a phrase, not a full sentence); put the fuller
+reasoning across the row's columns rather than one long paragraph per symbol, which is what made
+the old bulleted version repetitive and hard to scan (confirmed 2026-08-15, user feedback).
+`overall_read` stays a flat array of short strings — it's cross-market prose, not per-symbol, so it
+renders as a plain single-column table with no row coloring.
 
 Then run:
   `node C:\work\tradingview-mcp-jackson\scripts\daily-decision-render.mjs C:\Windows\Temp\crypto_decisions.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/crypto-decision.html {DATE}`
@@ -110,7 +118,10 @@ Write to `C:\Windows\Temp\crypto_perps_decisions.json`:
   "top_setups": [
     { "symbol": "BTC-PERP", "side": "Long", "entry": "...", "stop": "...", "tp1": "...", "notes": "..." }
   ],
-  "watch_list": ["ETH-PERP — reason...", "..."],
+  "watch_list_columns": ["Symbol", "Candidate", "NW Position", "Note"],
+  "watch_list": [
+    { "symbol": "ETH-PERP", "bias": "bearish", "col2": "Short", "col3": "early", "col4": "..." }
+  ],
   "overall_read": ["bullet 1", "bullet 2"],
   "all_symbols_columns": ["Symbol", "TWB Gap", "NW Position", "Bias", "Watch"],
   "all_symbols": [
@@ -119,10 +130,13 @@ Write to `C:\Windows\Temp\crypto_perps_decisions.json`:
 }
 ```
 `side` is "Long" or "Short" per symbol — the script colors Long rows green, Short rows red
-automatically. Never leave `symbol` or `side` blank on a row included in `top_setups`. Every
-`all_symbols` row must also carry a top-level `bias` field ("bullish"/"bearish"/"neutral") — this
-drives row shading the same way `side` does for top_setups; omitting it renders a flat, uncolored
-table (confirmed 2026-08-15).
+automatically. Never leave `symbol` or `side` blank on a row included in `top_setups`. `watch_list`
+and `all_symbols` rows must both carry a top-level `bias` field ("bullish"/"bearish"/"neutral") —
+this drives row shading the same way `side` does for top_setups; omitting it renders a flat,
+uncolored table (confirmed 2026-08-15). `watch_list` is a table now, not a bulleted list — keep
+each row's columns short phrases, not full sentences (confirmed 2026-08-15, user feedback: the old
+bulleted version repeated the same phrasing across rows and was hard to scan). `overall_read` stays
+a flat array of short strings, rendered as a plain single-column table with no row coloring.
 
 Then run:
   `node C:\work\tradingview-mcp-jackson\scripts\daily-decision-render.mjs C:\Windows\Temp\crypto_perps_decisions.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/crypto-perps-decision.html {DATE}`
@@ -157,7 +171,10 @@ Write to `C:\Windows\Temp\futures_decisions.json`:
   "top_setups": [
     { "market": "GC1!", "side": "Long", "entry": "...", "stop": "...", "tp1": "...", "tp2": "...", "notes": "..." }
   ],
-  "watch_list": ["CL1! — reason...", "..."],
+  "watch_list_columns": ["Market", "Candidate", "NW Position", "Note"],
+  "watch_list": [
+    { "symbol": "CL1!", "bias": "bullish", "col2": "Long", "col3": "inside", "col4": "..." }
+  ],
   "overall_read": ["bullet 1", "bullet 2"],
   "all_symbols_heading": "Combined Data",
   "all_symbols_columns": ["Market", "CT Bias", "ST", "LT", "Close", "Pivot", "R1", "TV NW", "TV Gap", "TV Watch"],
@@ -168,11 +185,15 @@ Write to `C:\Windows\Temp\futures_decisions.json`:
 ```
 `market` (or `symbol` — either key works) and `side` must never be blank on a `top_setups` row.
 Include EVERY market from ct_tv_data.json in `all_symbols`, not just the ones with trade decisions.
-`side` "Long"/"Short" drives row color automatically. Every `all_symbols` row must also carry a
-top-level `bias` field ("bullish"/"bearish"/"neutral") — for futures, derive this from `ct_bias`
-(UP→bullish, DOWN→bearish, NEUTRAL→neutral), since CT is the primary signal per
+`side` "Long"/"Short" drives row color automatically. `watch_list` and `all_symbols` rows must both
+carry a top-level `bias` field ("bullish"/"bearish"/"neutral") — for futures, derive this from
+`ct_bias` (UP→bullish, DOWN→bearish, NEUTRAL→neutral), since CT is the primary signal per
 strategy-futures.json, not from TV's bias. Omitting `bias` renders a flat, uncolored table
-(confirmed 2026-08-15).
+(confirmed 2026-08-15). `watch_list` is a table now, not a bulleted list — keep each row's columns
+short phrases, not full sentences (confirmed 2026-08-15, user feedback: the old bulleted version
+repeated the same "CT+TV agree X/bullish (Long candidate)..." phrasing across nearly every row and
+was hard to scan — splitting into columns removes that repetition). `overall_read` stays a flat
+array of short strings, rendered as a plain single-column table with no row coloring.
 
 Then run:
   `node C:\work\tradingview-mcp-jackson\scripts\daily-decision-render.mjs C:\Windows\Temp\futures_decisions.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/futures-decision.html {DATE}`

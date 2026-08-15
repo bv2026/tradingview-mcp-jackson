@@ -23,7 +23,10 @@
  *     { "symbol": "BTC-USD", "side": "Long", "entry": "...", "stop": "...", "tp1": "...",
  *       "tp2": "...", "notes": "..." }
  *   ],
- *   "watch_list": ["ETH-USD — reason...", ...],
+ *   "watch_list": [
+ *     { "symbol": "ETH-USD", "bias": "bearish", "col2": "...", "col3": "..." }
+ *   ],
+ *   "watch_list_columns": ["Symbol", "NW Position", "Note"],
  *   "overall_read": ["bullet 1", "bullet 2"],
  *   "all_symbols": [
  *     { "symbol": "BTC-USD", "bias": "bullish", "col2": "...", "col3": "...", "col4": "...", "col5": "..." }
@@ -31,12 +34,14 @@
  *   "all_symbols_columns": ["Symbol", "TWB Gap", "NW Position", "S/R Break", "Bias", "Watch"]
  * }
  * `side` (case-insensitive "long"/"short") drives top_setups row color: long = green #e8f5e9,
- * short = red #fdecea. `bias` (case-insensitive "bullish"/"bearish") drives all_symbols row
- * color the same way — this is separate from whatever text ends up in the visible bias column
- * (col2..colN), so the bias column can still say "bullish"/"bearish"/"neutral" as plain text
- * while `bias` (not rendered directly) controls the shading. Neither field is required; omitting
- * `bias` leaves a row uncolored. Futures uses a "market" key in place of "symbol" — both are
- * accepted in top_setups; all_symbols always uses "symbol".
+ * short = red #fdecea. `bias` (case-insensitive "bullish"/"bearish") drives watch_list and
+ * all_symbols row color the same way — this is separate from whatever text ends up in the
+ * visible columns (col2..colN), so a column can still say "bullish"/"bearish"/"neutral" as plain
+ * text while `bias` (not rendered directly) controls the shading. Neither field is required;
+ * omitting `bias` leaves a row uncolored. Futures uses a "market" key in place of "symbol" —
+ * both are accepted in top_setups; watch_list/all_symbols always use "symbol". `overall_read`
+ * stays a flat array of strings, rendered as an uncolored single-column table (it's cross-market
+ * prose commentary, not per-symbol data, so there's nothing to color-code).
  *
  * Usage:
  *   node daily-decision-render.mjs <decisionsJsonFile> <htmlOut> <dateStr>
@@ -81,18 +86,8 @@ function topSetupsTable(rows, hasTp2) {
   return out;
 }
 
-function watchListHtml(items) {
-  if (!items?.length) return '<p><em>No watch-list items this cycle.</em></p>';
-  return '<ul>' + items.map(i => `<li>${esc(i)}</li>`).join('') + '</ul>';
-}
-
-function overallReadHtml(items) {
-  if (!items?.length) return '';
-  return '<ul>' + items.map(i => `<li>${esc(i)}</li>`).join('') + '</ul>';
-}
-
-function allSymbolsTable(rows, columns) {
-  if (!rows?.length || !columns?.length) return '';
+function biasColoredTable(rows, columns, emptyMessage) {
+  if (!rows?.length || !columns?.length) return emptyMessage ? `<p><em>${emptyMessage}</em></p>` : '';
   const keys = ['symbol', ...Array.from({ length: columns.length - 1 }, (_, i) => `col${i + 2}`)];
   let out = `${TABLE_OPEN}${HEADER_TR}${columns.map(c => `<th>${c}</th>`).join('')}</tr>`;
   for (const r of rows) {
@@ -100,6 +95,12 @@ function allSymbolsTable(rows, columns) {
   }
   out += '</table>';
   return out;
+}
+
+function overallReadHtml(items) {
+  if (!items?.length) return '';
+  const rows = items.map(i => `<tr><td>${esc(i)}</td></tr>`).join('');
+  return `${TABLE_OPEN}${HEADER_TR}<th>Observation</th></tr>${rows}</table>`;
 }
 
 const d = JSON.parse(readFileSync(DECISIONS_FILE, 'utf8'));
@@ -111,11 +112,11 @@ const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#222;max-
 <h2>Trade Decisions</h2>
 ${topSetupsTable(d.top_setups, hasTp2)}
 <h2>Watch List</h2>
-${watchListHtml(d.watch_list)}
+${biasColoredTable(d.watch_list, d.watch_list_columns, 'No watch-list items this cycle.')}
 <h2>Overall Read</h2>
 ${overallReadHtml(d.overall_read)}
 <h2>${d.all_symbols_heading || 'All Symbols Scanned'}</h2>
-${allSymbolsTable(d.all_symbols, d.all_symbols_columns)}
+${biasColoredTable(d.all_symbols, d.all_symbols_columns)}
 </div>`;
 
 writeFileSync(HTML_OUT, html);
