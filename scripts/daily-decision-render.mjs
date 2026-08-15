@@ -26,13 +26,17 @@
  *   "watch_list": ["ETH-USD — reason...", ...],
  *   "overall_read": ["bullet 1", "bullet 2"],
  *   "all_symbols": [
- *     { "symbol": "BTC-USD", "col2": "...", "col3": "...", "col4": "...", "col5": "..." }
+ *     { "symbol": "BTC-USD", "bias": "bullish", "col2": "...", "col3": "...", "col4": "...", "col5": "..." }
  *   ],
  *   "all_symbols_columns": ["Symbol", "TWB Gap", "NW Position", "S/R Break", "Bias", "Watch"]
  * }
- * `side` (case-insensitive "long"/"short") drives row color: long = green #e8f5e9, short = red
- * #fdecea, anything else = uncolored. Futures uses a "market" key in place of "symbol" — both
- * are accepted.
+ * `side` (case-insensitive "long"/"short") drives top_setups row color: long = green #e8f5e9,
+ * short = red #fdecea. `bias` (case-insensitive "bullish"/"bearish") drives all_symbols row
+ * color the same way — this is separate from whatever text ends up in the visible bias column
+ * (col2..colN), so the bias column can still say "bullish"/"bearish"/"neutral" as plain text
+ * while `bias` (not rendered directly) controls the shading. Neither field is required; omitting
+ * `bias` leaves a row uncolored. Futures uses a "market" key in place of "symbol" — both are
+ * accepted in top_setups; all_symbols always uses "symbol".
  *
  * Usage:
  *   node daily-decision-render.mjs <decisionsJsonFile> <htmlOut> <dateStr>
@@ -52,6 +56,13 @@ function sideRowTr(side) {
   const s = (side || '').toLowerCase();
   if (s === 'long') return '<tr bgcolor="#e8f5e9">';
   if (s === 'short') return '<tr bgcolor="#fdecea">';
+  return '<tr>';
+}
+
+function biasRowTr(bias) {
+  const b = (bias || '').toLowerCase();
+  if (b === 'bullish') return '<tr bgcolor="#e8f5e9">';
+  if (b === 'bearish') return '<tr bgcolor="#fdecea">';
   return '<tr>';
 }
 
@@ -85,7 +96,7 @@ function allSymbolsTable(rows, columns) {
   const keys = ['symbol', ...Array.from({ length: columns.length - 1 }, (_, i) => `col${i + 2}`)];
   let out = `${TABLE_OPEN}${HEADER_TR}${columns.map(c => `<th>${c}</th>`).join('')}</tr>`;
   for (const r of rows) {
-    out += '<tr>' + keys.map(k => `<td>${esc(r[k])}</td>`).join('') + '</tr>';
+    out += biasRowTr(r.bias) + keys.map(k => `<td>${esc(r[k])}</td>`).join('') + '</tr>';
   }
   out += '</table>';
   return out;
