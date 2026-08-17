@@ -90,7 +90,7 @@ Read `C:\Windows\Temp\crypto_perps_email.html`.
 ---
 
 ## STEP 4: SEND EMAIL
-Call `mcp__18e26973-458f-4842-a557-521c0713ac9e__send_message` with:
+Call `mcp__18e26973-458f-4842-a655-687dfaf0ed6e__send_message` with:
 - `to`: `["bvajjala@gmail.com"]`
 - `subject`: `"Crypto Perps Decision Brief — {date}"`
 - `body`: full HTML from `crypto_perps_email.html`
