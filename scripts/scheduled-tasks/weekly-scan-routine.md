@@ -59,12 +59,12 @@ This reads the tool's own accumulated file directly — no scan-merge.mjs, no sc
   Calls: lux_screener_scan instrument_type="momentum_etf" timeframe="1W" max_symbols=20, offset=0,20,40,60,80
   Extract to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-momentum_etf.json
 
-**Scan 3 — sp_ndx (~36 symbols, usually fits in one call):**
-  lux_screener_scan instrument_type="sp_ndx" timeframe="1W"
+**Scan 3 — sp_ndx (36 symbols, 2 batches — confirmed 2026-08-20: single call times out):**
+  Calls: lux_screener_scan instrument_type="sp_ndx" timeframe="1W" max_symbols=20, offset=0,20
   Extract to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-sp_ndx.json
 
-**Scan 4 — r2k (~25 symbols, usually fits in one call):**
-  lux_screener_scan instrument_type="r2k" timeframe="1W"
+**Scan 4 — r2k (25 symbols, 2 batches):**
+  Calls: lux_screener_scan instrument_type="r2k" timeframe="1W" max_symbols=20, offset=0,20
   Extract to: reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-r2k.json
 
 **Scan 5 — momentum_ark (137 symbols, updated 2026-08-15):**

@@ -17,20 +17,30 @@ morning_brief instrument_type="futures"         # full static CSV/FUTURES.csv wa
 Watchlist briefs (static CSV → lux_screener_scan, no live screener needed):
 
 ```
-# Small lists — single call
-lux_screener_scan instrument_type="sp_ndx"  timeframe="1W"  # S&P 500 + Nasdaq 100 (~40 symbols)
-lux_screener_scan instrument_type="r2k"     timeframe="1W"  # Russell 2000 (~25 symbols)
+# IMPORTANT: always use max_symbols=20 — larger values time out
+# sp_ndx (36 symbols — 2 batches)
+lux_screener_scan instrument_type="sp_ndx" timeframe="1W" max_symbols=20 offset=0
+lux_screener_scan instrument_type="sp_ndx" timeframe="1W" max_symbols=20 offset=20
 
-# Large lists — split into two calls (~60 each), then combine results
-lux_screener_scan instrument_type="momentum_ark"    timeframe="1W" offset=0  max_symbols=60  # ARK half 1 (117 total)
-lux_screener_scan instrument_type="momentum_ark"    timeframe="1W" offset=60                 # ARK half 2
-lux_screener_scan instrument_type="thematic_stocks" timeframe="1W" offset=0  max_symbols=60  # thematic half 1 (121 total)
-lux_screener_scan instrument_type="thematic_stocks" timeframe="1W" offset=60                 # thematic half 2
-lux_screener_scan instrument_type="thematic_etfs"   timeframe="1W" offset=0  max_symbols=50  # ETFs half 1 (~90 total)
-lux_screener_scan instrument_type="thematic_etfs"   timeframe="1W" offset=50                 # ETFs half 2
+# r2k (25 symbols — 2 batches)
+lux_screener_scan instrument_type="r2k"    timeframe="1W" max_symbols=20 offset=0
+lux_screener_scan instrument_type="r2k"    timeframe="1W" max_symbols=20 offset=20
+
+# momentum_ark (137 symbols — 7 batches of 20)
+lux_screener_scan instrument_type="momentum_ark" timeframe="1W" max_symbols=20 offset=0
+lux_screener_scan instrument_type="momentum_ark" timeframe="1W" max_symbols=20 offset=20
+# ... continue in steps of 20 until slice_range shows no more symbols
+
+# thematic_stocks (117 symbols — 6 batches of 20)
+lux_screener_scan instrument_type="thematic_stocks" timeframe="1W" max_symbols=20 offset=0
+# ... continue in steps of 20
+
+# thematic_etfs (77 symbols — 4 batches of 20)
+lux_screener_scan instrument_type="thematic_etfs" timeframe="1W" max_symbols=20 offset=0
+# ... continue in steps of 20
 ```
 
-**Combining two-call results:** after both calls return, merge their `top_section` bullet lists, re-sort all passing symbols by score descending across both halves, and produce a single unified Top 20 table. Each call already ran NW on its own top-20 passers, so NW data is available for all passers from both halves.
+**Combining multi-batch results:** after all batches return, run `scan-extract.mjs --full` to deduplicate and keep highest-quality result per symbol. The extract output is the canonical scan JSON; no manual merging needed.
 
 **Step 1 — sync screener** (momentum_stocks only — crypto/perps use static CSV watchlists, no screener needed):
 ```
