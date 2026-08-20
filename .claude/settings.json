@@ -1,4 +1,17 @@
 {
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /c/work/tradingview-mcp-jackson/scripts/sync-skills-to-local.sh \"${file}\""
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "mcp__scheduled-tasks__create_scheduled_task",
@@ -61,7 +74,10 @@
       "Bash(rm -fv C:/Windows/Temp/*)",
       "Bash(ls /c/work/tradingview-mcp-jackson/reports/**)",
       "Bash(find /c/work/tradingview-mcp-jackson *)",
-      "Bash(find /c/Windows/Temp *)"
+      "Bash(find /c/Windows/Temp *)",
+      "Bash(bash /c/work/tradingview-mcp-jackson/scripts/sync-skills-to-local.sh*)",
+      "Bash(cp /c/work/tradingview-mcp-jackson/.claude/*.md /c/work/local/skills/*)",
+      "Bash(git -C /c/work/local*)"
     ]
   }
 }
