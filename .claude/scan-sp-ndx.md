@@ -78,8 +78,7 @@ Read `/c/Windows/Temp/sp_ndx_email.html`. Copy signals JSON to `reports/{YYYY-Wk
 Call `mcp__18e26973-458f-4842-a655-687dfaf0ed6e__send_message` with:
 - `to`: `["bvajjala@gmail.com"]`
 - `subject`: `"S&P 500 + Nasdaq 100 Decision — {date}"`
-- `body`: full HTML
-- `mimeType`: `"text/html"`
+- `htmlBody`: full HTML
 
 ---
 

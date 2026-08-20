@@ -92,8 +92,7 @@ Use the Write tool (or Bash cp) to save `/c/Windows/Temp/momentum_stocks_signals
 Call `mcp__18e26973-458f-4842-a655-687dfaf0ed6e__send_message` with:
 - `to`: `["bvajjala@gmail.com"]`
 - `subject`: `"Momentum Stocks Decision — {date}"`
-- `body`: full HTML from `momentum_stocks_email.html`
-- `mimeType`: `"text/html"`
+- `htmlBody`: full HTML from `momentum_stocks_email.html`
 
 ---
 

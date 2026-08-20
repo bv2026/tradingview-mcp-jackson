@@ -90,8 +90,7 @@ Read `/c/Windows/Temp/crypto_email.html`.
 Call `mcp__18e26973-458f-4842-a655-687dfaf0ed6e__send_message` with:
 - `to`: `["bvajjala@gmail.com"]`
 - `subject`: `"Crypto Spot Decision Brief — {date}"`
-- `body`: full HTML from `crypto_email.html`
-- `mimeType`: `"text/html"`
+- `htmlBody`: full HTML from `crypto_email.html`
 
 ---
 

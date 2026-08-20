@@ -84,8 +84,7 @@ Read `/c/Windows/Temp/thematic_etfs_email.html`. Copy signals JSON to `reports/{
 Call `mcp__18e26973-458f-4842-a655-687dfaf0ed6e__send_message` with:
 - `to`: `["bvajjala@gmail.com"]`
 - `subject`: `"Thematic ETFs Decision — {date}"`
-- `body`: full HTML
-- `mimeType`: `"text/html"`
+- `htmlBody`: full HTML
 
 ---
 

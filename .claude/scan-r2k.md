@@ -80,8 +80,7 @@ Read `/c/Windows/Temp/r2k_email.html`. Copy signals JSON to `reports/{YYYY-WkNN}
 Call `mcp__18e26973-458f-4842-a655-687dfaf0ed6e__send_message` with:
 - `to`: `["bvajjala@gmail.com"]`
 - `subject`: `"Russell 2000 Decision — {date}"`
-- `body`: full HTML
-- `mimeType`: `"text/html"`
+- `htmlBody`: full HTML
 
 ---
 

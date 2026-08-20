@@ -112,8 +112,7 @@ Read `/c/Windows/Temp/futures_email.html`.
 Call `mcp__18e26973-458f-4842-a655-687dfaf0ed6e__send_message` with:
 - `to`: `["bvajjala@gmail.com"]`
 - `subject`: `"Futures Decision Brief — {date}"`
-- `body`: full HTML content from `futures_email.html`
-- `mimeType`: `"text/html"`
+- `htmlBody`: full HTML content from `futures_email.html`
 
 ---
 

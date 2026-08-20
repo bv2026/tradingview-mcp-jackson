@@ -83,8 +83,7 @@ Read `/c/Windows/Temp/momentum_etf_email.html`. Copy signals JSON to `reports/{Y
 Call `mcp__18e26973-458f-4842-a655-687dfaf0ed6e__send_message` with:
 - `to`: `["bvajjala@gmail.com"]`
 - `subject`: `"Momentum ETF Decision — {date}"`
-- `body`: full HTML
-- `mimeType`: `"text/html"`
+- `htmlBody`: full HTML
 
 ---
 
