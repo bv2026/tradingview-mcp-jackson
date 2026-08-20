@@ -55,7 +55,7 @@ Read every WARN line. Re-run STEP 2 from offset=0 if MISSING or ERROR.
 
 ## STEP 5: CLASSIFY
 ```bash
-node /c/work/tradingview-mcp-jackson/scripts/decision-classify.mjs /c/work/tradingview-mcp-jackson/reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-sp_ndx.json C:\Windows\Temp\class_sp_ndx.json
+node /c/work/tradingview-mcp-jackson/scripts/decision-classify.mjs /c/work/tradingview-mcp-jackson/reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-sp_ndx.json /c/Windows/Temp/class_sp_ndx.json
 ```
 
 ---
@@ -67,10 +67,10 @@ date "+%b %d, %Y"
 ```
 
 ```bash
-node /c/work/tradingview-mcp-jackson/scripts/decision-render.mjs sp_ndx C:\Windows\Temp\class_sp_ndx.json C:\Windows\Temp\sp_ndx_email.html C:\Windows\Temp\sp_ndx_signals.json "{date}" "{YYYY-Mon-DD}"
+node /c/work/tradingview-mcp-jackson/scripts/decision-render.mjs sp_ndx /c/Windows/Temp/class_sp_ndx.json /c/Windows/Temp/sp_ndx_email.html /c/Windows/Temp/sp_ndx_signals.json "{date}" "{YYYY-Mon-DD}"
 ```
 
-Read `C:\Windows\Temp\sp_ndx_email.html`. Copy signals JSON to `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/sp_ndx-signals.json`.
+Read `/c/Windows/Temp/sp_ndx_email.html`. Copy signals JSON to `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/sp_ndx-signals.json`.
 
 ---
 

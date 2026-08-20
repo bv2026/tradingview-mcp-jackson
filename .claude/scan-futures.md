@@ -30,10 +30,10 @@ mkdir -p /c/work/tradingview-mcp-jackson/reports/{YYYY-WkNN}/{YYYY-Mon-DD}
 Call `morning_brief instrument_type="futures"`.
 
 **Handle result:**
-- If auto-saved to a file (tool returns a path): run `node scripts/brief-extract.mjs <path> C:\Windows\Temp\futures_extracted.json`
-- If returned inline: Write the JSON verbatim to `C:\Windows\Temp\futures_raw.json`, then run `node scripts/brief-extract.mjs C:\Windows\Temp\futures_raw.json C:\Windows\Temp\futures_extracted.json`
+- If auto-saved to a file (tool returns a path): run `node scripts/brief-extract.mjs <path> /c/Windows/Temp/futures_extracted.json`
+- If returned inline: Write the JSON verbatim to `/c/Windows/Temp/futures_raw.json`, then run `node scripts/brief-extract.mjs /c/Windows/Temp/futures_raw.json /c/Windows/Temp/futures_extracted.json`
 
-Read `C:\Windows\Temp\futures_extracted.json`.
+Read `/c/Windows/Temp/futures_extracted.json`.
 
 Apply strategy rules from `config/strategy-futures.json`. Format per CLAUDE.md futures conventions:
 - SYMBOL column: bare ticker only (`ES1!` not `ES1! (S&P)`)
@@ -72,7 +72,7 @@ Read `config/strategy-futures.json` and `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/ct_tv
 
 **PRIMARY RULE: CT always wins.** CT ST/LT arrows determine direction. TV data (NW, TWB gap) is timing context only — it never overrides CT direction.
 
-Write your decisions to `C:\Windows\Temp\futures_decisions.json`:
+Write your decisions to `/c/Windows/Temp/futures_decisions.json`:
 ```json
 {
   "title": "Futures Decision Brief",
@@ -101,10 +101,10 @@ date "+%b %d, %Y"
 
 Render the HTML:
 ```bash
-node /c/work/tradingview-mcp-jackson/scripts/daily-decision-render.mjs C:\Windows\Temp\futures_decisions.json C:\Windows\Temp\futures_email.html "{date}"
+node /c/work/tradingview-mcp-jackson/scripts/daily-decision-render.mjs /c/Windows/Temp/futures_decisions.json /c/Windows/Temp/futures_email.html "{date}"
 ```
 
-Read `C:\Windows\Temp\futures_email.html`.
+Read `/c/Windows/Temp/futures_email.html`.
 
 ---
 

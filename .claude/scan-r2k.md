@@ -57,7 +57,7 @@ Read every WARN line. Re-run STEP 2 from offset=0 if MISSING, ERROR, or `indicat
 
 ## STEP 5: CLASSIFY
 ```bash
-node /c/work/tradingview-mcp-jackson/scripts/decision-classify.mjs /c/work/tradingview-mcp-jackson/reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-r2k.json C:\Windows\Temp\class_r2k.json
+node /c/work/tradingview-mcp-jackson/scripts/decision-classify.mjs /c/work/tradingview-mcp-jackson/reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-r2k.json /c/Windows/Temp/class_r2k.json
 ```
 
 ---
@@ -69,10 +69,10 @@ date "+%b %d, %Y"
 ```
 
 ```bash
-node /c/work/tradingview-mcp-jackson/scripts/decision-render.mjs r2k C:\Windows\Temp\class_r2k.json C:\Windows\Temp\r2k_email.html C:\Windows\Temp\r2k_signals.json "{date}" "{YYYY-Mon-DD}"
+node /c/work/tradingview-mcp-jackson/scripts/decision-render.mjs r2k /c/Windows/Temp/class_r2k.json /c/Windows/Temp/r2k_email.html /c/Windows/Temp/r2k_signals.json "{date}" "{YYYY-Mon-DD}"
 ```
 
-Read `C:\Windows\Temp\r2k_email.html`. Copy signals JSON to `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/r2k-signals.json`.
+Read `/c/Windows/Temp/r2k_email.html`. Copy signals JSON to `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/r2k-signals.json`.
 
 ---
 

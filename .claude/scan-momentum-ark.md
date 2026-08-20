@@ -62,7 +62,7 @@ Read every WARN line. Re-run STEP 2 from offset=0 if MISSING or ERROR.
 
 ## STEP 5: CLASSIFY
 ```bash
-node /c/work/tradingview-mcp-jackson/scripts/decision-classify.mjs /c/work/tradingview-mcp-jackson/reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-momentum_ark.json C:\Windows\Temp\class_momentum_ark.json
+node /c/work/tradingview-mcp-jackson/scripts/decision-classify.mjs /c/work/tradingview-mcp-jackson/reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-momentum_ark.json /c/Windows/Temp/class_momentum_ark.json
 ```
 
 ---
@@ -76,10 +76,10 @@ date "+%b %d, %Y"
 ```
 
 ```bash
-node /c/work/tradingview-mcp-jackson/scripts/decision-render.mjs momentum_ark C:\Windows\Temp\class_momentum_ark.json C:\Windows\Temp\momentum_ark_email.html C:\Windows\Temp\momentum_ark_signals.json "{date}" "{YYYY-Mon-DD}"
+node /c/work/tradingview-mcp-jackson/scripts/decision-render.mjs momentum_ark /c/Windows/Temp/class_momentum_ark.json /c/Windows/Temp/momentum_ark_email.html /c/Windows/Temp/momentum_ark_signals.json "{date}" "{YYYY-Mon-DD}"
 ```
 
-Read `C:\Windows\Temp\momentum_ark_email.html`. Copy signals JSON to `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/momentum_ark-signals.json`.
+Read `/c/Windows/Temp/momentum_ark_email.html`. Copy signals JSON to `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/momentum_ark-signals.json`.
 
 ---
 

@@ -87,11 +87,12 @@ const out = {
 // Sanity check: if many passers exist but none are actionable and all rr are null,
 // the NW data pipeline is likely broken — warn loudly rather than silently producing all-watch output.
 const allRrNull = passers.every(p => p.rr == null);
-if (passers.length >= 3 && actionable === 0 && allRrNull) {
+const insidePassers = passers.filter(p => p.nw_position === 'inside');
+if (insidePassers.length >= 3 && actionable === 0 && allRrNull) {
   console.warn(
-    `WARNING [${d.instrument_type}]: ${passers.length} passers but 0 actionable and rr=null on all. ` +
+    `WARNING [${d.instrument_type}]: ${insidePassers.length} inside passers but 0 actionable and rr=null on all. ` +
     `NW band data is missing — check that Nadaraya-Watson Envelope is visible on the chart and ` +
-    `getStudyValues() is returning its plot values. These passers landed in ready_norr (inside, no R:R).`
+    `getStudyValues() is returning its plot values. Inside passers landed in ready_norr (no R:R data).`
   );
 }
 

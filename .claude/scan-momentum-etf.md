@@ -60,7 +60,7 @@ Read every WARN line. Re-run STEP 2 from offset=0 if MISSING or ERROR.
 
 ## STEP 5: CLASSIFY
 ```bash
-node /c/work/tradingview-mcp-jackson/scripts/decision-classify.mjs /c/work/tradingview-mcp-jackson/reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-momentum_etf.json C:\Windows\Temp\class_momentum_etf.json
+node /c/work/tradingview-mcp-jackson/scripts/decision-classify.mjs /c/work/tradingview-mcp-jackson/reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-momentum_etf.json /c/Windows/Temp/class_momentum_etf.json
 ```
 
 ---
@@ -72,10 +72,10 @@ date "+%b %d, %Y"
 ```
 
 ```bash
-node /c/work/tradingview-mcp-jackson/scripts/decision-render.mjs momentum_etf C:\Windows\Temp\class_momentum_etf.json C:\Windows\Temp\momentum_etf_email.html C:\Windows\Temp\momentum_etf_signals.json "{date}" "{YYYY-Mon-DD}"
+node /c/work/tradingview-mcp-jackson/scripts/decision-render.mjs momentum_etf /c/Windows/Temp/class_momentum_etf.json /c/Windows/Temp/momentum_etf_email.html /c/Windows/Temp/momentum_etf_signals.json "{date}" "{YYYY-Mon-DD}"
 ```
 
-Read `C:\Windows\Temp\momentum_etf_email.html`. Copy signals JSON to `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/momentum_etf-signals.json`.
+Read `/c/Windows/Temp/momentum_etf_email.html`. Copy signals JSON to `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/momentum_etf-signals.json`.
 
 ---
 

@@ -63,7 +63,7 @@ Read every WARN line — these signal silent corruption. If result is MISSING or
 
 ## STEP 5: CLASSIFY
 ```bash
-node /c/work/tradingview-mcp-jackson/scripts/decision-classify.mjs /c/work/tradingview-mcp-jackson/reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-momentum_stocks.json C:\Windows\Temp\class_momentum_stocks.json
+node /c/work/tradingview-mcp-jackson/scripts/decision-classify.mjs /c/work/tradingview-mcp-jackson/reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-momentum_stocks.json /c/Windows/Temp/class_momentum_stocks.json
 ```
 
 ---
@@ -78,13 +78,13 @@ date "+%b %d, %Y"
 Get the scan date (same as today's date folder, format `YYYY-Mon-DD`).
 
 ```bash
-node /c/work/tradingview-mcp-jackson/scripts/decision-render.mjs momentum_stocks C:\Windows\Temp\class_momentum_stocks.json C:\Windows\Temp\momentum_stocks_email.html C:\Windows\Temp\momentum_stocks_signals.json "{date}" "{scan_date}"
+node /c/work/tradingview-mcp-jackson/scripts/decision-render.mjs momentum_stocks /c/Windows/Temp/class_momentum_stocks.json /c/Windows/Temp/momentum_stocks_email.html /c/Windows/Temp/momentum_stocks_signals.json "{date}" "{scan_date}"
 ```
 
-Read `C:\Windows\Temp\momentum_stocks_email.html`.
+Read `/c/Windows/Temp/momentum_stocks_email.html`.
 
 Also copy signals to reports folder:
-Use the Write tool (or Bash cp) to save `C:\Windows\Temp\momentum_stocks_signals.json` to `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/momentum_stocks-signals.json`.
+Use the Write tool (or Bash cp) to save `/c/Windows/Temp/momentum_stocks_signals.json` to `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/momentum_stocks-signals.json`.
 
 ---
 

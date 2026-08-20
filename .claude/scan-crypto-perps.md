@@ -29,10 +29,10 @@ mkdir -p /c/work/tradingview-mcp-jackson/reports/{YYYY-WkNN}/{YYYY-Mon-DD}
 Call `morning_brief instrument_type="crypto_perps"`.
 
 **Handle result:**
-- If auto-saved to a file: run `node scripts/brief-extract.mjs <path> C:\Windows\Temp\crypto_perps_extracted.json`
-- If returned inline: Write JSON to `C:\Windows\Temp\crypto_perps_raw.json`, then run `node scripts/brief-extract.mjs C:\Windows\Temp\crypto_perps_raw.json C:\Windows\Temp\crypto_perps_extracted.json`
+- If auto-saved to a file: run `node scripts/brief-extract.mjs <path> /c/Windows/Temp/crypto_perps_extracted.json`
+- If returned inline: Write JSON to `/c/Windows/Temp/crypto_perps_raw.json`, then run `node scripts/brief-extract.mjs /c/Windows/Temp/crypto_perps_raw.json /c/Windows/Temp/crypto_perps_extracted.json`
 
-Read `C:\Windows\Temp\crypto_perps_extracted.json`.
+Read `/c/Windows/Temp/crypto_perps_extracted.json`.
 
 Apply strategy rules from `config/strategy-crypto_perps.json`. Key rules:
 - **Benchmark: BTC perp TWB Histogram direction.** Positive → scan ALL for LONG. Negative → scan ALL for SHORT.
@@ -53,7 +53,7 @@ rm -f /c/Windows/Temp/crypto_perps_extracted.json /c/Windows/Temp/crypto_perps_r
 
 Read `config/strategy-crypto_perps.json` and the saved brief from STEP 2.
 
-Write decisions to `C:\Windows\Temp\crypto_perps_decisions.json`:
+Write decisions to `/c/Windows/Temp/crypto_perps_decisions.json`:
 ```json
 {
   "title": "Crypto Perps Decision Brief",
@@ -82,10 +82,10 @@ date "+%b %d, %Y"
 
 Render HTML:
 ```bash
-node /c/work/tradingview-mcp-jackson/scripts/daily-decision-render.mjs C:\Windows\Temp\crypto_perps_decisions.json C:\Windows\Temp\crypto_perps_email.html "{date}"
+node /c/work/tradingview-mcp-jackson/scripts/daily-decision-render.mjs /c/Windows/Temp/crypto_perps_decisions.json /c/Windows/Temp/crypto_perps_email.html "{date}"
 ```
 
-Read `C:\Windows\Temp\crypto_perps_email.html`.
+Read `/c/Windows/Temp/crypto_perps_email.html`.
 
 ---
 

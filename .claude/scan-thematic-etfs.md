@@ -59,7 +59,7 @@ Read every WARN line. Re-run STEP 2 from offset=0 if MISSING or ERROR.
 
 ## STEP 5: CLASSIFY
 ```bash
-node /c/work/tradingview-mcp-jackson/scripts/decision-classify.mjs /c/work/tradingview-mcp-jackson/reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-thematic_etfs.json C:\Windows\Temp\class_thematic_etfs.json
+node /c/work/tradingview-mcp-jackson/scripts/decision-classify.mjs /c/work/tradingview-mcp-jackson/reports/{YYYY-WkNN}/{YYYY-Mon-DD}/scan-thematic_etfs.json /c/Windows/Temp/class_thematic_etfs.json
 ```
 
 ---
@@ -73,10 +73,10 @@ date "+%b %d, %Y"
 ```
 
 ```bash
-node /c/work/tradingview-mcp-jackson/scripts/decision-render.mjs thematic_etfs C:\Windows\Temp\class_thematic_etfs.json C:\Windows\Temp\thematic_etfs_email.html C:\Windows\Temp\thematic_etfs_signals.json "{date}" "{YYYY-Mon-DD}"
+node /c/work/tradingview-mcp-jackson/scripts/decision-render.mjs thematic_etfs /c/Windows/Temp/class_thematic_etfs.json /c/Windows/Temp/thematic_etfs_email.html /c/Windows/Temp/thematic_etfs_signals.json "{date}" "{YYYY-Mon-DD}"
 ```
 
-Read `C:\Windows\Temp\thematic_etfs_email.html`. Copy signals JSON to `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/thematic_etfs-signals.json`.
+Read `/c/Windows/Temp/thematic_etfs_email.html`. Copy signals JSON to `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/thematic_etfs-signals.json`.
 
 ---
 
