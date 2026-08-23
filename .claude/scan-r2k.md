@@ -22,6 +22,34 @@ mkdir -p /c/work/tradingview-mcp-jackson/reports/{YYYY-WkNN}/{YYYY-Mon-DD}
 
 ---
 
+## STEP 1b: REBUILD WATCHLIST FROM CSV
+
+Run the momentum watchlist builder to ensure `config/strategy-r2k.json` reflects the latest CSV:
+
+```bash
+node /c/work/tradingview-mcp-jackson/scripts/build-momentum-watchlists.mjs
+```
+
+**Verify the output immediately — do not proceed if any check fails:**
+
+```bash
+node -e "
+const fs = require('fs');
+const path = 'C:/work/tradingview-mcp-jackson/config/strategy-r2k.json';
+const cfg = JSON.parse(fs.readFileSync(path, 'utf8'));
+const wl = cfg.watchlist;
+if (!Array.isArray(wl) || wl.length === 0) throw new Error('watchlist is empty or missing');
+const bad = wl.filter(e => !e.symbol || e.wtd === undefined || e.sentiment === undefined);
+if (bad.length) throw new Error('entries missing required fields: ' + bad.map(e=>e.symbol||'?').join(', '));
+console.log('r2k watchlist OK: ' + wl.length + ' symbols, source: ' + cfg.watchlist_source);
+console.log('First 5: ' + wl.slice(0,5).map(e=>e.symbol).join(', '));
+"
+```
+
+If this throws, STOP: "scan-r2k aborted — watchlist rebuild failed: {error}". Do not scan a broken watchlist.
+
+---
+
 ## STEP 2: SCAN (~25 symbols — usually fits in two calls)
 
 Fire in sequence (do NOT read response bodies — accumulates in `evidence/latest/r2k.raw.json`):
