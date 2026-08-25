@@ -1,158 +1,158 @@
 {
   "instrument_type": "r2k",
-  "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\momentum-russell2000-2026-08-14.csv — IN symbols",
+  "watchlist_source": "C:\\work\\tradingview-mcp-jackson\\CSV\\momentum-russell2000-2026-08-21.csv — IN symbols",
   "default_timeframe": "W",
   "pipeline": "L1: r2k watchlist (rebuilt Saturdays from Russell 2000 CSV) → L2: LuxAlgo 3 screeners on 1W (hard filter: BOS + Bullish/Strong Bullish S&O Rating + ▲/▲+ Signal) → L3: NW Envelope per-symbol check",
   "watchlist": [
     {
       "symbol": "BYND",
-      "wtd": 138.8,
-      "sentiment": 68,
-      "watchers": null
+      "wtd": null,
+      "sentiment": 81,
+      "watchers": "81"
     },
     {
-      "symbol": "AEHR",
-      "wtd": 30.1,
-      "sentiment": 48,
-      "watchers": "14.6k"
+      "symbol": "NRDY",
+      "wtd": null,
+      "sentiment": 59,
+      "watchers": "59"
     },
     {
       "symbol": "AGL",
-      "wtd": 1.5,
-      "sentiment": 44,
+      "wtd": null,
+      "sentiment": 37,
       "watchers": "991"
     },
     {
+      "symbol": "AEHR",
+      "wtd": null,
+      "sentiment": 51,
+      "watchers": "14.6k"
+    },
+    {
       "symbol": "ERAS",
-      "wtd": -0.2,
-      "sentiment": 54,
+      "wtd": null,
+      "sentiment": 49,
       "watchers": "1.0k"
     },
     {
-      "symbol": "MXL",
-      "wtd": 13.1,
-      "sentiment": 37,
-      "watchers": "3.6k"
-    },
-    {
-      "symbol": "RXT",
-      "wtd": -14.1,
-      "sentiment": 51,
-      "watchers": "10.3k"
-    },
-    {
-      "symbol": "AAOI",
-      "wtd": 10.8,
-      "sentiment": 74,
-      "watchers": "23.6k"
+      "symbol": "TWST",
+      "wtd": null,
+      "sentiment": 62,
+      "watchers": "4.2k"
     },
     {
       "symbol": "ATEX",
-      "wtd": -7.8,
-      "sentiment": 61,
+      "wtd": null,
+      "sentiment": 42,
       "watchers": "365"
     },
     {
-      "symbol": "BLZE",
-      "wtd": 1.1,
-      "sentiment": 47,
-      "watchers": "2.3k"
+      "symbol": "SLS",
+      "wtd": null,
+      "sentiment": 69,
+      "watchers": "59.1k"
     },
     {
-      "symbol": "ICHR",
-      "wtd": 4,
-      "sentiment": 54,
-      "watchers": "3.6k"
-    },
-    {
-      "symbol": "FFAI",
-      "wtd": -4.4,
-      "sentiment": 44,
-      "watchers": "26.7k"
+      "symbol": "TXG",
+      "wtd": null,
+      "sentiment": 42,
+      "watchers": "2.9K"
     },
     {
       "symbol": "IBRX",
-      "wtd": -0.9,
-      "sentiment": 54,
+      "wtd": null,
+      "sentiment": 49,
       "watchers": "29.9k"
     },
     {
       "symbol": "ELVN",
-      "wtd": -2.7,
-      "sentiment": 51,
+      "wtd": null,
+      "sentiment": 48,
       "watchers": "1.3k"
     },
     {
-      "symbol": "TWST",
-      "wtd": 2.5,
-      "sentiment": 58,
-      "watchers": "4.2k"
-    },
-    {
-      "symbol": "ORKA",
-      "wtd": 12.4,
-      "sentiment": 62,
-      "watchers": "405"
-    },
-    {
-      "symbol": "BAND",
-      "wtd": 8,
-      "sentiment": 65,
-      "watchers": "3.1k"
+      "symbol": "MXL",
+      "wtd": null,
+      "sentiment": 39,
+      "watchers": "3.6k"
     },
     {
       "symbol": "ETON",
-      "wtd": 44.3,
-      "sentiment": 56,
-      "watchers": "3.7k"
-    },
-    {
-      "symbol": "TXG",
-      "wtd": 7.8,
-      "sentiment": 62,
-      "watchers": "2.9k"
-    },
-    {
-      "symbol": "SLS",
-      "wtd": 6.4,
-      "sentiment": 63,
-      "watchers": "59.1k"
-    },
-    {
-      "symbol": "UCTT",
-      "wtd": -2.7,
-      "sentiment": 64,
-      "watchers": "3.7k"
-    },
-    {
-      "symbol": "PENG",
-      "wtd": 9.2,
-      "sentiment": 42,
-      "watchers": "3.8k"
-    },
-    {
-      "symbol": "HURA",
-      "wtd": -0.4,
-      "sentiment": 72,
-      "watchers": "15.5k"
+      "wtd": null,
+      "sentiment": 67,
+      "watchers": "5.7k"
     },
     {
       "symbol": "PLSE",
-      "wtd": 5,
-      "sentiment": 70,
-      "watchers": "1.2k"
+      "wtd": null,
+      "sentiment": 44,
+      "watchers": "44"
+    },
+    {
+      "symbol": "AAOI",
+      "wtd": null,
+      "sentiment": 48,
+      "watchers": "23.6k"
+    },
+    {
+      "symbol": "ORKA",
+      "wtd": null,
+      "sentiment": 41,
+      "watchers": "405"
+    },
+    {
+      "symbol": "RXT",
+      "wtd": null,
+      "sentiment": 71,
+      "watchers": "10.3k"
+    },
+    {
+      "symbol": "BLZE",
+      "wtd": null,
+      "sentiment": 35,
+      "watchers": "2.3k"
     },
     {
       "symbol": "DFTX",
-      "wtd": -7.6,
-      "sentiment": 89,
+      "wtd": null,
+      "sentiment": 61,
       "watchers": "26.2k"
     },
     {
+      "symbol": "ICHR",
+      "wtd": null,
+      "sentiment": 51,
+      "watchers": "3.6k"
+    },
+    {
+      "symbol": "KOS",
+      "wtd": null,
+      "sentiment": 66,
+      "watchers": "9.7k"
+    },
+    {
       "symbol": "SYRE",
-      "wtd": -1.2,
-      "sentiment": 47,
+      "wtd": null,
+      "sentiment": 64,
       "watchers": "2.2k"
+    },
+    {
+      "symbol": "AMLX",
+      "wtd": null,
+      "sentiment": 77,
+      "watchers": "77"
+    },
+    {
+      "symbol": "FFA",
+      "wtd": null,
+      "sentiment": 31,
+      "watchers": "26.7k"
+    },
+    {
+      "symbol": "NVCT",
+      "wtd": null,
+      "sentiment": 52,
+      "watchers": "851"
     }
   ],
   "required_indicators": [
@@ -186,5 +186,5 @@
     "Sentiment ≥ 80% in small-caps = crowded pump risk — skip or half-size"
   ],
   "asset_notes": "Small-cap (Russell 2000) momentum names rebuilt weekly from CSV. Benchmarked to IWM. Pipeline: LuxAlgo 3 screeners (BOS + Bullish rating + ▲ signal) → NW Envelope extension check. In small-caps, high sentiment + high chatter (Overheated annotation) warrants extra sizing caution. Many names are low-priced and gap-prone — liquidity matters more than in large-cap book.",
-  "watchlist_generated": "2026-08-15"
+  "watchlist_generated": "2026-08-23"
 }
