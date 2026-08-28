@@ -25,6 +25,7 @@ a `references/` folder of focused, independently-editable files loaded only as e
 | Name | Version | Last updated | Canonical | Live (scheduled) | Project skill |
 |---|---|---|---|---|---|
 | weekly-decision-routine | 1.0.0 | 2026-08-28 | ✅ | ✅ (weekdays ~6:50pm) | ✅ `.claude/skills/weekly-decision-routine/` |
+| weekly-decision-routine-oneshot | 1.0.0 | 2026-08-28 | ✅ | ✅ (manual trigger only) | — (same as weekly-decision-routine) |
 | decision-email-routine | — (unversioned) | — | ✅ | ✅ (daily 8:15am) | — |
 | weekly-scan-routine | — (unversioned) | — | ✅ | ✅ (weekdays 7:43pm) | — |
 | futures-morning-routine | — (unversioned) | — | ✅ | ✅ (daily 7:30am) | — |
@@ -43,3 +44,11 @@ real case for running it on demand outside its cron; not every routine needs one
 - **2026-08-28** — weekly-decision-routine versioned at 1.0.0 and published as a modular project
   skill (`.claude/skills/weekly-decision-routine/`), after a live run surfaced that this routine's
   existence wasn't being checked before hand-rolling emails. This file created as the general fix.
+- **2026-08-28** — Discovered `weekly-decision-routine-oneshot` had no canonical copy in this repo,
+  so `sync-to-claude.ps1` never touched it — its live copy had silently drifted to an old draft
+  (legacy hard-filter classification instead of V1 evidence scoring, no METRICS section, and a
+  TABLE STYLE using raw CSS `style="background:..."` — the exact Gmail-stripping bug the main
+  routine fixed on 2026-08-15). Created `weekly-decision-routine-oneshot.md` as its canonical copy
+  (mirrors weekly-decision-routine.md, renamed frontmatter) and added it to `sync-to-claude.ps1`'s
+  task list. **Lesson: a routine only stays in sync if it has a canonical file AND is in the sync
+  script's list — check both when adding any new scheduled task, not just one.**

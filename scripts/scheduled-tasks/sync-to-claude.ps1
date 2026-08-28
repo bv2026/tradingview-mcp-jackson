@@ -10,6 +10,7 @@ $tasks = @(
   "decision-email-routine",
   "weekly-scan-routine",
   "weekly-decision-routine",
+  "weekly-decision-routine-oneshot",
   "tv-top-setups-report",
   "tv-mcp-archive-old-reports",
   "income-etf-weekly-routine",
