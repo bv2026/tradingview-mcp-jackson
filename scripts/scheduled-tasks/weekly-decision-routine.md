@@ -1,7 +1,15 @@
 ---
 name: weekly-decision-routine
 description: Weekdays ~6:50pm (42-min buffer after weekly-scan-routine) — reads saved scan JSON, produces 7 HTML emails sent directly to inbox
+version: 1.0.0
+last_updated: 2026-08-28
 ---
+
+**Version 1.0.0** (2026-08-28) — first versioned baseline. Content unchanged from the pre-versioning
+scheduled task; this run is the reference execution that confirmed the routine end-to-end (5/7 emails
+sent, sp_ndx/r2k correctly skipped for schema-incompatible scan data). Also published as a directly
+invocable project Skill at `.claude/skills/weekly-decision-routine/SKILL.md` — see
+[VERSIONS.md](VERSIONS.md) for the canonical/live/skill copy map and how to keep them in sync.
 
 You are running the weekly equity DECISION routine for the tradingview-mcp-jackson project at C:\work\tradingview-mcp-jackson.
 
