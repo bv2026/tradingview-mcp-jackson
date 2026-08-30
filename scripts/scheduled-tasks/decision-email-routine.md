@@ -7,6 +7,11 @@ You are running the decision engine for the tradingview-mcp-jackson project at C
 
 Run the following steps IN ORDER without stopping or asking for confirmation.
 
+**Shell commands (the `node …render.mjs …` calls and any `rm`) use forward-slash paths**
+(`C:/work/…`, `C:/Windows/Temp/…`). The Bash tool runs Git Bash, which strips unquoted
+backslashes, so a literal `C:\work\x` becomes `C:workx` and fails. Read/Write tool paths may stay
+in either style.
+
 --- STEP 0: LOCATE TODAY'S REPORTS FOLDER ---
 Determine today's date. Compute the ISO week folder (YYYY-WkNN, Monday-start) and date folder (YYYY-Mon-DD).
 The reports base path is: C:\work\tradingview-mcp-jackson\reports\{YYYY-WkNN}\{YYYY-Mon-DD}\
@@ -48,7 +53,7 @@ attributes, never CSS `background`, since Gmail's send pipeline strips `<style>`
 attributes, and any inline `style="...background..."`). This is both cheaper (no more typing full
 `<tr>/<td>` boilerplate by hand every day) and immune to that bug by construction.
 
-Write to `C:\Windows\Temp\crypto_decisions.json` (scratch file, not the reports folder):
+Write to `C:/Windows/Temp/crypto_decisions.json` (scratch file, not the reports folder):
 ```json
 {
   "title": "Crypto Decision Brief",
@@ -82,10 +87,10 @@ the old bulleted version repetitive and hard to scan (confirmed 2026-08-15, user
 renders as a plain single-column table with no row coloring.
 
 Then run:
-  `node C:\work\tradingview-mcp-jackson\scripts\daily-decision-render.mjs C:\Windows\Temp\crypto_decisions.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/crypto-decision.html {DATE}`
+  `node C:/work/tradingview-mcp-jackson/scripts/daily-decision-render.mjs C:/Windows/Temp/crypto_decisions.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/crypto-decision.html {DATE}`
 
 Read the generated `crypto-decision.html` back and use its exact contents as the email body — do
-not re-type or re-format it. Delete `C:\Windows\Temp\crypto_decisions.json` after the render succeeds.
+not re-type or re-format it. Delete `C:/Windows/Temp/crypto_decisions.json` after the render succeeds.
 
 Send it as a Gmail email using mcp__18e26973-458f-4842-a655-687dfaf0ed6e__send_message (NOT create_draft — this sends immediately, no draft/review step):
   - to: ["bvajjala@gmail.com"]
@@ -107,7 +112,7 @@ Key rules to apply from strategy-crypto_perps.json:
 render script — same reasoning as STEP 3 (cheaper, and immune to the Gmail background-CSS bug by
 construction).
 
-Write to `C:\Windows\Temp\crypto_perps_decisions.json`:
+Write to `C:/Windows/Temp/crypto_perps_decisions.json`:
 ```json
 {
   "title": "Perps Decision Brief",
@@ -136,10 +141,10 @@ bulleted version repeated the same phrasing across rows and was hard to scan). `
 a flat array of short strings, rendered as a plain single-column table with no row coloring.
 
 Then run:
-  `node C:\work\tradingview-mcp-jackson\scripts\daily-decision-render.mjs C:\Windows\Temp\crypto_perps_decisions.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/crypto-perps-decision.html {DATE}`
+  `node C:/work/tradingview-mcp-jackson/scripts/daily-decision-render.mjs C:/Windows/Temp/crypto_perps_decisions.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/crypto-perps-decision.html {DATE}`
 
 Read the generated `crypto-perps-decision.html` back and use its exact contents as the email body.
-Delete `C:\Windows\Temp\crypto_perps_decisions.json` after the render succeeds.
+Delete `C:/Windows/Temp/crypto_perps_decisions.json` after the render succeeds.
 
 Send it as a Gmail email using mcp__18e26973-458f-4842-a655-687dfaf0ed6e__send_message (NOT create_draft — this sends immediately, no draft/review step):
   - to: ["bvajjala@gmail.com"]
@@ -163,7 +168,7 @@ Key rules to apply from strategy-futures.json:
 **Do NOT hand-write HTML.** Write your decisions as a small JSON file instead, then run the shared
 render script — same reasoning as STEP 3/4.
 
-Write to `C:\Windows\Temp\futures_decisions.json`:
+Write to `C:/Windows/Temp/futures_decisions.json`:
 ```json
 {
   "title": "Futures Decision Brief",
@@ -177,26 +182,29 @@ Write to `C:\Windows\Temp\futures_decisions.json`:
   ],
   "overall_read": ["bullet 1", "bullet 2"],
   "all_symbols_heading": "TradingView Futures Data",
-  "all_symbols_columns": ["Market", "Bias", "TWB Gap", "NW", "Regime", "S/R", "Watch"],
+  "all_symbols_columns": ["Market", "TWB Gap", "NW", "Regime", "S/R", "Watch"],
   "all_symbols": [
-    { "symbol": "GC1!", "bias": "bullish", "col2": "...", "col3": "...", "col4": "...", "col5": "...", "col6": "..." }
+    { "symbol": "GC1!", "bias": "bullish", "col2": "+133.10", "col3": "extended", "col4": "TRENDING_LONG", "col5": "sup 55 / res 90", "col6": "buy dips only" }
   ]
 }
 ```
 `market` (or `symbol` — either key works) and `side` must never be blank on a `top_setups` row.
 Include EVERY market from futures.md in `all_symbols`, not just the ones with trade decisions.
-`side` "Long"/"Short" drives row color automatically. `watch_list` and `all_symbols` rows must both
-carry a top-level `bias` field ("bullish"/"bearish"/"neutral") — derive it from the market's TWB
-bias in futures.md (gap sign). Omitting `bias` renders a flat, uncolored table (confirmed
-2026-08-15). `watch_list` is a table, not a bulleted list — keep each row's columns short phrases,
-not full sentences (confirmed 2026-08-15, user feedback). `overall_read` stays a flat array of
-short strings, rendered as a plain single-column table with no row coloring.
+**`col2`..`colN` map positionally to `all_symbols_columns[1..]`, so the row needs exactly one
+`colK` per column after "Market" — here col2..col6 for the 6-column header. `bias` is the
+top-level row-color field, NOT a column.** `side` "Long"/"Short" drives `top_setups`/`watch_list`
+row color automatically. `watch_list` and `all_symbols` rows must both carry a top-level `bias`
+field ("bullish"/"bearish"/"neutral") — derive it from the market's TWB bias in futures.md (gap
+sign). Omitting `bias` renders a flat, uncolored table (confirmed 2026-08-15). `watch_list` is a
+table, not a bulleted list — keep each row's columns short phrases, not full sentences (confirmed
+2026-08-15, user feedback). `overall_read` stays a flat array of short strings, rendered as a
+plain single-column table with no row coloring.
 
 Then run:
-  `node C:\work\tradingview-mcp-jackson\scripts\daily-decision-render.mjs C:\Windows\Temp\futures_decisions.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/futures-decision.html {DATE}`
+  `node C:/work/tradingview-mcp-jackson/scripts/daily-decision-render.mjs C:/Windows/Temp/futures_decisions.json reports/{YYYY-WkNN}/{YYYY-Mon-DD}/futures-decision.html {DATE}`
 
 Read the generated `futures-decision.html` back and use its exact contents as the email body.
-Delete `C:\Windows\Temp\futures_decisions.json` after the render succeeds.
+Delete `C:/Windows/Temp/futures_decisions.json` after the render succeeds.
 
 Send it as a Gmail email using mcp__18e26973-458f-4842-a655-687dfaf0ed6e__send_message (NOT create_draft — this sends immediately, no draft/review step):
   - to: ["bvajjala@gmail.com"]
