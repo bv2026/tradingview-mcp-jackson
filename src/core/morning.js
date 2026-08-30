@@ -13,7 +13,6 @@ import * as chart from './chart.js';
 import * as data from './data.js';
 import * as screener from './screener.js';
 import { classifyResults } from './classify.js';
-import { applyFuturesEvidenceScoring } from './futures-evidence-scoring.js';
 import {
   PROJECT_ROOT,
   REPORTS_DIR,
@@ -26,8 +25,6 @@ import {
 } from './report_paths.js';
 import { switchTab } from './tab.js';
 import { persistRawEvidence } from './raw-evidence.js';
-import { cannonEvidence, cannonEvidenceForSymbol } from './external-evidence/cannon.js';
-import { scoreCryptoEvidence } from './crypto-evidence-scoring.js';
 import { attachCoinbaseWeeklyToRows, loadCoinbaseWeeklyLatest } from './external-evidence/coinbase-weekly.js';
 
 const SESSIONS_DIR = join(homedir(), '.tradingview-mcp', 'sessions');
@@ -86,17 +83,26 @@ async function ensureIndicators(requiredIndicators) {
   );
 
   const added = [];
+  const failed = [];
   for (const indicator of requiredIndicators) {
     const alreadyOn = currentIndicators.some(name =>
       name.includes(indicator.toLowerCase().split('[')[0].trim())
     );
     if (!alreadyOn) {
       try {
-        await chart.manageIndicator({ action: 'add', indicator });
+        const res = await chart.manageIndicator({ action: 'add', indicator });
         await new Promise(r => setTimeout(r, 400));
-        added.push(indicator);
+        if (res && res.success) {
+          added.push(indicator);
+        } else {
+          // createStudy() silently no-ops for invite-only scripts added by public name
+          // (e.g. the LuxAlgo TWB oscillator) — new_study_count comes back 0 with no throw.
+          failed.push(indicator);
+          console.error(`Indicator "${indicator}" could not be added by name (invite-only script?); it must already be on the saved layout.`);
+        }
       } catch (err) {
         // Non-fatal — log and continue
+        failed.push(indicator);
         console.error(`Could not add indicator "${indicator}": ${err.message}`);
       }
     }
@@ -108,7 +114,7 @@ async function ensureIndicators(requiredIndicators) {
     await new Promise(r => setTimeout(r, 3000));
   }
 
-  return { added };
+  return { added, failed };
 }
 
 const round2 = (x) => Math.round(x * 100) / 100;
@@ -203,7 +209,7 @@ function tickerRoot(sym) {
 // not echoing the previously-loaded symbol), and (2) the value-producing required indicator
 // (TWB oscillator — NW Envelope is a price overlay and never reports here) is actually
 // computing. If either never confirms, abort loudly instead of emitting stale/empty data.
-async function verifyChartLive(symbol, timeframe, scanWaitMs, requiredIndicators) {
+async function verifyChartLive(symbol, timeframe, scanWaitMs, requiredIndicators, failedIndicators = []) {
   const CHART_API = KNOWN_PATHS.chartApi;
   const wait = scanWaitMs ?? 800;
   const want = tickerRoot(symbol);
@@ -228,6 +234,22 @@ async function verifyChartLive(symbol, timeframe, scanWaitMs, requiredIndicators
       studyLive = valueKey ? names.some(n => n.includes(valueKey)) : true;
     } catch (_) { studyLive = false; }
     if (quoteFresh && studyLive) return;
+  }
+
+  // Distinguish the two failure modes so an unattended run gets an accurate fix:
+  //  1. quote is stale too  → the tab/feed opened before it was ready → reload/restart TV.
+  //  2. quote is fresh but the value indicator never shows up, AND ensureIndicators
+  //     already failed to add it → it's simply missing from the saved layout (invite-only
+  //     script that can't be re-added by name) → the user must add it in the TV UI.
+  const valueMissing = quoteFresh && !studyLive && valueIndicator &&
+    failedIndicators.some(i => i.toLowerCase().split('[')[0].trim() === valueKey);
+  if (valueMissing) {
+    throw new Error(
+      `Chart feed for ${symbol} is live, but the required indicator "${valueIndicator}" ` +
+      `is not on the chart and could not be added automatically (invite-only script). ` +
+      `Open this chart in TradingView Desktop, add "${valueIndicator}" from your LuxAlgo library, ` +
+      `and re-save the layout — then re-run the brief. (A tab reload will NOT fix this.)`
+    );
   }
 
   throw new Error(
@@ -389,7 +411,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
   }
 
   // Ensure required indicators are on the chart
-  const { added: indicatorsAdded } = await ensureIndicators(strategy.required_indicators);
+  const { added: indicatorsAdded, failed: indicatorsFailed } = await ensureIndicators(strategy.required_indicators);
 
   // Save current chart state so we can restore after scan
   let originalSymbol, originalTimeframe;
@@ -415,7 +437,7 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
   // Liveness probe — abort before scanning if the chart isn't returning live data or the
   // required indicators aren't computing. Prevents silently emitting stale/empty briefs
   // (the failure where every symbol echoed one cached quote with study_count 0).
-  await verifyChartLive(symbols[0], timeframe, _scan_wait_ms, strategy.required_indicators);
+  await verifyChartLive(symbols[0], timeframe, _scan_wait_ms, strategy.required_indicators, indicatorsFailed);
 
   const results = [];
   const CHART_API = KNOWN_PATHS.chartApi;
@@ -450,33 +472,8 @@ export async function runBrief({ rules_path, instrument_type, _scan_wait_ms, off
   const classifiedResults = classifyResults(results, instrument, {
     correlationClusters: strategy.asset_notes?.correlation_clusters,
   });
-  if (instrument === 'futures') {
-    for (const row of classifiedResults) {
-      row.external_evidence = { ...(row.external_evidence || {}), cannon: cannonEvidence(row.symbol, { timeframe, captureDate: new Date().toISOString().slice(0, 10) }) };
-    }
-    const scoredResults = applyFuturesEvidenceScoring(classifiedResults);
-    classifiedResults.splice(0, classifiedResults.length, ...scoredResults);
-  }
-  if (instrument === 'crypto' || instrument === 'crypto_perps') {
-    const cannonBySymbol = new Map();
-    for (const row of classifiedResults) {
-      if (row.error || row.stale) continue;
-      const cannon = cannonEvidenceForSymbol(row.symbol, { instrumentType: instrument, timeframe, captureDate: new Date().toISOString().slice(0, 10) });
-      cannonBySymbol.set(row.symbol, cannon);
-      Object.assign(row, scoreCryptoEvidence(row, { instrumentType: instrument, cannonEvidence: cannon }));
-    }
-    if (instrument === 'crypto_perps') {
-      const btc = classifiedResults.find(r => /BTC(?:USD|USDC)/i.test(String(r.symbol)));
-      const btcCannon = btc ? cannonBySymbol.get(btc.symbol) : null;
-      const btcTrend = btc?.bias === 'bullish' ? 'LONG' : btc?.bias === 'bearish' ? 'SHORT' : null;
-      const cannonTrend = btcCannon?.bias === 'UP' ? 'LONG' : btcCannon?.bias === 'DOWN' ? 'SHORT' : null;
-      const composite = btcTrend && cannonTrend ? (btcTrend === cannonTrend ? `AGREEMENT_${btcTrend}` : 'CONFLICT') : btcTrend || cannonTrend ? 'ONE_SOURCE' : 'UNKNOWN';
-      for (const row of classifiedResults) if (row.perp_evidence_state) row.perp_evidence_state.session_context = { btc_perp_trend: btcTrend, btc_cannon_direction: cannonTrend, broad_crypto_context: composite, note: 'Composite context dimension; BTC observations are not independently point-stacked' };
-    }
-  }
 
-  // Observational Coinbase Weekly context is attached only after scoring. It cannot
-  // influence score, setup, eligibility, Cannon, or session_context semantics.
+  // Observational Coinbase Weekly context. It cannot influence any per-symbol classification.
   if (instrument === 'crypto' || instrument === 'crypto_perps') {
     const coinbaseLatest = loadCoinbaseWeeklyLatest();
     const attached = attachCoinbaseWeeklyToRows(classifiedResults, { instrumentType: instrument, latest: coinbaseLatest });

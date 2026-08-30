@@ -1,11 +1,52 @@
 # Session Handoff — TradingView MCP Jackson
-**Date:** 2026-08-15  
-**Handoff to:** Codex (Claude Code)  
+**Date:** 2026-08-15 (+ 2026-08-30 addendum below)
+**Handoff to:** Codex (Claude Code)
 **Project root:** `C:\work\tradingview-mcp-jackson`
 
 ---
 
-## Current State
+## 2026-08-30 — CannonEdge / CT+TV removed + MY-PERPS TWB fixed
+
+**CannonEdge / CT removed from the decision pipeline ("dead for now" per the user — the
+CannonEdge system is being rebuilt and isn't producing usable signal).** The
+`cannonedge-daily-pipeline` scheduled task still runs and keeps `cannonedge.db` populated —
+tradingview-mcp-jackson just no longer consumes it. All CT+TV and Cannon evidence-scoring
+wiring in this repo was deleted. See the `cannonedge-removed-2026-08-30` memory for the full
+file list. Summary:
+- **Deleted:** `scripts/ct_tv_data.py`, `src/core/external-evidence/cannon.js` +
+  `cannon-market-family.js`, `src/core/futures-evidence-scoring.js`, `crypto-evidence-scoring.js`,
+  `config/cannon-market-families.json`, 4 cannon test files.
+- **`src/core/morning.js`** — cannon imports + futures/crypto evidence-scoring blocks removed.
+  Daily `.md` briefs unchanged (never rendered those fields).
+- **`futures-morning-routine`** — STEP 4 (ct_tv fetcher) gone. **`decision-email-routine`** —
+  STEP 5 Futures email is TV-only now (`Market | Bias | TWB Gap | NW | Regime | S/R | Watch`);
+  no `ct_tv_data.json`. Both synced to live.
+- **`.claude/scan-futures.md` + `futures-decision.md`** rewritten TV-only. `.claude/settings.json`
+  ct_tv allow rules removed. `publish-all-strategies.mjs` / `build-all-strategies-llm-input.mjs`
+  de-Cannoned.
+- **Not touched:** the "all-strategies LLM" fixture `evidence/latest/all-strategies-llm-input.json`
+  + `tests/all_strategies_llm_input.test.js` still reflect the Cannon era (frozen snapshot, tests
+  pass). That apparatus is not scheduled — revisit if revived.
+- **`npm test`: 153/153 pass.** The old time-dependent `cannon_evidence.test.js` failure is gone
+  (file deleted).
+- **⚠️ MCP host restart needed** — the running `tradingview` MCP server still has the old
+  `morning.js` in memory. `morning_brief` keeps executing Cannon code (harmless — `.md` output
+  was already TV-only) until Claude Desktop / the MCP host restarts.
+
+**MY-PERPS TWB (crypto/crypto_perps briefs):** TWB oscillator had been dropped from the
+`6y8jPo4Y` layout (invite-only LuxAlgo script, can't be re-added via MCP). User re-added it in
+the TV UI + re-saved. `verifyChartLive()` in `morning.js` now emits a targeted error
+("add it in the UI, a reload won't fix this") when a required value-indicator is missing vs. a
+genuinely dead feed.
+
+**Today's 3 briefs (2026-08-30) saved:** `crypto.md`, `crypto_perps.md`, `futures.md` in
+`reports/2026-Wk35/2026-Aug-30/`. No `ct_tv_data.json` (pipeline removed).
+
+**Not yet committed** — all of the above is uncommitted working-tree changes.
+
+---
+
+## Current State (2026-08-15)
 
 All watchlist scans healthy and trusted for daily use. All 3 daily decision emails (crypto, perps, futures) generating correctly. Weekly decision pipeline V1 evidence-scoring gaps patched — all 7 instrument types should now produce correct actionable buckets.
 
@@ -205,8 +246,8 @@ Global rule added to `~/.claude/CLAUDE.md`: any new/edited scheduled task must g
 
 | Task | Schedule | Status |
 |---|---|---|
-| `futures-morning-routine` | Weekdays 10:37 AM | **Active** — 3 briefs → ct_tv_data.json (with validation gate) |
-| `decision-email-routine` | Daily ~8:15 AM | **Active** — reads 4 files → 3 decision HTMLs → 3 Gmail drafts |
+| `futures-morning-routine` | Daily ~7:37 AM | **Active** — 3 briefs (crypto/crypto_perps/futures), TV-only (ct_tv/CannonEdge step removed 2026-08-30) |
+| `decision-email-routine` | Daily ~8:16 AM | **Active** — reads the 3 briefs → 3 TV-only decision HTMLs → 3 Gmail sends |
 | `weekly-scan-routine` | Weekdays ~6:05 PM | **Active** — 7 lux_screener_scan jobs → 7 scan JSONs |
 | `weekly-decision-routine` | Weekdays ~6:50 PM | **Active** — classify + render → 7 HTML emails + 7 Gmail drafts |
 | `income-etf-weekly-routine` | Saturdays 10:00 AM | **Active** |
@@ -220,10 +261,10 @@ Global rule added to `~/.claude/CLAUDE.md`: any new/edited scheduled task must g
 ## Architecture Summary
 
 ```
-DAILY DECISION ENGINE:
-  crypto           → morning_brief → crypto-decision.html → Gmail draft
-  crypto_perps     → morning_brief → crypto-perps-decision.html → Gmail draft
-  futures          → morning_brief → ct_tv_data.py → futures-decision.html → Gmail draft
+DAILY DECISION ENGINE (all TV-only as of 2026-08-30):
+  crypto           → morning_brief → crypto-decision.html → Gmail send
+  crypto_perps     → morning_brief → crypto-perps-decision.html → Gmail send
+  futures          → morning_brief → futures-decision.html → Gmail send
 
 WEEKLY DECISION ENGINE:
   7 equity types   → lux_screener_scan → auto-save file
@@ -257,7 +298,6 @@ SCORING (V1 evidence-scoring, as of ~2026-08-01):
 | Equity decision renderer | `scripts/decision-render.mjs` |
 | NW envelope reader | `src/core/lux_screener.js` → `readNwEnvelope()` |
 | Morning brief classifier | `src/core/classify.js` → `nwPositionFrom()` |
-| CT+TV data fetcher (with validation gate) | `scripts/ct_tv_data.py` |
 | Perps watchlist (gitignored) | `CSV/PERPS.csv` (33 symbols) |
 | Perps strategy config | `config/strategy-crypto_perps.json` |
 | Futures morning routine skill | `~/.claude/scheduled-tasks/futures-morning-routine/SKILL.md` |
@@ -268,8 +308,8 @@ SCORING (V1 evidence-scoring, as of ~2026-08-01):
 ## Known Gaps / Next Session
 
 - **`ready_norr` first live scan pending**: The `getStudyValues()` fix for NW band data hasn't been validated on a post-2026-08-14 live scan yet. If `nw_data_warning` fires in scan output, verify NW Envelope is visible on chart at scan time.
-- **CT data mapping gaps**: 9-10 futures symbols have `tv_symbol: null` in `TV_TO_CT_MARKET` (YM1!, RTY1!, BZ1!, ZN1!, ETH1!, 6B1!, 6J1!, DX1!, GF1!) — no CT+TV agreement possible for these. Could add CT market codes if CannonEdge covers them.
-- **Futures indicator validation** was due ~2026-08-03: re-check TWB/NW hit rate vs CannonEdge baseline — not yet confirmed done. Update the `futures-indicator-validation` memory once verified.
+- ~~**CT data mapping gaps**~~ — moot: CT/CannonEdge consumption removed 2026-08-30.
+- ~~**Futures indicator validation** vs CannonEdge baseline~~ — can't be done this way while the CannonEdge signal is being rebuilt (see `futures-indicator-validation` memory).
 - **M-2 (ARK cluster drift)**: `decision-render.mjs` has a hardcoded `CLUSTERS` object that could drift from `strategy-momentum_ark.json`. Low urgency but worth reading clusters from the strategy JSON at runtime in a future session.
 - **ARK batch 3 (symbols 121–137) lux data**: these 17 symbols produced no Lux screener data (score=0/N/A) in the 2026-08-15 scan — thinly traded / recent listings. They showed NW position from chart labels only. Recheck periodically whether any mature enough for S&O to cover.
 - **L-3 (NW pass doesn't restore main chart symbol)**: After `lux_screener_scan`'s NW L3 pass, the main chart tab is pointed at the last scanned symbol. `morning.js` explicitly restores `originalSymbol`; `lux_screener.js` doesn't. Minor UX issue.
@@ -278,4 +318,4 @@ SCORING (V1 evidence-scoring, as of ~2026-08-01):
 
 ## Git State
 
-Branch: `main` — committed and pushed as of 2026-08-15.
+Branch: `main` — committed and pushed as of 2026-08-30 (CannonEdge/CT removal + MY-PERPS TWB fixes).

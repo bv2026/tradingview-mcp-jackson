@@ -17,25 +17,10 @@ const direction = r => r.setup_direction || r.direction || r.bias || 'UNKNOWN';
 const status = r => r.eligibility || r.status || 'UNKNOWN';
 mkdirSync(outDir, { recursive: true });
 
-// CT/TV is a required futures evidence stage. Run it before replacing the
-// compatibility futures.md so its parser sees the normal legacy brief format.
+// (CT/TV + CannonEdge futures evidence stage removed 2026-08-30 — this repo no longer
+// consumes CannonEdge. Futures now publishes from its TV-only evidence like every other
+// family below.)
 const { execFileSync } = await import('node:child_process');
-const dateArg = date.toISOString().slice(0, 10);
-const futuresSource = join(evidenceDir, 'futures.raw.json');
-if (existsSync(futuresSource)) {
-  const fd = JSON.parse(readFileSync(futuresSource, 'utf8'));
-  const fr = rowsOf(fd);
-  const ctInput = ['# FUTURES Morning Brief', '', '### Screener List', '', '| SYMBOL | BIAS | SIGNAL | WATCH |', '|---|---|---|---|',
-    ...fr.map(r => `| ${esc(r.symbol)} | ${esc(r.bias)} | Hist ${r.hist ?? 'N/A'} above sig ${r.sig ?? 'N/A'} (${esc(r.regime)}) | NW ${esc(r.nw_position)} |`), ''].join('\n');
-  writeFileSync(join(outDir, 'futures.md'), ctInput);
-}
-const ctJson = execFileSync('python', [join(root, 'scripts', 'ct_tv_data.py'), dateArg], {
-  cwd: root, encoding: 'utf8', env: process.env,
-});
-const ctData = JSON.parse(ctJson);
-if (ctData.error) throw new Error(`CT/TV fetch failed: ${ctData.error}`);
-writeFileSync(join(outDir, 'ct_tv_data.json'), JSON.stringify(ctData, null, 2));
-
 
 for (const family of families) {
   const source = join(evidenceDir, `${family}.raw.json`);

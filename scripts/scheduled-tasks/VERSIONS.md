@@ -41,6 +41,19 @@ real case for running it on demand outside its cron; not every routine needs one
 
 ## Changelog
 
+- **2026-08-30** — **CannonEdge / CT+TV consumption removed from this repo** (the CannonEdge
+  signal is being rebuilt and isn't usable right now; the `cannonedge-daily-pipeline` scraper
+  still runs). Deleted
+  `scripts/ct_tv_data.py`, `src/core/external-evidence/cannon.js` + `cannon-market-family.js`,
+  `src/core/futures-evidence-scoring.js`, `src/core/crypto-evidence-scoring.js`,
+  `config/cannon-market-families.json`, and 4 cannon test files. `src/core/morning.js` no longer
+  attaches Cannon evidence or runs futures/crypto evidence-scoring. **futures-morning-routine**:
+  STEP 4 (ct_tv fetcher) removed. **decision-email-routine**: STEP 5 Futures email rewritten
+  TV-only (TWB gap / NW / regime / S/R from `futures.md`); `ct_tv_data.json` no longer required
+  or read. `.claude/scan-futures.md` + `.claude/futures-decision.md` updated to TV-only.
+  Also converted the routine's `C:\Windows\Temp\...` / `python C:\work\...` backslash paths to
+  forward-slash form (Git Bash strips unquoted backslashes → junk files in repo root). Both
+  routines synced to live.
 - **2026-08-28** — weekly-decision-routine versioned at 1.0.0 and published as a modular project
   skill (`.claude/skills/weekly-decision-routine/`), after a live run surfaced that this routine's
   existence wasn't being checked before hand-rolling emails. This file created as the general fix.

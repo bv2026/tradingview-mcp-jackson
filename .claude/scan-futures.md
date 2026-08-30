@@ -45,49 +45,43 @@ Call `session_save instrument_type="futures"` with the complete formatted brief.
 
 ---
 
-## STEP 3: RUN CT+TV DATA FETCHER
-```bash
-python /c/work/tradingview-mcp-jackson/scripts/ct_tv_data.py
-```
+## STEP 3: CLEANUP SCRATCH
 
-If non-zero exit, STOP and report the error.
-
-Validate output JSON:
-- Check `_validation.null_gap_count` / `_validation.tv_mapped_count`
-- If `null_gap_count / tv_mapped_count > 0.5`, STOP: "CT/TV pipeline failure — futures.md format may have changed."
-
-Use the Write tool to save captured stdout to:
-`reports/{YYYY-WkNN}/{YYYY-Mon-DD}/ct_tv_data.json`
-
-Delete scratch files:
 ```bash
 rm -f /c/Windows/Temp/futures_extracted.json /c/Windows/Temp/futures_raw.json
 ```
+
+(The old CT+TV fetcher step was removed 2026-08-30 — this repo no longer consumes CannonEdge
+while its signal is being rebuilt. This is now a TV-only pipeline.)
 
 ---
 
 ## STEP 4: FUTURES DECISION EMAIL
 
-Read `config/strategy-futures.json` and `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/ct_tv_data.json`.
+Read `config/strategy-futures.json` and `reports/{YYYY-WkNN}/{YYYY-Mon-DD}/futures.md`.
 
-**PRIMARY RULE: CT always wins.** CT ST/LT arrows determine direction. TV data (NW, TWB gap) is timing context only — it never overrides CT direction.
+**Each market is evaluated independently on its own TWB histogram + NW position + regime + S/R** —
+no benchmark. Determine the regime (TRENDING_LONG / TRENDING_SHORT / MEAN_REVERTING) from the
+brief's `regime` field + `regime_detection` rules, then apply the matching bias_criteria. TWB gap
+sign is the primary directional read; NW position is timing context. Apply `macro_overlays`
+(DXY / bonds / VX1!) and the sector concentration limits.
 
 Write your decisions to `/c/Windows/Temp/futures_decisions.json`:
 ```json
 {
   "title": "Futures Decision Brief",
-  "subtitle": "CT primary · TV timing context · Daily",
+  "subtitle": "TV only · CT/CannonEdge not used · Each market evaluated independently",
   "top_setups": [
     { "symbol": "ES1!", "side": "Long", "entry": "...", "stop": "...", "tp1": "...", "notes": "..." }
   ],
-  "watch_list_columns": ["Symbol", "CT Signal", "Note"],
+  "watch_list_columns": ["Symbol", "Candidate", "Note"],
   "watch_list": [
     { "symbol": "NQ1!", "bias": "neutral", "col2": "...", "col3": "..." }
   ],
   "overall_read": ["bullet 1", "bullet 2"],
-  "all_symbols_columns": ["Symbol", "CT ST", "CT LT", "TV Gap", "NW Position", "Bias"],
+  "all_symbols_columns": ["Symbol", "Bias", "TWB Gap", "NW", "Regime", "S/R", "Watch"],
   "all_symbols": [
-    { "symbol": "ES1!", "bias": "bullish", "col2": "UP", "col3": "UP", "col4": "+174.8", "col5": "inside", "col6": "bullish" }
+    { "symbol": "ES1!", "bias": "bullish", "col2": "+30.6", "col3": "extended", "col4": "TRENDING_LONG", "col5": "-", "col6": "no chase" }
   ]
 }
 ```
